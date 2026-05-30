@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { font-family: var(--font-cairo), 'Cairo', sans-serif; }
+body { direction: rtl; background: #f8fafc; }
+
+html { scroll-behavior: smooth; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9px; }
+
+.section-title {
+  @apply text-3xl md:text-4xl font-extrabold text-slate-900 text-center;
+}
+.section-sub {
+  @apply text-slate-500 text-center mt-3 text-lg max-w-xl mx-auto;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -8px rgba(99,102,241,.15);
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
