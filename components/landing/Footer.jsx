@@ -52,7 +52,7 @@ export default function Footer() {
 
         <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 text-sm">
           <p>© {new Date().getFullYear()} Amine-Fit. جميع الحقوق محفوظة.</p>
-          <p>صُنع بـ ❤️ للمجتمع الرياضي الجزائري</p>
+          <p>صُنع بـ ❤️ من أجل صحتك ولياقتك</p>
         </div>
       </div>
     </footer>

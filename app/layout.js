@@ -15,7 +15,7 @@ export const metadata = {
   openGraph: {
     title: 'Amine-Fit',
     description: 'برامج تدريب وتغذية مخصصة',
-    locale: 'ar_DZ',
+    locale: 'ar',
     type: 'website',
   },
 }
