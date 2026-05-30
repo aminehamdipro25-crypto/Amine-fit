@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList, LogOut, ExternalLink } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'لوحة التحكم' },
@@ -12,6 +12,12 @@ const navItems = [
 
 export default function Sidebar({ open, onClose }) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  async function logout() {
+    await fetch('/api/dashboard/auth', { method: 'DELETE' })
+    router.push('/dashboard/login')
+  }
 
   return (
     <>
@@ -65,13 +71,23 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        {/* Back to site */}
-        <div className="px-3 pt-3 pb-2 border-t border-white/5">
+        {/* Quick links */}
+        <div className="px-3 pt-3 pb-2 border-t border-white/5 space-y-0.5">
           <Link href="/"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/25 hover:text-white hover:bg-white/5 transition text-sm font-medium">
             <ArrowUpLeft className="w-4 h-4" />
             العودة للموقع
           </Link>
+          <Link href="/client/login" target="_blank"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/25 hover:text-gold-400 hover:bg-white/5 transition text-sm font-medium">
+            <ExternalLink className="w-4 h-4" />
+            بوابة العميل
+          </Link>
+          <button onClick={logout}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/25 hover:text-red-400 hover:bg-red-500/5 transition text-sm font-medium">
+            <LogOut className="w-4 h-4" />
+            تسجيل الخروج
+          </button>
         </div>
 
         {/* Profile */}

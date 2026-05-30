@@ -47,7 +47,11 @@ export default function Navbar() {
           </nav>
 
           {/* CTA */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            <Link href="/client/login"
+              className="px-4 py-2 border border-white/10 text-white/60 text-sm font-bold rounded-xl hover:bg-white/5 hover:text-white transition-all">
+              دخول العميل
+            </Link>
             <Link href="/dashboard"
               className="px-5 py-2 bg-gold-400 text-black text-sm font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
               لوحة التحكم
@@ -71,8 +75,12 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          <Link href="/client/login" onClick={() => setMobileOpen(false)}
+            className="block mt-2 text-center px-4 py-3 border border-white/10 text-white/70 font-bold rounded-xl">
+            دخول العميل
+          </Link>
           <Link href="/dashboard" onClick={() => setMobileOpen(false)}
-            className="block mt-3 text-center px-4 py-3 bg-gold-400 text-black font-extrabold rounded-xl">
+            className="block mt-2 text-center px-4 py-3 bg-gold-400 text-black font-extrabold rounded-xl">
             لوحة التحكم
           </Link>
         </div>
