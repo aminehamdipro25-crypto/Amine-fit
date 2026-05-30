@@ -64,7 +64,7 @@ export default function Hero() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <a href="#contact"
+            <a href="/register"
               className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary-600 to-emerald-500
                 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-primary-900/50
                 hover:shadow-primary-600/40 hover:scale-105 transition-all">

@@ -82,7 +82,7 @@ export default function Pricing() {
                 <span className="text-slate-500 text-sm mb-1">{p.period}</span>
               </div>
 
-              <a href="#contact"
+              <a href="/register"
                 className={`block text-center text-white font-bold py-3 rounded-2xl ${p.btn} transition-all mb-7 shadow-md`}>
                 اشترك الآن
               </a>
