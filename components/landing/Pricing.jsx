@@ -1,84 +1,120 @@
 'use client'
-import { useState } from 'react'
-import { X, Check, ArrowLeft, Zap, Shield, Clock, Headphones } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Check, ArrowLeft, Zap, Shield, Clock, Headphones, Flame, Tag } from 'lucide-react'
+
+/* ── countdown to end of month ── */
+function useCountdown() {
+  const [time, setTime] = useState({ h: 0, m: 0, s: 0 })
+  useEffect(() => {
+    function calc() {
+      const now  = new Date()
+      const end  = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      const diff = Math.max(0, end - now)
+      setTime({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      })
+    }
+    calc()
+    const id = setInterval(calc, 1000)
+    return () => clearInterval(id)
+  }, [])
+  return time
+}
 
 const plans = [
   {
-    name: 'الباقة الأساسية',
-    price: '500',
-    desc: 'مثالية للمبتدئين',
-    emoji: '🌱',
+    name: 'برنامج التدريب',
+    salePrice: '50',
+    origPrice: '100',
+    currency: 'د.ت',
+    period: '/ شهر',
+    desc: 'للبدء بخطوة واحدة',
+    emoji: '🏋️',
     badge: null,
     color: 'dark',
     duration: 'شهر واحد',
-    support: 'واتساب (رد خلال 24س)',
-    sessions: '2 أسبوعياً',
+    support: 'واتساب (رد خلال 24 ساعة)',
+    sessions: 'حسب المستوى',
     includes: [
-      '2 جلسات تدريب أسبوعياً',
-      'خطة غذائية أساسية مخصصة',
-      'بوابة عميل شخصية للوصول للخطة',
-      'متابعة شهرية لقياس التقدم',
-      'دعم عبر الواتساب',
+      'خطة تدريب أسبوعية مخصصة',
+      'بوابة عميل شخصية للوصول للبرنامج',
       'تعديل الخطة عند الحاجة',
+      'دعم عبر الواتساب',
     ],
     notIncluded: [
-      'قياسات جسم دورية (InBody)',
-      'تقارير تقدم مفصلة أسبوعية',
-      'أولوية الرد الفوري',
-      'استشارات غذائية غير محدودة',
+      'خطة غذائية',
+      'متابعة أسبوعية مفصلة',
+      'قياسات InBody',
     ],
-    forWho: 'مناسبة لمن يبدأ رحلته الأولى في اللياقة البدنية ويريد نتائج ثابتة بدعم أساسي.',
+    forWho: 'مثالي لمن يريد بداية بسيطة بخطة تدريب احترافية دون التزام غذائي كامل.',
   },
   {
-    name: 'الباقة المتقدمة',
-    price: '900',
-    desc: 'الخيار الأمثل للنتائج السريعة',
+    name: 'الباقة الشهرية',
+    salePrice: '125',
+    origPrice: '250',
+    currency: 'د.ت',
+    period: '/ شهر',
+    desc: 'تدريب + تغذية متكاملة',
     emoji: '⚡',
     badge: '⭐ الأكثر طلباً',
     color: 'gold',
     duration: 'شهر واحد',
-    support: 'واتساب + مكالمة أسبوعية',
-    sessions: '4 أسبوعياً',
+    support: 'واتساب + متابعة أسبوعية',
+    sessions: '3–4 جلسات / أسبوع',
     includes: [
-      '4 جلسات تدريب أسبوعياً',
+      'خطة تدريب أسبوعية مخصصة',
       'خطة غذائية بنظام التبادل الكامل',
       'بوابة عميل شخصية متكاملة',
       'متابعة أسبوعية + تعديلات فورية',
-      'قياسات جسم شهرية (InBody)',
-      'تقارير تقدم مفصلة أسبوعية',
-      'استشارات غذائية غير محدودة',
-      'دعم عبر الواتساب والمكالمة',
+      'استشارات غذائية عبر الواتساب',
+      'تقرير تقدم شهري',
     ],
     notIncluded: [
-      'أولوية الرد الفوري (24/7)',
+      'قياسات InBody الشهرية',
     ],
-    forWho: 'الخيار الأمثل لمن يريد نتائج حقيقية وسريعة مع متابعة دورية ودعم متواصل.',
+    forWho: 'الخيار الأمثل لمن يريد تحولاً حقيقياً في التدريب والتغذية معاً خلال شهر واحد.',
   },
   {
-    name: 'الباقة الاحترافية',
-    price: '1,500',
-    desc: 'للمحترفين وصنّاع النتائج',
+    name: 'باقة 3 أشهر',
+    salePrice: '300',
+    origPrice: '600',
+    currency: 'د.ت',
+    period: '/ 3 أشهر',
+    desc: 'الأوفر — نتائج مضمونة',
     emoji: '🏆',
-    badge: '💎 VIP',
+    badge: '💎 الأوفر',
     color: 'dark',
-    duration: 'شهر واحد',
-    support: 'دعم مباشر فوري 7/7',
-    sessions: '6 أسبوعياً',
+    duration: '3 أشهر كاملة',
+    support: 'دعم مباشر + مكالمة شهرية',
+    sessions: '3–5 جلسات / أسبوع',
     includes: [
-      '6 جلسات تدريب أسبوعياً',
-      'خطة غذائية + تكيفات دورية ذكية',
-      'بوابة عميل شخصية VIP',
-      'متابعة يومية مستمرة',
-      'قياسات جسم + تقارير مفصلة أسبوعية',
-      'أولوية الرد الفوري (24/7)',
-      'استشارات غير محدودة في كل وقت',
-      'خطة خاصة للمناسبات والسفر',
-      'ضمان النتيجة أو الاسترداد',
+      'خطة تدريب + تغذية كاملة ومتجددة',
+      'بوابة عميل شخصية متكاملة',
+      'متابعة أسبوعية طوال الفترة',
+      'تعديل الخطط كل شهر حسب التقدم',
+      'استشارات غذائية غير محدودة',
+      'تقارير تقدم مفصلة شهرية',
+      'ضمان التقدم الملموس أو التمديد مجاناً',
     ],
     notIncluded: [],
-    forWho: 'للرياضيين والمحترفين الذين يريدون أعلى مستوى من التخصيص والدعم بلا حدود.',
+    forWho: 'للجادين فعلاً — 3 أشهر كافية لتحول حقيقي مع ضمان نتيجة ملموسة.',
   },
 ]
+
+function Digit({ val, label }) {
+  return (
+    <div className="text-center">
+      <div className="bg-black/30 border border-white/10 rounded-xl w-14 h-14 flex items-center justify-center">
+        <span className="text-2xl font-extrabold text-white tabular-nums">
+          {String(val).padStart(2, '0')}
+        </span>
+      </div>
+      <p className="text-white/30 text-[10px] font-bold mt-1 uppercase">{label}</p>
+    </div>
+  )
+}
 
 function PlanModal({ plan, onClose }) {
   const isGold = plan.color === 'gold'
@@ -88,7 +124,6 @@ function PlanModal({ plan, onClose }) {
       <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-4
         ${isGold ? 'bg-white' : 'bg-[#111]'}`}>
 
-        {/* Header */}
         <div className={`px-7 pt-7 pb-5 relative
           ${isGold
             ? 'bg-gradient-to-br from-gold-400 to-amber-400'
@@ -99,7 +134,7 @@ function PlanModal({ plan, onClose }) {
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-start gap-4">
-            <div className={`text-5xl`}>{plan.emoji}</div>
+            <span className="text-5xl">{plan.emoji}</span>
             <div>
               {plan.badge && (
                 <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full mb-2 inline-block
@@ -111,20 +146,26 @@ function PlanModal({ plan, onClose }) {
               <p className={`text-sm font-medium ${isGold ? 'text-black/50' : 'text-white/40'}`}>{plan.desc}</p>
             </div>
           </div>
-          <div className="flex items-end gap-1 mt-4">
-            <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.price}</span>
-            <span className={`text-sm mb-1 ${isGold ? 'text-black/40' : 'text-white/30'}`}>ر.ق / شهر</span>
+          <div className="flex items-end gap-2 mt-4">
+            <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.salePrice}</span>
+            <div className="mb-1">
+              <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>
+                {plan.origPrice} {plan.currency}
+              </span>
+              <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>
+                {plan.currency} {plan.period}
+              </span>
+            </div>
+            <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2 py-0.5 rounded-full">-50%</span>
           </div>
         </div>
 
         <div className="px-7 py-6 space-y-6">
-
-          {/* Quick info */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: Clock,       label: 'المدة',      val: plan.duration  },
-              { icon: Zap,         label: 'الجلسات',    val: plan.sessions  },
-              { icon: Headphones,  label: 'الدعم',      val: plan.support   },
+              { icon: Clock,      label: 'المدة',   val: plan.duration },
+              { icon: Zap,        label: 'الجلسات', val: plan.sessions },
+              { icon: Headphones, label: 'الدعم',   val: plan.support  },
             ].map(({ icon: Icon, label, val }) => (
               <div key={label} className={`rounded-2xl p-3 text-center
                 ${isGold ? 'bg-slate-50 border border-slate-100' : 'bg-white/5 border border-white/5'}`}>
@@ -135,16 +176,14 @@ function PlanModal({ plan, onClose }) {
             ))}
           </div>
 
-          {/* For who */}
           <div className={`rounded-2xl p-4 border-r-4 ${isGold ? 'bg-amber-50 border-amber-400' : 'bg-gold-400/5 border-gold-400'}`}>
             <p className={`text-sm font-medium leading-relaxed ${isGold ? 'text-amber-900' : 'text-white/70'}`}>
               💡 {plan.forWho}
             </p>
           </div>
 
-          {/* Included */}
           <div>
-            <p className={`text-xs font-extrabold uppercase tracking-widest mb-3 ${isGold ? 'text-slate-500' : 'text-white/40'}`}>ما يشمله الباقة</p>
+            <p className={`text-xs font-extrabold uppercase tracking-widest mb-3 ${isGold ? 'text-slate-500' : 'text-white/40'}`}>ما تشمله الباقة</p>
             <ul className="space-y-2">
               {plan.includes.map(f => (
                 <li key={f} className="flex items-start gap-2.5">
@@ -175,7 +214,6 @@ function PlanModal({ plan, onClose }) {
             </div>
           )}
 
-          {/* CTA */}
           <div className="flex gap-3 pt-2">
             <button onClick={onClose}
               className={`px-4 py-3 rounded-xl font-bold text-sm transition border
@@ -188,7 +226,7 @@ function PlanModal({ plan, onClose }) {
                   ? 'bg-black text-gold-400 hover:bg-black/80 shadow-black/20'
                   : 'bg-gold-400 text-black hover:bg-gold-300 shadow-gold-400/20'}`}>
               <Zap className="w-4 h-4" fill="currentColor" />
-              اشترك في {plan.name}
+              اشترك الآن بـ {plan.salePrice} {plan.currency}
             </a>
           </div>
         </div>
@@ -199,21 +237,46 @@ function PlanModal({ plan, onClose }) {
 
 export default function Pricing() {
   const [activePlan, setActivePlan] = useState(null)
+  const { h, m, s } = useCountdown()
 
   return (
     <section id="pricing" className="py-24 bg-[#0f0f0f]">
       {activePlan && <PlanModal plan={activePlan} onClose={() => setActivePlan(null)} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* ── FLASH SALE BANNER ── */}
+        <div className="mb-12 bg-gradient-to-r from-red-600/20 via-red-500/10 to-red-600/20 border border-red-500/30 rounded-3xl p-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Flame className="w-5 h-5 text-red-400 animate-pulse" />
+            <span className="text-red-400 font-extrabold text-sm uppercase tracking-widest">عرض إطلاق محدود</span>
+            <Flame className="w-5 h-5 text-red-400 animate-pulse" />
+          </div>
+          <p className="text-white font-extrabold text-2xl sm:text-3xl mb-1">
+            خصم <span className="text-red-400">50%</span> على جميع الباقات
+          </p>
+          <p className="text-white/40 text-sm mb-5">
+            أسعار خاصة لإطلاق المنصة في السوق التونسية — العرض ينتهي مع نهاية الشهر
+          </p>
+          {/* Countdown */}
+          <div className="flex items-center justify-center gap-3">
+            <Digit val={h}  label="ساعة" />
+            <span className="text-white/30 font-extrabold text-2xl mb-5">:</span>
+            <Digit val={m}  label="دقيقة" />
+            <span className="text-white/30 font-extrabold text-2xl mb-5">:</span>
+            <Digit val={s}  label="ثانية" />
+          </div>
+        </div>
+
         <p className="text-gold-400 font-bold text-center text-xs uppercase tracking-widest mb-3">الأسعار</p>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-white text-center mb-3 tracking-tight">
           اختر الباقة المناسبة لك
         </h2>
-        <p className="text-white/30 text-center max-w-xl mx-auto font-medium">
-          باقات مرنة بأسعار في متناول الجميع — اضغط على أي باقة لتعرف كل التفاصيل
+        <p className="text-white/30 text-center max-w-xl mx-auto font-medium text-sm">
+          باقات بالدينار التونسي — اضغط على أي باقة لتعرف كل التفاصيل
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-14 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10 items-start">
           {plans.map(p => (
             <div key={p.name}
               onClick={() => setActivePlan(p)}
@@ -222,6 +285,7 @@ export default function Pricing() {
                   ? 'bg-gold-400 border-gold-400 scale-[1.03] shadow-2xl shadow-gold-400/20 hover:shadow-gold-400/40'
                   : 'bg-white/3 border-white/8 hover:border-white/20 hover:shadow-white/5'}`}>
 
+              {/* Badge */}
               {p.badge && (
                 <div className={`absolute -top-3.5 right-6 text-xs font-extrabold px-3 py-1 rounded-full border
                   ${p.color === 'gold'
@@ -231,7 +295,14 @@ export default function Pricing() {
                 </div>
               )}
 
-              <div className="flex items-center gap-3 mb-4">
+              {/* -50% tag */}
+              <div className="absolute -top-3.5 left-6">
+                <span className="flex items-center gap-1 bg-red-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
+                  <Tag className="w-3 h-3" />-50%
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4 mt-1">
                 <span className="text-3xl">{p.emoji}</span>
                 <div>
                   <h3 className={`font-extrabold text-lg leading-tight ${p.color === 'gold' ? 'text-black' : 'text-white'}`}>
@@ -241,9 +312,25 @@ export default function Pricing() {
                 </div>
               </div>
 
-              <div className="flex items-end gap-1 mb-6">
-                <span className={`text-4xl font-extrabold ${p.color === 'gold' ? 'text-black' : 'text-white'}`}>{p.price}</span>
-                <span className={`text-sm mb-1 ${p.color === 'gold' ? 'text-black/40' : 'text-white/30'}`}>ر.ق / شهر</span>
+              {/* Price */}
+              <div className="flex items-end gap-2 mb-1">
+                <span className={`text-4xl font-extrabold ${p.color === 'gold' ? 'text-black' : 'text-white'}`}>
+                  {p.salePrice}
+                </span>
+                <div className="mb-1">
+                  <span className={`line-through text-xs block font-bold ${p.color === 'gold' ? 'text-black/30' : 'text-white/25'}`}>
+                    {p.origPrice} {p.currency}
+                  </span>
+                  <span className={`text-xs font-medium ${p.color === 'gold' ? 'text-black/50' : 'text-white/30'}`}>
+                    {p.currency} {p.period}
+                  </span>
+                </div>
+              </div>
+
+              {/* Savings pill */}
+              <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full mb-5
+                ${p.color === 'gold' ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                💰 توفير {Number(p.origPrice) - Number(p.salePrice)} {p.currency}
               </div>
 
               {/* Preview features */}
@@ -263,7 +350,6 @@ export default function Pricing() {
                 )}
               </ul>
 
-              {/* CTA */}
               <div className={`flex items-center justify-between pt-4 border-t
                 ${p.color === 'gold' ? 'border-black/10' : 'border-white/5'}`}>
                 <span className={`text-xs font-bold ${p.color === 'gold' ? 'text-black/40' : 'text-white/25'}`}>
