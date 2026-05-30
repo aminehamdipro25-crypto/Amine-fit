@@ -2,8 +2,70 @@
 import { useState } from 'react'
 import {
   Search, Eye, X, User, Target, Activity,
-  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle
+  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download
 } from 'lucide-react'
+
+function printClientPDF(client) {
+  const yesNo = v => v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : v === 'sometimes' ? 'أحياناً' : v || '—'
+  const v = x => x?.toString().trim() || '—'
+  const rows = items => items.map(([lbl, val]) =>
+    val && val !== '—' ? `<tr><td class="lbl">${lbl}</td><td>${val}</td></tr>` : ''
+  ).join('')
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>استبيان — ${client.name}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:20px}
+.header{background:linear-gradient(135deg,#4f46e5,#10b981);color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:18px;margin-bottom:4px}.header p{font-size:11px;opacity:.85}
+.avatar{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;flex-shrink:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center}
+.stat .num{font-size:18px;font-weight:bold;color:#4f46e5}.stat .lbl{font-size:10px;color:#64748b;margin-top:2px}
+section{margin-bottom:14px}
+section h2{font-size:12px;font-weight:bold;color:#4f46e5;background:#eef2ff;padding:6px 10px;border-right:3px solid #4f46e5}
+table{width:100%;border-collapse:collapse}
+tr:nth-child(even){background:#f8fafc}
+td{padding:7px 10px;border:1px solid #e2e8f0;font-size:11px}
+td.lbl{font-weight:600;background:#f1f5f9;width:38%;color:#374151}
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}
+@media print{body{padding:10px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div><h1>🏋️ استبيان العميل — Amine-Fit</h1>
+  <p>تاريخ التسجيل: ${new Date(client.createdAt).toLocaleString('ar', { timeZone: 'Asia/Qatar' })}</p></div>
+  <div class="avatar">${client.name?.[0] ?? '?'}</div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="num">${v(client.age)}</div><div class="lbl">العمر (سنة)</div></div>
+  <div class="stat"><div class="num">${v(client.weight)}</div><div class="lbl">الوزن (كغ)</div></div>
+  <div class="stat"><div class="num">${v(client.height)}</div><div class="lbl">الطول (سم)</div></div>
+  <div class="stat"><div class="num">${v(client.targetWeight)}</div><div class="lbl">الهدف (كغ)</div></div>
+</div>
+<section><h2>📋 المعلومات الشخصية</h2>
+<table>${rows([['الاسم',v(client.name)],['البريد',v(client.email)],['الهاتف',v(client.phone)],['الجنس',client.gender==='male'?'ذكر':'أنثى'],['طبيعة العمل',v(client.workActivity)],['ميزان مطبخ',yesNo(client.hasScale)]])}</table></section>
+<section><h2>🎯 الأهداف</h2>
+<table>${rows([['الهدف',v(client.goal)],['الوزن المستهدف',v(client.targetWeight)+' كغ'],['مستوى النشاط',v(client.activityLevel)],['نوع الرياضة',v(client.sportType)],['InBody',client.hasInBody==='yes'?'نعم — '+v(client.inBodyNote):'لا'],['NFS',client.hasNFS==='yes'?'نعم — '+v(client.nfsNote):'لا']])}</table></section>
+<section><h2>🥗 التغذية</h2>
+<table>${rows([['عدد الوجبات',v(client.dailyMeals)],['الماء يومياً',v(client.waterIntake)+' ل'],['حساسية',v(client.foodAllergy)],['أطعمة مستبعدة',v(client.dislikedFoods)],['أطعمة مفضلة',v(client.preferredFoods)],['الشهية',v(client.appetite)],['النظام الحالي',v(client.currentDiet)]])}</table></section>
+<section><h2>🏥 الصحة</h2>
+<table>${rows([['أمراض مزمنة',client.hasChronicDisease==='yes'?'نعم — '+v(client.chronicDiseaseNote):'لا'],['أدوية/مكملات',v(client.medications)],['النوم',v(client.sleepHours)+' ساعات'],['ضغط نفسي',yesNo(client.hasPsychStress)],['من يحضر الطعام',v(client.foodPrep)]])}</table></section>
+<section><h2>💬 ملاحظات</h2>
+<table>${rows([['الدافع',v(client.motivation)],['برامج سابقة',v(client.previousPrograms)],['الالتزام',v(client.commitment)],['كيف سمع عنّا',v(client.heardFrom)],['ملاحظات',v(client.notes)]])}</table></section>
+<div class="footer"><span>Amine-Fit • الدوحة، قطر • +974 3065 3759</span><span>amine-fit.vercel.app</span></div>
+<script>window.onload=()=>window.print()</script>
+</body></html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+}
 
 const goalMap = {
   loss:        { label:'خسارة وزن',       color:'bg-red-100 text-red-700',       icon:'📉' },
@@ -45,7 +107,7 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   )
 }
 
-function ClientModal({ client, onClose, onStatusChange }) {
+function ClientModal({ client, onClose, onStatusChange, onDelete }) {
   const goal = goalMap[client.goal]
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-12 overflow-y-auto"
@@ -147,7 +209,17 @@ function ClientModal({ client, onClose, onStatusChange }) {
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center gap-3 px-6 py-4 border-t border-slate-100">
+        <div className="flex items-center gap-3 px-6 py-4 border-t border-slate-100 flex-wrap">
+          <button onClick={() => printClientPDF(client)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+            <Download className="w-3.5 h-3.5" />
+            تنزيل PDF
+          </button>
+          <button onClick={() => onDelete(client.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition">
+            <X className="w-3.5 h-3.5" />
+            حذف
+          </button>
           <p className="text-xs text-slate-400 flex-1">
             تاريخ التسجيل: {new Date(client.createdAt).toLocaleDateString('ar-DZ', { year:'numeric', month:'long', day:'numeric' })}
           </p>
@@ -172,6 +244,7 @@ export default function ClientsClient({ submissions: initial }) {
   const [filterStatus, setFS]     = useState('all')
   const [filterGoal, setFG]       = useState('all')
   const [selected, setSelected]   = useState(null)
+  const [deleting, setDeleting]   = useState(null)
 
   const filtered = clients.filter(c => {
     const q = query.toLowerCase()
@@ -187,6 +260,18 @@ export default function ClientsClient({ submissions: initial }) {
     if (selected?.id === id) setSelected(s => ({ ...s, status }))
   }
 
+  async function deleteClient(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return
+    setDeleting(id)
+    try {
+      await fetch(`/api/register/${id}`, { method: 'DELETE' })
+      setClients(cs => cs.filter(c => c.id !== id))
+      if (selected?.id === id) setSelected(null)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   const counts = {
     all: clients.length,
     new: clients.filter(c => c.status === 'new').length,
@@ -197,7 +282,7 @@ export default function ClientsClient({ submissions: initial }) {
   return (
     <>
       {selected && (
-        <ClientModal client={selected} onClose={() => setSelected(null)} onStatusChange={changeStatus} />
+        <ClientModal client={selected} onClose={() => setSelected(null)} onStatusChange={changeStatus} onDelete={deleteClient} />
       )}
 
       <div className="space-y-5">
@@ -243,7 +328,7 @@ export default function ClientsClient({ submissions: initial }) {
               const goal = goalMap[c.goal]
               return (
                 <div key={c.id}
-                  className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer relative group"
                   onClick={() => setSelected(c)}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -255,7 +340,15 @@ export default function ClientsClient({ submissions: initial }) {
                         <p className="text-xs text-slate-500 truncate max-w-[130px]">{c.email}</p>
                       </div>
                     </div>
-                    <Badge status={c.status} />
+                    <div className="flex items-center gap-2">
+                      <Badge status={c.status} />
+                      <button
+                        onClick={e => { e.stopPropagation(); deleteClient(c.id) }}
+                        disabled={deleting === c.id}
+                        className="opacity-0 group-hover:opacity-100 transition p-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 mb-3">
