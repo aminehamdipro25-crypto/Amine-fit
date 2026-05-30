@@ -1,12 +1,13 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Calculator, X, Dumbbell, ChevronLeft, ArrowUpLeft } from 'lucide-react'
+import { LayoutDashboard, Users, Calculator, X, Dumbbell, ChevronLeft, ArrowUpLeft, ClipboardList } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard',              icon: LayoutDashboard, label: 'لوحة التحكم' },
-  { href: '/dashboard/subscribers',  icon: Users,           label: 'المشتركون' },
-  { href: '/dashboard/calculator',   icon: Calculator,      label: 'حاسبة التبادل' },
+  { href: '/dashboard',             icon: LayoutDashboard, label: 'لوحة التحكم' },
+  { href: '/dashboard/clients',     icon: ClipboardList,   label: 'الاستبيانات', badge: true },
+  { href: '/dashboard/subscribers', icon: Users,           label: 'المشتركون' },
+  { href: '/dashboard/calculator',  icon: Calculator,      label: 'حاسبة التبادل' },
 ]
 
 export default function Sidebar({ open, onClose }) {
@@ -44,7 +45,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <p className="text-white/30 text-xs uppercase tracking-wider px-3 mb-3">القائمة</p>
-          {navItems.map(({ href, icon: Icon, label }) => {
+          {navItems.map(({ href, icon: Icon, label, badge }) => {
             const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
             return (
               <Link key={href} href={href}
@@ -55,8 +56,9 @@ export default function Sidebar({ open, onClose }) {
                     : 'text-white/60 hover:bg-white/10 hover:text-white'
                   }`}>
                 <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-white/40 group-hover:text-white'}`} />
-                <span className="font-medium">{label}</span>
-                {active && <ChevronLeft className="w-4 h-4 mr-auto opacity-60" />}
+                <span className="font-medium flex-1">{label}</span>
+                {badge && !active && <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />}
+                {active && <ChevronLeft className="w-4 h-4 opacity-60" />}
               </Link>
             )
           })}
