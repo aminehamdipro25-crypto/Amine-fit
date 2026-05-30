@@ -2,8 +2,132 @@
 import { useState } from 'react'
 import {
   Search, Eye, X, User, Target, Activity,
-  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle
+  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download
 } from 'lucide-react'
+
+function printClientPDF(client) {
+  const goalLabels = { loss:'خسارة وزن', gain:'بناء عضلات', maintain:'الحفاظ على الوزن', performance:'أداء رياضي' }
+  const actLabels  = { sedentary:'خامل', light:'خفيف', moderate:'متوسط', high:'عالي' }
+  const yesNo = v => v === 'yes' ? 'نعم' : v === 'no' ? 'لا' : v === 'sometimes' ? 'أحياناً' : v || '—'
+  const v = x => x?.toString().trim() || '—'
+
+  const rows = (items) => items.map(([label, value]) =>
+    value && value !== '—' ? `<tr><td class="lbl">${label}</td><td>${value}</td></tr>` : ''
+  ).join('')
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>استبيان — ${client.name}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 20px; }
+  .header { background: linear-gradient(135deg,#4f46e5,#10b981); color: #fff; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 18px; margin-bottom: 4px; }
+  .header p { font-size: 11px; opacity: .85; }
+  .avatar { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.3); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; flex-shrink: 0; }
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+  .stat .num { font-size: 18px; font-weight: bold; color: #4f46e5; }
+  .stat .lbl { font-size: 10px; color: #64748b; margin-top: 2px; }
+  section { margin-bottom: 14px; }
+  section h2 { font-size: 12px; font-weight: bold; color: #4f46e5; background: #eef2ff; padding: 6px 10px; border-right: 3px solid #4f46e5; margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  tr:nth-child(even) { background: #f8fafc; }
+  td { padding: 7px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
+  td.lbl { font-weight: 600; background: #f1f5f9; width: 38%; color: #374151; }
+  .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+  @media print { body { padding: 10px; } .no-print { display: none; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>🏋️ استبيان العميل — Amine-Fit</h1>
+    <p>تاريخ التسجيل: ${new Date(client.createdAt).toLocaleString('ar', { timeZone: 'Asia/Qatar' })}</p>
+  </div>
+  <div class="avatar">${client.name?.[0] ?? '?'}</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num">${v(client.age)}</div><div class="lbl">العمر (سنة)</div></div>
+  <div class="stat"><div class="num">${v(client.weight)}</div><div class="lbl">الوزن (كغ)</div></div>
+  <div class="stat"><div class="num">${v(client.height)}</div><div class="lbl">الطول (سم)</div></div>
+  <div class="stat"><div class="num">${v(client.targetWeight)}</div><div class="lbl">الوزن المستهدف</div></div>
+</div>
+
+<section>
+  <h2>📋 المعلومات الشخصية</h2>
+  <table>${rows([
+    ['الاسم الكامل', v(client.name)],
+    ['البريد الإلكتروني', v(client.email)],
+    ['رقم الهاتف', v(client.phone)],
+    ['الجنس', client.gender === 'male' ? 'ذكر' : 'أنثى'],
+    ['طبيعة العمل', v(client.workActivity)],
+    ['ميزان في المطبخ', yesNo(client.hasScale)],
+  ])}</table>
+</section>
+
+<section>
+  <h2>🎯 الأهداف والتدريب</h2>
+  <table>${rows([
+    ['الهدف الرئيسي', goalLabels[client.goal] || v(client.goal)],
+    ['الوزن المستهدف', v(client.targetWeight) + ' كغ'],
+    ['مستوى النشاط', actLabels[client.activityLevel] || v(client.activityLevel)],
+    ['نوع الرياضة', v(client.sportType)],
+    ['قياسات InBody', client.hasInBody === 'yes' ? ('نعم — ' + v(client.inBodyNote)) : 'لا'],
+    ['تحاليل دم NFS', client.hasNFS === 'yes' ? ('نعم — ' + v(client.nfsNote)) : 'لا'],
+  ])}</table>
+</section>
+
+<section>
+  <h2>🥗 العادات الغذائية</h2>
+  <table>${rows([
+    ['عدد الوجبات اليومية', v(client.dailyMeals)],
+    ['كمية الماء يومياً', v(client.waterIntake) + ' لتر'],
+    ['حساسية غذائية', v(client.foodAllergy)],
+    ['أطعمة غير مرغوبة', v(client.dislikedFoods)],
+    ['أطعمة مفضلة', v(client.preferredFoods)],
+    ['شهية الطعام', {high:'عالية جداً',medium:'متوسطة',low:'ضعيفة'}[client.appetite] || v(client.appetite)],
+    ['النظام الغذائي الحالي', v(client.currentDiet)],
+  ])}</table>
+</section>
+
+<section>
+  <h2>🏥 الحالة الصحية ونمط الحياة</h2>
+  <table>${rows([
+    ['أمراض مزمنة', client.hasChronicDisease === 'yes' ? (v(client.chronicDiseaseNote) || 'نعم') : 'لا'],
+    ['أدوية / مكملات', v(client.medications)],
+    ['ساعات النوم', v(client.sleepHours) + ' ساعات'],
+    ['ضغوط نفسية', yesNo(client.hasPsychStress)],
+    ['من يحضر الطعام', v(client.foodPrep)],
+  ])}</table>
+</section>
+
+<section>
+  <h2>💬 ملاحظات إضافية</h2>
+  <table>${rows([
+    ['الدافع للانضمام', v(client.motivation)],
+    ['برامج سابقة', v(client.previousPrograms)],
+    ['الالتزام المتوقع', v(client.commitment)],
+    ['كيف سمع عنّا', v(client.heardFrom)],
+    ['ملاحظات', v(client.notes)],
+  ])}</table>
+</section>
+
+<div class="footer">
+  <span>Amine-Fit • الدوحة، قطر • +974 3065 3759</span>
+  <span>amine-fit.vercel.app</span>
+</div>
+
+<script>window.onload = () => window.print()</script>
+</body></html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+}
 
 const goalMap = {
   loss:        { label:'خسارة وزن',       color:'bg-red-100 text-red-700',       icon:'📉' },
@@ -147,9 +271,14 @@ function ClientModal({ client, onClose, onStatusChange }) {
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center gap-3 px-6 py-4 border-t border-slate-100">
+        <div className="flex items-center gap-3 px-6 py-4 border-t border-slate-100 flex-wrap">
+          <button onClick={() => printClientPDF(client)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+            <Download className="w-3.5 h-3.5" />
+            تنزيل PDF
+          </button>
           <p className="text-xs text-slate-400 flex-1">
-            تاريخ التسجيل: {new Date(client.createdAt).toLocaleDateString('ar-DZ', { year:'numeric', month:'long', day:'numeric' })}
+            {new Date(client.createdAt).toLocaleDateString('ar', { year:'numeric', month:'long', day:'numeric' })}
           </p>
           {['new','reviewed','active'].map(s => (
             <button key={s} onClick={() => onStatusChange(client.id, s)}
