@@ -73,7 +73,11 @@ export default function DashboardLogin() {
 
         <div className="rounded-2xl p-7 border border-white/8" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
           <h2 className="text-xl font-extrabold text-white mb-1">دخول المدرب</h2>
-          <p className="text-white/30 text-sm mb-6 font-medium">أدخل كلمة المرور للوصول للوحة التحكم</p>
+          <p className="text-white/30 text-sm mb-4 font-medium">أدخل كلمة المرور للوصول للوحة التحكم</p>
+          <div className="bg-gold-400/10 border border-gold-400/20 rounded-xl px-4 py-3 mb-5">
+            <p className="text-gold-400 text-xs font-bold">🔑 كلمة المرور الافتراضية: <span className="font-mono tracking-wider">amine2025</span></p>
+            <p className="text-white/30 text-xs mt-1">يمكنك تغييرها من إعدادات Vercel (DASHBOARD_PASSWORD)</p>
+          </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div>

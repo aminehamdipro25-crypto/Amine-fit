@@ -1,15 +1,22 @@
+'use client'
+import { ArrowLeft } from 'lucide-react'
+
 const services = [
   {
     icon: '🏋️',
     title: 'التدريب الشخصي',
     desc: 'برامج تدريبية مخصصة بالكامل لجسمك وهدفك — سواء كان خسارة وزن، بناء عضلات، أو تحسين اللياقة العامة.',
     features: ['تمارين مكيّفة مع مستواك', 'جدول أسبوعي مرن', 'شرح كامل لكل تمرين', 'تعديل دوري حسب تقدمك'],
+    cta: 'ابدأ التدريب',
+    href: '/register',
   },
   {
     icon: '🥗',
     title: 'التخطيط الغذائي',
     desc: 'خطط غذائية دقيقة بنظام جداول التبادل المعتمد — توزيع مثالي للسعرات والماكرو على وجباتك اليومية.',
     features: ['حاسبة BMR/TDEE دقيقة', 'نظام التبادل الغذائي الـ 6', 'توزيع 5 وجبات يومياً', 'أمثلة تطبيقية واضحة'],
+    cta: 'احصل على خطتك',
+    href: '/register',
     featured: true,
   },
   {
@@ -17,6 +24,8 @@ const services = [
     title: 'المتابعة والدعم',
     desc: 'متابعة منتظمة لقياساتك ونتائجك — تقارير تفصيلية وتواصل مستمر لضمان وصولك للهدف في الوقت المحدد.',
     features: ['قياسات جسم دورية', 'تقارير تقدم مفصلة', 'دعم مباشر عبر الهاتف', 'تعديلات حسب النتائج'],
+    cta: 'ابدأ المتابعة',
+    href: '/register',
   },
 ]
 
@@ -36,9 +45,9 @@ export default function Services() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-14">
           {services.map(s => (
             <div key={s.title}
-              className={`relative rounded-2xl p-7 border transition-all hover:-translate-y-1
+              className={`relative rounded-2xl p-7 border flex flex-col transition-all hover:-translate-y-1
                 ${s.featured
-                  ? 'bg-gold-400 border-gold-400'
+                  ? 'bg-gold-400 border-gold-400 shadow-2xl shadow-gold-400/20'
                   : 'bg-white/3 border-white/8 hover:border-white/20'}`}>
 
               {s.featured && (
@@ -59,7 +68,7 @@ export default function Services() {
                 {s.desc}
               </p>
 
-              <ul className="space-y-2.5">
+              <ul className="space-y-2.5 flex-1 mb-6">
                 {s.features.map(f => (
                   <li key={f} className={`flex items-center gap-2.5 text-sm font-medium
                     ${s.featured ? 'text-black/80' : 'text-white/50'}`}>
@@ -69,6 +78,14 @@ export default function Services() {
                   </li>
                 ))}
               </ul>
+
+              <a href={s.href}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-extrabold text-sm transition-all
+                  ${s.featured
+                    ? 'bg-black text-gold-400 hover:bg-black/80 shadow-lg shadow-black/20'
+                    : 'bg-gold-400 text-black hover:bg-gold-300 shadow-lg shadow-gold-400/10'}`}>
+                {s.cta} <ArrowLeft className="w-4 h-4" />
+              </a>
             </div>
           ))}
         </div>
