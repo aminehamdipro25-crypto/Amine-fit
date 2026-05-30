@@ -169,7 +169,7 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   )
 }
 
-function ClientModal({ client, onClose, onStatusChange }) {
+function ClientModal({ client, onClose, onStatusChange, onDelete }) {
   const goal = goalMap[client.goal]
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-12 overflow-y-auto"
@@ -277,6 +277,11 @@ function ClientModal({ client, onClose, onStatusChange }) {
             <Download className="w-3.5 h-3.5" />
             تنزيل PDF
           </button>
+          <button onClick={() => onDelete(client.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition">
+            <X className="w-3.5 h-3.5" />
+            حذف العميل
+          </button>
           <p className="text-xs text-slate-400 flex-1">
             {new Date(client.createdAt).toLocaleDateString('ar', { year:'numeric', month:'long', day:'numeric' })}
           </p>
@@ -301,6 +306,7 @@ export default function ClientsClient({ submissions: initial }) {
   const [filterStatus, setFS]     = useState('all')
   const [filterGoal, setFG]       = useState('all')
   const [selected, setSelected]   = useState(null)
+  const [deleting, setDeleting]   = useState(null)
 
   const filtered = clients.filter(c => {
     const q = query.toLowerCase()
@@ -316,6 +322,18 @@ export default function ClientsClient({ submissions: initial }) {
     if (selected?.id === id) setSelected(s => ({ ...s, status }))
   }
 
+  async function deleteClient(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return
+    setDeleting(id)
+    try {
+      await fetch(`/api/register/${id}`, { method: 'DELETE' })
+      setClients(cs => cs.filter(c => c.id !== id))
+      if (selected?.id === id) setSelected(null)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   const counts = {
     all: clients.length,
     new: clients.filter(c => c.status === 'new').length,
@@ -326,7 +344,7 @@ export default function ClientsClient({ submissions: initial }) {
   return (
     <>
       {selected && (
-        <ClientModal client={selected} onClose={() => setSelected(null)} onStatusChange={changeStatus} />
+        <ClientModal client={selected} onClose={() => setSelected(null)} onStatusChange={changeStatus} onDelete={deleteClient} />
       )}
 
       <div className="space-y-5">
