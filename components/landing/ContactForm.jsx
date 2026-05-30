@@ -34,14 +34,18 @@ export default function ContactForm() {
     }
   }
 
+  const inputCls = "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:bg-white/8 focus:border-gold-400/50 outline-none transition text-sm font-medium"
+
   if (success) {
     return (
       <div className="text-center py-16">
-        <CheckCircle className="w-20 h-20 text-emerald-400 mx-auto mb-6 animate-bounce" />
-        <h3 className="text-2xl font-bold text-white mb-3">تم إرسال طلبك بنجاح! 🎉</h3>
-        <p className="text-white/70 text-lg mb-6">سأتواصل معك خلال 24 ساعة لتحديد موعد بدء برنامجك.</p>
+        <div className="w-16 h-16 bg-gold-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-8 h-8 text-black" />
+        </div>
+        <h3 className="text-2xl font-extrabold text-white mb-3">تم إرسال طلبك! ⚡</h3>
+        <p className="text-white/40 mb-6 font-medium">سأتواصل معك خلال 24 ساعة لتحديد موعد بدء برنامجك.</p>
         <button onClick={() => setOk(false)}
-          className="px-6 py-3 bg-white/20 border border-white/30 text-white font-bold rounded-2xl hover:bg-white/30 transition">
+          className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition">
           إرسال طلب آخر
         </button>
       </div>
@@ -52,72 +56,58 @@ export default function ContactForm() {
     <form onSubmit={submit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-white/80 text-sm font-medium block mb-1.5">الاسم الكامل *</label>
+          <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">الاسم الكامل *</label>
           <input value={form.name} onChange={e => set('name', e.target.value)}
-            placeholder="أحمد بن علي"
-            className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
-              focus:bg-white/15 focus:border-white/40 focus:ring-2 focus:ring-white/20 outline-none transition" />
+            placeholder="أحمد بن علي" className={inputCls} />
         </div>
         <div>
-          <label className="text-white/80 text-sm font-medium block mb-1.5">رقم الهاتف *</label>
+          <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">رقم الهاتف *</label>
           <input value={form.phone} onChange={e => set('phone', e.target.value)}
-            placeholder="+974 3065 3759" dir="ltr" type="tel"
-            className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
-              focus:bg-white/15 focus:border-white/40 outline-none transition" />
+            placeholder="+974 3065 3759" dir="ltr" type="tel" className={inputCls} />
         </div>
       </div>
 
       <div>
-        <label className="text-white/80 text-sm font-medium block mb-1.5">البريد الإلكتروني</label>
+        <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">البريد الإلكتروني</label>
         <input value={form.email} onChange={e => set('email', e.target.value)}
-          placeholder="ahmed@example.com" type="email" dir="ltr"
-          className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
-            focus:bg-white/15 focus:border-white/40 outline-none transition" />
+          placeholder="ahmed@example.com" type="email" dir="ltr" className={inputCls} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-white/80 text-sm font-medium block mb-1.5">هدفك الرئيسي</label>
-          <select value={form.goal} onChange={e => set('goal', e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white
-              focus:bg-white/15 focus:border-white/40 outline-none transition appearance-none">
-            <option value="" className="text-slate-800">اختر هدفك</option>
-            {goals.map(g => <option key={g} value={g} className="text-slate-800">{g}</option>)}
+          <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">هدفك الرئيسي</label>
+          <select value={form.goal} onChange={e => set('goal', e.target.value)} className={inputCls}>
+            <option value="" className="text-slate-800 bg-slate-900">اختر هدفك</option>
+            {goals.map(g => <option key={g} value={g} className="text-slate-800 bg-slate-900">{g}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-white/80 text-sm font-medium block mb-1.5">الباقة المهتم بها</label>
-          <select value={form.pkg} onChange={e => set('pkg', e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white
-              focus:bg-white/15 focus:border-white/40 outline-none transition appearance-none">
-            <option value="" className="text-slate-800">اختر باقة</option>
-            {packages.map(p => <option key={p} value={p} className="text-slate-800">{p}</option>)}
+          <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">الباقة المهتم بها</label>
+          <select value={form.pkg} onChange={e => set('pkg', e.target.value)} className={inputCls}>
+            <option value="" className="text-slate-800 bg-slate-900">اختر باقة</option>
+            {packages.map(p => <option key={p} value={p} className="text-slate-800 bg-slate-900">{p}</option>)}
           </select>
         </div>
       </div>
 
       <div>
-        <label className="text-white/80 text-sm font-medium block mb-1.5">رسالة إضافية (اختياري)</label>
+        <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">رسالة إضافية (اختياري)</label>
         <textarea value={form.message} onChange={e => set('message', e.target.value)}
-          placeholder="أخبرني أكثر عن وضعك الحالي وأهدافك..."
-          rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
-            focus:bg-white/15 focus:border-white/40 outline-none transition resize-none" />
+          placeholder="أخبرني أكثر عن وضعك الحالي وأهدافك..." rows={3}
+          className={inputCls + ' resize-none'} />
       </div>
 
       {error && (
-        <p className="text-rose-300 text-sm bg-rose-500/20 border border-rose-400/30 rounded-xl px-4 py-3">
+        <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 font-medium">
           {error}
         </p>
       )}
 
       <button type="submit" disabled={loading}
         className="w-full flex items-center justify-center gap-3 py-4 px-6
-          bg-gradient-to-r from-primary-500 to-emerald-500
-          hover:from-primary-600 hover:to-emerald-600
-          disabled:opacity-60 text-white font-bold text-lg rounded-2xl
-          shadow-2xl shadow-primary-900/30 hover:shadow-primary-600/40
-          hover:scale-[1.02] transition-all">
+          bg-gold-400 hover:bg-gold-300 disabled:opacity-60
+          text-black font-extrabold text-base rounded-xl
+          shadow-xl shadow-gold-400/20 hover:scale-[1.01] transition-all">
         {loading
           ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري الإرسال...</>
           : <><Send className="w-5 h-5" /> أرسل طلبك الآن</>

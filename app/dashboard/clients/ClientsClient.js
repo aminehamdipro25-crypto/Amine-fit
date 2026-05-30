@@ -1,8 +1,10 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   Search, Eye, X, User, Target, Activity,
-  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download
+  Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
+  Key, ExternalLink, Loader2
 } from 'lucide-react'
 
 function printClientPDF(client) {
@@ -171,6 +173,28 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
 
 function ClientModal({ client, onClose, onStatusChange, onDelete }) {
   const goal = goalMap[client.goal]
+  const [pw, setPw]           = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwSaved, setPwSaved]   = useState(false)
+
+  async function savePassword() {
+    if (!pw.trim()) return
+    setPwSaving(true)
+    await fetch(`/api/register/${client.id}/plan`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientPassword: pw.trim() }),
+    })
+    setPwSaving(false)
+    setPwSaved(true)
+    setTimeout(() => setPwSaved(false), 3000)
+    setPw('')
+  }
+
+  const hasPlan = !!client.plan
+  const hasNutrition = hasPlan && !!client.plan?.nutrition?.calories
+  const hasTraining  = hasPlan && !!client.plan?.training?.daysPerWeek
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-12 overflow-y-auto"
       onClick={e => e.target === e.currentTarget && onClose()}>
@@ -247,6 +271,53 @@ function ClientModal({ client, onClose, onStatusChange, onDelete }) {
               <DetailRow icon={Heart}    label="نوع الرياضة"    value={client.sportType} />
               <DetailRow icon={AlertCircle} label="أمراض مزمنة" value={client.hasChronicDisease === 'yes' ? (client.chronicDiseaseNote || 'نعم') : 'لا'} />
               <DetailRow icon={Heart}    label="الأدوية / المكملات" value={client.medications} />
+            </div>
+          </div>
+
+          {/* Plan status */}
+          <div>
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">الخطة</h3>
+            <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap gap-y-2">
+                <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold border ${hasNutrition ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-400 border-slate-200'}`}>
+                  {hasNutrition ? '✅ غذاء' : '⏳ غذاء'}
+                </span>
+                <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold border ${hasTraining ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-400 border-slate-200'}`}>
+                  {hasTraining ? '✅ تدريب' : '⏳ تدريب'}
+                </span>
+              </div>
+              <Link href={`/dashboard/clients/${client.id}/plan`}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold-400 text-black font-bold text-xs hover:bg-gold-300 transition flex-shrink-0">
+                <ExternalLink className="w-3.5 h-3.5" />
+                {hasPlan ? 'تعديل الخطة' : 'بناء الخطة'}
+              </Link>
+            </div>
+          </div>
+
+          {/* Client password */}
+          <div>
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">كلمة مرور العميل</h3>
+            <div className="bg-slate-50 rounded-2xl p-4">
+              <p className="text-xs text-slate-400 font-medium mb-3">
+                {client.clientPassword ? 'تم ضبط كلمة المرور — يمكن للعميل تسجيل الدخول' : 'لم يُضبط بعد — اضبط كلمة مرور لتمكين الوصول'}
+              </p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input value={pw} onChange={e => setPw(e.target.value)}
+                    type="text" placeholder="كلمة مرور جديدة..."
+                    className="w-full pr-9 pl-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium bg-white" />
+                </div>
+                <button onClick={savePassword} disabled={pwSaving || !pw.trim()}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0a0a0a] text-white font-bold text-xs hover:bg-black transition disabled:opacity-40">
+                  {pwSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : pwSaved ? '✓ تم' : 'حفظ'}
+                </button>
+              </div>
+              {client.email && (
+                <p className="text-xs text-slate-400 font-medium mt-2">
+                  البريد: <span className="text-slate-600 font-bold" dir="ltr">{client.email}</span>
+                </p>
+              )}
             </div>
           </div>
 
