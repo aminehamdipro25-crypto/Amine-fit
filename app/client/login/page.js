@@ -32,13 +32,66 @@ export default function ClientLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4"
-      style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '60px 60px', backgroundBlendMode: 'overlay', opacity: 1 }}>
-      <div className="absolute inset-0 bg-[#0a0a0a]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111827 50%, #0a0a0a 100%)' }}>
 
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-10">
+      {/* Background emoji — split: food left, gym right */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        {/* Food emojis — left side */}
+        {[
+          { e: '🥗', top: '5%',  left: '3%',   size: 96, deg: -15 },
+          { e: '🍎', top: '22%', left: '1%',   size: 72, deg: 10 },
+          { e: '🥦', top: '45%', left: '4%',   size: 80, deg: -8 },
+          { e: '🥑', top: '65%', left: '2%',   size: 70, deg: 15 },
+          { e: '🍗', top: '80%', left: '8%',   size: 64, deg: -5 },
+          { e: '💧', top: '12%', left: '16%',  size: 52, deg: 0 },
+          { e: '🥚', top: '55%', left: '14%',  size: 48, deg: 8 },
+          { e: '🫐', top: '35%', left: '10%',  size: 44, deg: -12 },
+        ].map((item, i) => (
+          <span key={`f${i}`} className="absolute opacity-[0.09]" style={{
+            top: item.top, left: item.left,
+            fontSize: item.size, lineHeight: 1,
+            transform: `rotate(${item.deg}deg)`,
+          }}>{item.e}</span>
+        ))}
+        {/* Gym emojis — right side */}
+        {[
+          { e: '🏋️', top: '5%',  right: '3%',  size: 96, deg: 15 },
+          { e: '💪',  top: '22%', right: '1%',  size: 72, deg: -10 },
+          { e: '🔥',  top: '45%', right: '4%',  size: 80, deg: 8 },
+          { e: '⚡',  top: '65%', right: '2%',  size: 70, deg: -15 },
+          { e: '🏃',  top: '80%', right: '8%',  size: 64, deg: 5 },
+          { e: '🎯',  top: '12%', right: '16%', size: 52, deg: 0 },
+          { e: '🥊',  top: '55%', right: '14%', size: 48, deg: -8 },
+          { e: '🏆',  top: '35%', right: '10%', size: 44, deg: 12 },
+        ].map((item, i) => (
+          <span key={`g${i}`} className="absolute opacity-[0.09]" style={{
+            top: item.top, right: item.right,
+            fontSize: item.size, lineHeight: 1,
+            transform: `rotate(${item.deg}deg)`,
+          }}>{item.e}</span>
+        ))}
+
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)',
+          backgroundSize: '60px 60px'
+        }} />
+
+        {/* Gold diagonal lines */}
+        {[20, 50, 80].map(pct => (
+          <div key={pct} className="absolute opacity-[0.04]" style={{
+            width: '200%', height: '1px',
+            background: 'linear-gradient(90deg,transparent,#fbbf24,transparent)',
+            top: `${pct}%`, left: '-50%',
+            transform: 'rotate(-8deg)',
+          }} />
+        ))}
+      </div>
+
+      {/* Login card */}
+      <div className="relative w-full max-w-sm z-10">
+        <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gold-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-gold-400/20">
             <Zap className="w-8 h-8 text-black" fill="black" />
           </div>
@@ -48,35 +101,28 @@ export default function ClientLogin() {
           <p className="text-white/30 text-sm mt-1 font-medium">بوابة العميل الشخصية</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white/3 border border-white/8 rounded-2xl p-8">
+        <div className="rounded-2xl p-7 border border-white/8" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
           <h2 className="text-xl font-extrabold text-white mb-1">تسجيل الدخول</h2>
-          <p className="text-white/30 text-sm mb-7 font-medium">أدخل بياناتك للوصول لبرنامجك</p>
+          <p className="text-white/30 text-sm mb-6 font-medium">أدخل بياناتك للوصول لبرنامجك</p>
 
           <form onSubmit={submit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">البريد الإلكتروني</label>
+              <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-1.5">البريد الإلكتروني</label>
               <div className="relative">
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com" dir="ltr" required
-                  className="w-full pl-4 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/15 focus:border-gold-400/50 focus:bg-white/8 outline-none transition text-sm font-medium"
-                />
+                  className="w-full pl-4 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/15 focus:border-gold-400/60 outline-none transition text-sm font-medium" />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-2">كلمة المرور</label>
+              <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-1.5">كلمة المرور</label>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input
-                  type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" required
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/15 focus:border-gold-400/50 focus:bg-white/8 outline-none transition text-sm font-medium"
-                />
+                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/15 focus:border-gold-400/60 outline-none transition text-sm font-medium" />
                 <button type="button" onClick={() => setShowPw(v => !v)}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -91,7 +137,7 @@ export default function ClientLogin() {
             )}
 
             <button type="submit" disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gold-400 hover:bg-gold-300 disabled:opacity-50 text-black font-extrabold rounded-xl transition-all shadow-lg shadow-gold-400/20 mt-2">
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gold-400 hover:bg-gold-300 disabled:opacity-50 text-black font-extrabold rounded-xl transition-all shadow-lg shadow-gold-400/20 mt-1">
               {loading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري الدخول...</>
                 : <><Zap className="w-4 h-4" fill="black" /> دخول</>
@@ -99,9 +145,9 @@ export default function ClientLogin() {
             </button>
           </form>
 
-          <p className="text-center text-white/20 text-xs mt-6 font-medium">
+          <p className="text-center text-white/20 text-xs mt-5 font-medium">
             مشكلة في الدخول؟{' '}
-            <a href="tel:+97430653759" className="text-gold-400 hover:text-gold-300 transition">
+            <a href="tel:+97430653759" className="text-gold-400 hover:text-gold-300 transition font-bold">
               تواصل مع المدرب
             </a>
           </p>

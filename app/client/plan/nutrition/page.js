@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Utensils, Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock } from 'lucide-react'
 
 export default function NutritionPlan() {
   const router = useRouter()
@@ -22,7 +22,7 @@ export default function NutritionPlan() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -33,74 +33,130 @@ export default function NutritionPlan() {
 
   if (!plan) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-24">
-        <div className="w-20 h-20 bg-[#0a0a0a] rounded-3xl flex items-center justify-center mx-auto mb-6">
-          <Utensils className="w-10 h-10 text-white/20" />
+      <div className="max-w-2xl mx-auto">
+        {/* Empty state hero */}
+        <div className="relative rounded-3xl overflow-hidden mb-6" style={{
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
+          minHeight: 260
+        }}>
+          {/* Floating food emojis */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+            {[
+              { e: '🥗', t: '8%',  l: '5%',  s: 64, r: -15 },
+              { e: '🍎', t: '12%', r: '8%',  s: 56, rot: 20 },
+              { e: '🥦', t: '55%', l: '3%',  s: 52, r: 10 },
+              { e: '🥑', t: '60%', r: '5%',  s: 60, rot: -12 },
+              { e: '🍗', t: '30%', l: '45%', s: 80, rot: 8 },
+              { e: '💧', t: '75%', l: '30%', s: 44, rot: 0 },
+              { e: '🥚', t: '20%', l: '25%', s: 40, rot: -5 },
+              { e: '🥩', t: '70%', r: '25%', s: 50, rot: 15 },
+            ].map((item, i) => (
+              <span key={i} className="absolute opacity-10" style={{
+                top: item.t, left: item.l, right: item.r,
+                fontSize: item.s,
+                transform: `rotate(${item.r ?? item.rot ?? 0}deg)`,
+                lineHeight: 1
+              }}>{item.e}</span>
+            ))}
+          </div>
+          <div className="relative z-10 flex flex-col items-center justify-center text-center py-16 px-6">
+            <div className="text-6xl mb-4">🥗</div>
+            <h2 className="text-2xl font-extrabold text-white mb-2">الخطة الغذائية قيد الإعداد</h2>
+            <p className="text-emerald-200 font-medium text-sm max-w-sm">يعمل المدرب أمين على تجهيز خطتك الغذائية المخصصة. ستظهر هنا قريباً.</p>
+          </div>
         </div>
-        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">الخطة الغذائية قيد الإعداد</h2>
-        <p className="text-slate-400 font-medium">يعمل المدرب أمين على تجهيز خطتك الغذائية المخصصة. ستظهر هنا قريباً.</p>
       </div>
     )
   }
 
   const macros = [
-    { label: 'السعرات',   val: plan.calories,  unit: 'kcal', color: 'text-gold-600',    bg: 'bg-gold-50',    icon: Flame },
-    { label: 'بروتين',    val: plan.protein,   unit: 'غ',    color: 'text-blue-600',    bg: 'bg-blue-50',    icon: Zap },
-    { label: 'كربوهيدرات',val: plan.carbs,     unit: 'غ',    color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Zap },
-    { label: 'دهون',      val: plan.fats,      unit: 'غ',    color: 'text-orange-600',  bg: 'bg-orange-50',  icon: Droplets },
-  ]
+    { label: 'السعرات',    val: plan.calories, unit: 'kcal', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-100', icon: Flame },
+    { label: 'بروتين',     val: plan.protein,  unit: 'غ',    color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-100',  icon: Zap },
+    { label: 'كربوهيدرات', val: plan.carbs,    unit: 'غ',    color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-100',icon: Zap },
+    { label: 'دهون',       val: plan.fats,     unit: 'غ',    color: 'text-orange-700',  bg: 'bg-orange-50',  border: 'border-orange-100',icon: Droplets },
+  ].filter(m => m.val)
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-5 max-w-2xl mx-auto">
 
-      {/* Header */}
-      <div className="bg-[#0a0a0a] rounded-2xl p-6 relative overflow-hidden">
-        <div className="absolute -left-6 -top-6 w-40 h-40 bg-gold-400/5 rounded-full" />
-        <div className="relative">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-11 h-11 bg-gold-400 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Utensils className="w-5 h-5 text-black" />
-            </div>
+      {/* Hero banner */}
+      <div className="relative rounded-3xl overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%)',
+        minHeight: 200
+      }}>
+        {/* Background food emojis */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+          {[
+            { e: '🥗', top: '5%',  left: '2%',  size: 72, deg: -15 },
+            { e: '🍎', top: '8%',  right: '4%', size: 60, deg: 20 },
+            { e: '🥦', top: '55%', left: '1%',  size: 56, deg: 10 },
+            { e: '🥑', top: '58%', right: '3%', size: 64, deg: -12 },
+            { e: '🍗', top: '25%', left: '42%', size: 90, deg: 8 },
+            { e: '💧', top: '70%', left: '28%', size: 48, deg: 0 },
+            { e: '🥚', top: '15%', left: '22%', size: 44, deg: -5 },
+            { e: '🥩', top: '68%', right: '22%',size: 54, deg: 15 },
+            { e: '🍌', top: '40%', right: '15%',size: 50, deg: -20 },
+            { e: '🫐', top: '45%', left: '15%', size: 42, deg: 5 },
+          ].map((item, i) => (
+            <span key={i} className="absolute opacity-[0.12]" style={{
+              top: item.top, left: item.left, right: item.right,
+              fontSize: item.size, lineHeight: 1,
+              transform: `rotate(${item.deg}deg)`,
+            }}>{item.e}</span>
+          ))}
+        </div>
+
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)',
+          backgroundSize: '40px 40px'
+        }} />
+
+        <div className="relative z-10 px-6 py-8">
+          <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-white/30 text-xs font-bold uppercase tracking-widest">برنامجك المخصص</p>
-              <h1 className="text-xl font-extrabold text-white">الخطة الغذائية</h1>
+              <p className="text-emerald-300 text-xs font-extrabold uppercase tracking-widest mb-2">برنامجك المخصص</p>
+              <h1 className="text-3xl font-extrabold text-white leading-tight">
+                الخطة<br /><span className="text-emerald-300">الغذائية</span>
+              </h1>
+              {plan.note && (
+                <p className="text-emerald-200/80 text-sm font-medium mt-3 max-w-xs leading-relaxed">{plan.note}</p>
+              )}
             </div>
+            <div className="text-7xl opacity-80 select-none flex-shrink-0">🥗</div>
           </div>
-          {plan.note && (
-            <p className="text-white/50 text-sm font-medium bg-white/5 rounded-xl px-4 py-3 border border-white/5">
-              {plan.note}
-            </p>
-          )}
         </div>
       </div>
 
       {/* Macros */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {macros.map(m => m.val ? (
-          <div key={m.label} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
-            <div className={`w-9 h-9 ${m.bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
-              <m.icon className={`w-4 h-4 ${m.color}`} />
+      {macros.length > 0 && (
+        <div className={`grid gap-3 ${macros.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : `grid-cols-${macros.length}`}`}>
+          {macros.map(m => (
+            <div key={m.label} className={`${m.bg} rounded-2xl p-4 border ${m.border} text-center`}>
+              <m.icon className={`w-5 h-5 ${m.color} mx-auto mb-2`} />
+              <p className={`text-2xl font-extrabold ${m.color}`}>{m.val}</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{m.unit}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">{m.label}</p>
             </div>
-            <p className={`text-2xl font-extrabold ${m.color}`}>{m.val}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">{m.unit}</p>
-            <p className="text-xs text-slate-500 font-semibold mt-1">{m.label}</p>
-          </div>
-        ) : null)}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Meals */}
       {plan.meals?.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-extrabold text-slate-500 uppercase tracking-widest px-1">الوجبات اليومية</h2>
+          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <span>🍽️</span> الوجبات اليومية
+          </h2>
           {plan.meals.map((meal, i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <button
-                onClick={() => setOpenMeal(openMeal === i ? -1 : i)}
+              <button onClick={() => setOpenMeal(openMeal === i ? -1 : i)}
                 className="w-full flex items-center gap-4 p-5 text-right hover:bg-slate-50 transition">
-                <div className="w-10 h-10 bg-[#0a0a0a] rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-gold-400 font-extrabold text-sm">{i + 1}</span>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+                  style={{ background: 'linear-gradient(135deg,#064e3b,#059669)' }}>
+                  <span>{['☀️','🕑','🌆','🌙','🥤'][i % 5]}</span>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 text-right">
                   <p className="font-extrabold text-slate-900 text-sm">{meal.name || `وجبة ${i + 1}`}</p>
                   {meal.time && (
                     <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
@@ -109,13 +165,13 @@ export default function NutritionPlan() {
                   )}
                 </div>
                 {meal.calories && (
-                  <span className="text-xs font-extrabold text-gold-600 bg-gold-50 px-2.5 py-1 rounded-full border border-gold-100">
+                  <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex-shrink-0">
                     {meal.calories} kcal
                   </span>
                 )}
                 {openMeal === i
-                  ? <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  ? <ChevronUp className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-slate-300 flex-shrink-0" />
                 }
               </button>
 
@@ -125,7 +181,7 @@ export default function NutritionPlan() {
                     <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
                   )}
                   {meal.items?.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 mt-3">
                       {meal.items.map((item, j) => (
                         <div key={j} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                           <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
@@ -134,11 +190,11 @@ export default function NutritionPlan() {
                       ))}
                     </div>
                   )}
-                  {meal.macros && (
-                    <div className="flex gap-3 mt-4 flex-wrap">
-                      {meal.macros.protein && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">بروتين: {meal.macros.protein}غ</span>}
-                      {meal.macros.carbs   && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">كارب: {meal.macros.carbs}غ</span>}
-                      {meal.macros.fats    && <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">دهون: {meal.macros.fats}غ</span>}
+                  {meal.macros && (meal.macros.protein || meal.macros.carbs || meal.macros.fats) && (
+                    <div className="flex gap-2 mt-4 flex-wrap">
+                      {meal.macros.protein && <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">بروتين: {meal.macros.protein}غ</span>}
+                      {meal.macros.carbs   && <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">كارب: {meal.macros.carbs}غ</span>}
+                      {meal.macros.fats    && <span className="text-xs font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">دهون: {meal.macros.fats}غ</span>}
                     </div>
                   )}
                 </div>
@@ -150,22 +206,25 @@ export default function NutritionPlan() {
 
       {/* Tips */}
       {plan.tips?.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h2 className="text-sm font-extrabold text-slate-500 uppercase tracking-widest mb-4">نصائح التغذية</h2>
-          <ul className="space-y-2.5">
+        <div className="rounded-2xl overflow-hidden border border-emerald-100">
+          <div className="px-5 py-4 flex items-center gap-2" style={{ background: 'linear-gradient(135deg,#064e3b,#065f46)' }}>
+            <span className="text-xl">💡</span>
+            <h2 className="text-sm font-extrabold text-white uppercase tracking-widest">نصائح التغذية</h2>
+          </div>
+          <div className="bg-emerald-50 px-5 py-4 space-y-3">
             {plan.tips.map((tip, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="w-5 h-5 bg-gold-400 rounded-full flex items-center justify-center text-black text-[10px] font-extrabold flex-shrink-0 mt-0.5">{i + 1}</span>
-                <span className="text-sm text-slate-700 font-medium leading-relaxed">{tip}</span>
-              </li>
+              <div key={i} className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[11px] font-extrabold flex-shrink-0 mt-0.5">{i + 1}</span>
+                <span className="text-sm text-emerald-900 font-medium leading-relaxed">{tip}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      <p className="text-center text-slate-400 text-xs font-medium pb-2">
+      <p className="text-center text-slate-400 text-xs font-medium pb-4">
         أسئلة عن خطتك؟{' '}
-        <a href="tel:+97430653759" className="text-gold-600 font-bold hover:text-gold-500 transition">
+        <a href="tel:+97430653759" className="text-emerald-600 font-bold hover:text-emerald-500 transition">
           تواصل مع المدرب أمين
         </a>
       </p>
