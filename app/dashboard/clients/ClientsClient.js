@@ -480,8 +480,13 @@ export default function ClientsClient({ submissions: initial }) {
                         {c.name?.[0] ?? '?'}
                       </div>
                       <div>
-                        <p className="font-extrabold text-slate-900 text-sm leading-tight">{c.name}</p>
-                        <p className="text-xs text-slate-400 truncate max-w-[140px] mt-0.5">{c.email}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-extrabold text-slate-900 text-sm leading-tight">{c.name}</p>
+                          {c.source === 'contact' && (
+                            <span className="text-[9px] font-extrabold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-200 uppercase">تواصل</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 truncate max-w-[140px] mt-0.5">{c.email || c.phone}</p>
                       </div>
                     </div>
                     <Badge status={c.status} />

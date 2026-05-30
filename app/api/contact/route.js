@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { saveSubmission } from '@/lib/submissions'
 
 export async function POST(request) {
   try {
@@ -9,17 +10,22 @@ export async function POST(request) {
       return NextResponse.json({ error: 'الاسم ورقم الهاتف مطلوبان' }, { status: 400 })
     }
 
-    // Log lead (replace with DB/email service in production)
-    console.log('[Amine-Fit Lead]', {
-      name, phone, email, goal, pkg, message,
-      receivedAt: new Date().toISOString(),
+    // Save to Redis so it appears in the dashboard
+    const entry = await saveSubmission({
+      name:    name.trim(),
+      phone:   phone.trim(),
+      email:   email?.trim() || '',
+      goal:    goal   || '',
+      notes:   [pkg ? `الباقة المهتم بها: ${pkg}` : '', message || ''].filter(Boolean).join('\n'),
+      source:  'contact',  // distinguishes from full questionnaire
+      status:  'new',
     })
 
-    // TODO: integrate Resend / Nodemailer here to send email notification
-    // e.g.: await resend.emails.send({ from: 'leads@amine-fit.com', to: 'amine.hamdi.pro25@gmail.com', ... })
+    console.log('[contact] saved lead:', entry.id, name)
 
-    return NextResponse.json({ success: true, message: 'تم استلام طلبك بنجاح' })
-  } catch {
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[contact] error:', err.message)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
