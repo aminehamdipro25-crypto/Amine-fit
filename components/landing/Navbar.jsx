@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Zap, Menu, X } from 'lucide-react'
 
 const links = [
+  { href: '#about',    label: 'من هو أمين' },
   { href: '#services', label: 'الخدمات' },
   { href: '#how',      label: 'كيف يعمل' },
   { href: '#pricing',  label: 'الأسعار' },
