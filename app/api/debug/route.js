@@ -88,12 +88,20 @@ export async function GET() {
   const setOk = setRaw?.body?.[0]?.result === 'OK'
   const getOk = getRaw?.body?.[0]?.result === TEST_VAL
 
+  // Test getSubmissions() with the fixed double-parse logic
+  const { getSubmissions } = await import('@/lib/submissions')
+  let submissionsResult = []
+  let submissionsError = null
+  try { submissionsResult = await getSubmissions() }
+  catch(e) { submissionsError = e.message }
+
   return NextResponse.json({
     env: envDetails,
     ping: pingRaw,
-    set_test: setRaw,
-    get_test: getRaw,
     set_get_match: setOk && getOk ? 'PASS — Redis read/write works!' : `FAIL — set:${setOk} get:${getOk}`,
     real_key: realKeyRaw,
+    submissions_count: submissionsResult.length,
+    submissions_error: submissionsError,
+    submissions: submissionsResult.map(s => ({ id: s.id, name: s.name, date: s.createdAt, status: s.status })),
   })
 }
