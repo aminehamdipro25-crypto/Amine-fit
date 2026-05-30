@@ -22,8 +22,9 @@ module.exports = {
         },
       },
       animation: {
-        'fade-up': 'fadeUp 0.6s ease forwards',
-        'float':   'float 3s ease-in-out infinite',
+        'fade-up':      'fadeUp 0.6s ease forwards',
+        'float':        'float 3s ease-in-out infinite',
+        'bounce-slow':  'bounceSlow 2s ease-in-out infinite',
       },
       keyframes: {
         fadeUp: {
@@ -33,6 +34,10 @@ module.exports = {
         float: {
           '0%,100%': { transform: 'translateY(0)' },
           '50%':     { transform: 'translateY(-8px)' },
+        },
+        bounceSlow: {
+          '0%,100%': { transform: 'translateY(0)' },
+          '50%':     { transform: 'translateY(-6px)' },
         },
       },
     },
