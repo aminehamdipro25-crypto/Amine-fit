@@ -159,7 +159,8 @@ export default function DashboardClient({ submissions }) {
             {recent.map(c => {
               const Icon = statusIcon[c.status] || Clock
               return (
-                <div key={c.id} className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 transition-colors">
+                <Link key={c.id} href="/dashboard/clients"
+                  className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-emerald-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                     {c.name?.[0] ?? '?'}
                   </div>
@@ -174,7 +175,7 @@ export default function DashboardClient({ submissions }) {
                     <Icon className="w-3 h-3" />
                     {statusLbl[c.status] ?? 'جديد'}
                   </span>
-                </div>
+                </Link>
               )
             })}
           </div>
