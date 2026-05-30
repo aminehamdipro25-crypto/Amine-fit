@@ -1,80 +1,99 @@
 import { NextResponse } from 'next/server'
-import { getSubmissions, saveSubmission, deleteSubmission } from '@/lib/submissions'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL   || 'NOT SET'
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || 'NOT SET'
-  const cfg   = url !== 'NOT SET' ? { url: url.replace(/\/$/, ''), token } : null
 
-  // Test 1: PING
-  let pingResult = null
-  if (cfg) {
-    try {
-      const r = await fetch(cfg.url + '/pipeline', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify([['PING']]),
-      })
-      pingResult = await r.json()
-    } catch(e) { pingResult = { error: e.message } }
+  // Show all 4 env vars individually
+  const envDetails = {
+    UPSTASH_REDIS_REST_URL:    process.env.UPSTASH_REDIS_REST_URL   ? process.env.UPSTASH_REDIS_REST_URL.substring(0, 50)   : 'NOT SET',
+    UPSTASH_REDIS_REST_TOKEN:  process.env.UPSTASH_REDIS_REST_TOKEN ? process.env.UPSTASH_REDIS_REST_TOKEN.substring(0, 20) + '...' : 'NOT SET',
+    KV_REST_API_URL:           process.env.KV_REST_API_URL          ? process.env.KV_REST_API_URL.substring(0, 50)           : 'NOT SET',
+    KV_REST_API_TOKEN:         process.env.KV_REST_API_TOKEN        ? process.env.KV_REST_API_TOKEN.substring(0, 20) + '...' : 'NOT SET',
+    active_url: url.substring(0, 50),
+    active_token_prefix: token.substring(0, 20) + '...',
   }
 
-  // Test 2: Save a test submission via the real saveSubmission function
-  let testSaveResult = null
-  let testSaveId = null
+  if (url === 'NOT SET') {
+    return NextResponse.json({ env: envDetails, error: 'No Redis config found' })
+  }
+
+  const cfg = { url: url.replace(/\/$/, ''), token }
+  const TEST_KEY = 'debug_test_key_12345'
+  const TEST_VAL = 'hello_' + Date.now()
+
+  // Raw PING
+  let pingRaw = null
   try {
-    const entry = await saveSubmission({
-      email: 'debug@test.com', name: 'DEBUG_TEST', gender: 'male',
-      age: '25', height: '175', weight: '70', workActivity: 'test',
-      goal: 'loss', targetWeight: '65', dailyMeals: '3',
-      waterIntake: '2', activityLevel: 'moderate', sleepHours: '7',
-      hasScale: 'no', hasInBody: 'no', hasNFS: 'no', hasPsychStress: 'no',
-      foodPrep: 'self', _debug: true,
+    const r = await fetch(cfg.url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['PING']]),
     })
-    testSaveId = entry.id
-    testSaveResult = 'OK — saved ' + entry.id
-  } catch(e) {
-    testSaveResult = 'ERROR: ' + e.message
-  }
+    pingRaw = { status: r.status, body: await r.json() }
+  } catch(e) { pingRaw = { error: e.message } }
 
-  // Test 3: Read all submissions
-  let submissions = []
-  let submissionsError = null
+  // Raw SET a simple test key
+  let setRaw = null
   try {
-    submissions = await getSubmissions()
-  } catch(e) {
-    submissionsError = e.message
-  }
+    const r = await fetch(cfg.url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['SET', TEST_KEY, TEST_VAL]]),
+    })
+    setRaw = { status: r.status, body: await r.json() }
+  } catch(e) { setRaw = { error: e.message } }
 
-  // Test 4: Delete the test submission we just created
-  let deleteResult = null
-  if (testSaveId) {
-    try {
-      const ok = await deleteSubmission(testSaveId)
-      deleteResult = ok ? 'deleted test entry' : 'not found'
-    } catch(e) {
-      deleteResult = 'ERROR: ' + e.message
+  // Raw GET the same test key
+  let getRaw = null
+  try {
+    const r = await fetch(cfg.url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['GET', TEST_KEY]]),
+    })
+    getRaw = { status: r.status, body: await r.json() }
+  } catch(e) { getRaw = { error: e.message } }
+
+  // Raw GET the real submissions key
+  let realKeyRaw = null
+  try {
+    const r = await fetch(cfg.url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['GET', 'amine_fit_submissions']]),
+    })
+    const body = await r.json()
+    const val = body?.[0]?.result
+    realKeyRaw = {
+      status: r.status,
+      error: body?.[0]?.error || null,
+      has_data: !!val,
+      data_length: val ? val.length : 0,
+      data_preview: val ? val.substring(0, 100) : null,
     }
-  }
+  } catch(e) { realKeyRaw = { error: e.message } }
 
-  // Test 5: Read again after delete
-  let afterDelete = []
-  try { afterDelete = await getSubmissions() } catch {}
+  // Clean up test key
+  try {
+    await fetch(cfg.url + '/pipeline', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['DEL', TEST_KEY]]),
+    })
+  } catch {}
+
+  const setOk = setRaw?.body?.[0]?.result === 'OK'
+  const getOk = getRaw?.body?.[0]?.result === TEST_VAL
 
   return NextResponse.json({
-    env: {
-      url_set:    url !== 'NOT SET',
-      token_set:  token !== 'NOT SET',
-      url_prefix: url.substring(0, 40),
-    },
-    ping:              pingResult,
-    test_save:         testSaveResult,
-    count_after_save:  submissions.length,
-    delete_test:       deleteResult,
-    count_after_delete: afterDelete.length,
-    submissions_error: submissionsError,
-    real_submissions:  afterDelete.map(s => ({ id: s.id, name: s.name, date: s.createdAt })),
+    env: envDetails,
+    ping: pingRaw,
+    set_test: setRaw,
+    get_test: getRaw,
+    set_get_match: setOk && getOk ? 'PASS — Redis read/write works!' : `FAIL — set:${setOk} get:${getOk}`,
+    real_key: realKeyRaw,
   })
 }
