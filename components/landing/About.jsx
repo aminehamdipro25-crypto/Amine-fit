@@ -68,7 +68,7 @@ export default function About() {
             من هو <span className="text-gold-400">أمين حمدي</span>؟
           </h2>
           <p className="text-white/30 max-w-2xl mx-auto font-medium text-sm leading-relaxed">
-            خبير في الرياضة والتغذية نادر الجمع — يمزج بين الانضباط العسكري النخبوي والمعرفة الأكاديمية المعتمدة
+            متخصص يجمع بين الانضباط العسكري النخبوي والمعرفة الأكاديمية المعتمدة في الرياضة والتغذية
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function About() {
                 </div>
                 <div>
                   <h3 className="text-xl font-extrabold text-white">أمين حمدي</h3>
-                  <p className="text-gold-400 text-sm font-bold mt-0.5">مدرب شخصي ومستشار تغذية</p>
+                  <p className="text-gold-400 text-sm font-bold mt-0.5">مدرب شخصي ومدرب تغذية معتمد</p>
                   <p className="text-white/30 text-xs mt-1 font-medium">الدوحة، قطر 🏅</p>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function About() {
               </div>
               <div className="space-y-3">
                 {[
-                  { deg: 'بكالوريوس علوم الرياضة والنشاط البدني', inst: 'ISSEP صفاقس', year: '2022–23' },
+                  { deg: 'بكالوريوس علوم وتقنيات الأنشطة البدنية والرياضية (STAPS)', inst: 'ISSEP صفاقس', year: '2022–23' },
                   { deg: 'بكالوريوس الحقوق والعلوم السياسية',     inst: 'المعهد العالي قابس', year: '2020–23' },
                   { deg: 'شهادة مربي رياضي عسكري',                inst: 'المدرسة العسكرية', year: '2014–16' },
                 ].map(d => (
