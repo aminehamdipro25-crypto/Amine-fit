@@ -32,8 +32,7 @@ async function sendEmailNotification(entry) {
     console.log('[NEW SUBMISSION]', JSON.stringify(entry, null, 2))
     return
   }
-  const pdfHtml = buildPrintableHtml(entry)
-  const attachment = Buffer.from(pdfHtml, 'utf-8').toString('base64')
+  const printUrl = `https://amine-fit.vercel.app/api/print/${entry.id}`
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -45,13 +44,7 @@ async function sendEmailNotification(entry) {
       from: 'Amine-Fit <onboarding@resend.dev>',
       to: [adminEmail],
       subject: `🏋️ استبيان جديد — ${entry.name} | Amine-Fit`,
-      html: buildEmailHtml(entry),
-      attachments: [
-        {
-          filename: `استبيان-${entry.name}.html`,
-          content: attachment,
-        },
-      ],
+      html: buildEmailHtml(entry, printUrl),
     }),
   })
 }
@@ -70,7 +63,7 @@ function row(label, value) {
     </tr>`
 }
 
-function buildEmailHtml(e) {
+function buildEmailHtml(e, printUrl) {
   const date = new Date(e.createdAt).toLocaleString('ar', { timeZone: 'Asia/Qatar' })
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -140,8 +133,12 @@ function buildEmailHtml(e) {
 
   <!-- Footer -->
   <div style="background:#f8fafc;padding:16px 24px;text-align:center;border-top:1px solid #e2e8f0">
+    <a href="${printUrl}"
+       style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;margin-left:10px">
+      🖨️ تنزيل / طباعة PDF
+    </a>
     <a href="https://amine-fit.vercel.app/dashboard/clients"
-       style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#10b981);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
+       style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
       عرض في لوحة التحكم
     </a>
     <p style="color:#9ca3af;font-size:11px;margin:12px 0 0">Amine-Fit • الدوحة، قطر • +974 3065 3759</p>
