@@ -61,7 +61,7 @@ export default function ContactForm() {
         <div>
           <label className="text-white/80 text-sm font-medium block mb-1.5">رقم الهاتف *</label>
           <input value={form.phone} onChange={e => set('phone', e.target.value)}
-            placeholder="+974 XXXX XXXX" dir="ltr" type="tel"
+            placeholder="+974 3065 3759" dir="ltr" type="tel"
             className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
               focus:bg-white/15 focus:border-white/40 outline-none transition" />
         </div>
