@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Send, CheckCircle, Loader2 } from 'lucide-react'
 
 const goals = ['خسارة الوزن', 'بناء العضلات', 'الحفاظ على الوزن', 'تحسين اللياقة العامة', 'أخرى']
-const packages = ['الباقة الأساسية (3,000 دج)', 'الباقة المتقدمة (6,000 دج)', 'الباقة الاحترافية (10,000 دج)', 'لم أقرر بعد']
+const packages = ['الباقة الأساسية (500 ر.ق)', 'الباقة المتقدمة (900 ر.ق)', 'الباقة الاحترافية (1,500 ر.ق)', 'لم أقرر بعد']
 
 const init = { name: '', phone: '', email: '', goal: '', pkg: '', message: '' }
 
@@ -61,7 +61,7 @@ export default function ContactForm() {
         <div>
           <label className="text-white/80 text-sm font-medium block mb-1.5">رقم الهاتف *</label>
           <input value={form.phone} onChange={e => set('phone', e.target.value)}
-            placeholder="0661234567" dir="ltr" type="tel"
+            placeholder="+974 XXXX XXXX" dir="ltr" type="tel"
             className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40
               focus:bg-white/15 focus:border-white/40 outline-none transition" />
         </div>

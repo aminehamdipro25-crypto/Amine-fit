@@ -2,9 +2,9 @@ import ContactForm from './ContactForm'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 
 const info = [
-  { icon: Phone, label: 'الهاتف', value: '+213 6XX XXX XXX', href: 'tel:+213600000000' },
-  { icon: Mail,  label: 'البريد', value: 'coach@amine-fit.dz', href: 'mailto:coach@amine-fit.dz' },
-  { icon: MapPin,label: 'الموقع', value: 'الجزائر العاصمة، الجزائر', href: '#' },
+  { icon: Phone, label: 'الهاتف', value: '+974 XXXX XXXX', href: 'tel:+974000000000' },
+  { icon: Mail,  label: 'البريد', value: 'amine.hamdi.pro25@gmail.com', href: 'mailto:amine.hamdi.pro25@gmail.com' },
+  { icon: MapPin,label: 'الموقع', value: 'الدوحة، قطر', href: '#' },
   { icon: Clock, label: 'ساعات العمل', value: 'السبت – الخميس: 8ص – 9م', href: '#' },
 ]
 

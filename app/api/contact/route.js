@@ -16,7 +16,7 @@ export async function POST(request) {
     })
 
     // TODO: integrate Resend / Nodemailer here to send email notification
-    // e.g.: await resend.emails.send({ from: 'leads@amine-fit.dz', to: 'coach@amine-fit.dz', ... })
+    // e.g.: await resend.emails.send({ from: 'leads@amine-fit.com', to: 'amine.hamdi.pro25@gmail.com', ... })
 
     return NextResponse.json({ success: true, message: 'تم استلام طلبك بنجاح' })
   } catch {

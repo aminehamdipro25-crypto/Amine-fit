@@ -1,8 +1,8 @@
 const plans = [
   {
     name: 'الباقة الأساسية',
-    price: '3,000',
-    period: 'دج / شهر',
+    price: '500',
+    period: 'ر.ق / شهر',
     desc: 'مثالية للمبتدئين الذين يريدون الانطلاق',
     color: 'border-slate-200',
     btn: 'bg-slate-800 hover:bg-slate-900',
@@ -16,8 +16,8 @@ const plans = [
   },
   {
     name: 'الباقة المتقدمة',
-    price: '6,000',
-    period: 'دج / شهر',
+    price: '900',
+    period: 'ر.ق / شهر',
     desc: 'الخيار الأمثل للحصول على نتائج سريعة',
     featured: true,
     color: 'border-primary-500',
@@ -33,8 +33,8 @@ const plans = [
   },
   {
     name: 'الباقة الاحترافية',
-    price: '10,000',
-    period: 'دج / شهر',
+    price: '1,500',
+    period: 'ر.ق / شهر',
     desc: 'للمحترفين الذين يريدون الأفضل فقط',
     color: 'border-amber-400',
     btn: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600',
