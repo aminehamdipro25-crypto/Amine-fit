@@ -17,28 +17,28 @@ const TEMPLATES = {
   ppl: {
     label: 'Push / Pull / Legs',
     emoji: '💪',
-    desc: '٣ أيام — صدر/ظهر/أرجل',
+    desc: '٣ أيام — PPL',
     days: [
-      { name:'يوم الدفع (Push)', focus:'صدر وكتف', description:'', exercises:[
-        { name:'بنش بريس',           sets:'4', reps:'10-12', rest:'90 ثانية', note:'احرص على لمس الصدر في كل تكرار', videoUrl:'' },
-        { name:'الدمبل الإمالة',     sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'ضغط الكتف بالبار',   sets:'4', reps:'10',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'رفع جانبي دمبل',     sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'ترايسبس كيبل',       sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
+      { name:'Push Day', focus:'صدر وكتف', description:'', exercises:[
+        { name:'Barbell Bench Press',    sets:'4', reps:'8-10',  rest:'90s',   note:'Keep the bar touching chest each rep', videoUrl:'' },
+        { name:'Incline Dumbbell Press', sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
+        { name:'Overhead Press',         sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
+        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'Control the descent', videoUrl:'' },
+        { name:'Tricep Pushdown',        sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
       ]},
-      { name:'يوم السحب (Pull)', focus:'ظهر وبايسبس', description:'', exercises:[
-        { name:'سحب بار عريض',       sets:'4', reps:'8-10',  rest:'90 ثانية', note:'ابدأ بالعضلة لا الذراع', videoUrl:'' },
-        { name:'رو بار',             sets:'4', reps:'10',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'سحب كيبل ضيق',       sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'بايسبس كيبل',        sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'هامر كيرل دمبل',     sets:'3', reps:'12',    rest:'45 ثانية', note:'', videoUrl:'' },
+      { name:'Pull Day', focus:'ظهر وبايسبس', description:'', exercises:[
+        { name:'Wide-Grip Pull-Up',      sets:'4', reps:'6-8',   rest:'90s',   note:'ابدأ الحركة بعضلة الظهر لا الذراع', videoUrl:'' },
+        { name:'Barbell Row',            sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
+        { name:'Lat Pulldown',           sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Barbell Curl',           sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
+        { name:'Hammer Curl',            sets:'3', reps:'12',    rest:'45s',   note:'', videoUrl:'' },
       ]},
-      { name:'يوم الأرجل (Legs)', focus:'أرجل', description:'', exercises:[
-        { name:'سكوات',              sets:'5', reps:'8-10',  rest:'2 دقيقة',  note:'ظهر مستقيم، ركبة لا تتجاوز القدم', videoUrl:'' },
-        { name:'ليغ بريس',           sets:'4', reps:'12',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'ليغ كيرل',           sets:'3', reps:'15',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'كاف ريز',            sets:'4', reps:'20',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'بلانك',              sets:'3', reps:'60 ثانية', rest:'30 ثانية', note:'', videoUrl:'' },
+      { name:'Legs Day', focus:'أرجل', description:'', exercises:[
+        { name:'Barbell Back Squat',     sets:'5', reps:'8-10',  rest:'2 min', note:'ظهر مستقيم، ركبة لا تتجاوز القدم', videoUrl:'' },
+        { name:'Leg Press',              sets:'4', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Romanian Deadlift',      sets:'3', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Leg Curl',               sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Standing Calf Raise',    sets:'4', reps:'20',    rest:'45s',   note:'', videoUrl:'' },
       ]},
     ],
   },
@@ -47,29 +47,31 @@ const TEMPLATES = {
     emoji: '🔄',
     desc: '٤ أيام — علوي/سفلي',
     days: [
-      { name:'يوم الجزء العلوي (أ)', focus:'صدر وظهر', description:'', exercises:[
-        { name:'بنش بريس',           sets:'4', reps:'8-10',  rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'سحب بار',            sets:'4', reps:'8-10',  rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'دمبل كتف',           sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'رو دمبل',            sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
+      { name:'Upper Body A', focus:'صدر وظهر', description:'', exercises:[
+        { name:'Barbell Bench Press',    sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
+        { name:'Barbell Row',            sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
+        { name:'Incline Dumbbell Press', sets:'3', reps:'10-12', rest:'90s',   note:'', videoUrl:'' },
+        { name:'Cable Row',              sets:'3', reps:'10-12', rest:'90s',   note:'', videoUrl:'' },
       ]},
-      { name:'يوم الجزء السفلي (أ)', focus:'أرجل', description:'', exercises:[
-        { name:'سكوات',              sets:'4', reps:'8-10',  rest:'2 دقيقة',  note:'', videoUrl:'' },
-        { name:'ليغ بريس',           sets:'3', reps:'12',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'ليغ كيرل',           sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'كاف ريز',            sets:'4', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
+      { name:'Lower Body A', focus:'أرجل', description:'', exercises:[
+        { name:'Barbell Back Squat',     sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
+        { name:'Leg Press',              sets:'3', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Leg Extension',          sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Standing Calf Raise',    sets:'4', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
       ]},
-      { name:'يوم الجزء العلوي (ب)', focus:'كتف وذراعين', description:'', exercises:[
-        { name:'ضغط الكتف أوفر هيد', sets:'4', reps:'10',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'رفع جانبي',          sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'بايسبس بار',         sets:'3', reps:'10',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'ترايسبس دمبل',       sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
+      { name:'Upper Body B', focus:'كتف', description:'', exercises:[
+        { name:'Overhead Press',         sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
+        { name:'Lat Pulldown',           sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
+        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
+        { name:'Barbell Curl',           sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
+        { name:'Tricep Pushdown',        sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
       ]},
-      { name:'يوم الجزء السفلي (ب)', focus:'أرجل وبطن', description:'', exercises:[
-        { name:'ديدليفت',            sets:'4', reps:'5-6',   rest:'2 دقيقة',  note:'ظهر مستقيم', videoUrl:'' },
-        { name:'لانج',               sets:'3', reps:'12 لكل رجل', rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'بطن جهاز',           sets:'3', reps:'20',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'هايبر اكستنشن',      sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
+      { name:'Lower Body B', focus:'أرجل وبطن', description:'', exercises:[
+        { name:'Romanian Deadlift',      sets:'4', reps:'8-10',  rest:'90s',   note:'ظهر مستقيم طوال الحركة', videoUrl:'' },
+        { name:'Walking Lunge',          sets:'3', reps:'12 each',rest:'60s',  note:'', videoUrl:'' },
+        { name:'Leg Curl',               sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Plank',                  sets:'3', reps:'45s',   rest:'30s',   note:'', videoUrl:'' },
+        { name:'Cable Crunch',           sets:'3', reps:'20',    rest:'30s',   note:'', videoUrl:'' },
       ]},
     ],
   },
@@ -78,26 +80,26 @@ const TEMPLATES = {
     emoji: '⚡',
     desc: '٣ أيام — جسم كامل',
     days: [
-      { name:'اليوم الكامل (أ)', focus:'كامل', description:'', exercises:[
-        { name:'سكوات',              sets:'3', reps:'8',     rest:'2 دقيقة',  note:'', videoUrl:'' },
-        { name:'بنش بريس',           sets:'3', reps:'8',     rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'سحب بار',            sets:'3', reps:'8',     rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'ضغط الكتف',          sets:'3', reps:'10',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'بلانك',              sets:'3', reps:'45 ثانية', rest:'30 ثانية', note:'', videoUrl:'' },
+      { name:'Full Body A', focus:'كامل', description:'', exercises:[
+        { name:'Barbell Back Squat',     sets:'3', reps:'8',     rest:'2 min', note:'', videoUrl:'' },
+        { name:'Barbell Bench Press',    sets:'3', reps:'8',     rest:'90s',   note:'', videoUrl:'' },
+        { name:'Barbell Row',            sets:'3', reps:'8',     rest:'90s',   note:'', videoUrl:'' },
+        { name:'Overhead Press',         sets:'3', reps:'10',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Plank',                  sets:'3', reps:'45s',   rest:'30s',   note:'', videoUrl:'' },
       ]},
-      { name:'اليوم الكامل (ب)', focus:'كامل', description:'', exercises:[
-        { name:'ديدليفت رومانياني',  sets:'3', reps:'10',    rest:'90 ثانية', note:'', videoUrl:'' },
-        { name:'دمبل إمالة',         sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'رو كيبل',            sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'رفع جانبي',          sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
-        { name:'كرانش',              sets:'3', reps:'20',    rest:'30 ثانية', note:'', videoUrl:'' },
+      { name:'Full Body B', focus:'كامل', description:'', exercises:[
+        { name:'Romanian Deadlift',      sets:'3', reps:'10',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Incline Dumbbell Press', sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Cable Row',              sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
+        { name:'Bicycle Crunch',         sets:'3', reps:'20',    rest:'30s',   note:'', videoUrl:'' },
       ]},
-      { name:'اليوم الكامل (ج)', focus:'كامل', description:'', exercises:[
-        { name:'لانج',               sets:'3', reps:'12 لكل رجل', rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'بنش دمبل',           sets:'3', reps:'15',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'سحب كيبل',           sets:'3', reps:'15',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'برباج',              sets:'3', reps:'12',    rest:'60 ثانية', note:'', videoUrl:'' },
-        { name:'ليغ ريز',            sets:'3', reps:'15',    rest:'45 ثانية', note:'', videoUrl:'' },
+      { name:'Full Body C', focus:'كامل', description:'', exercises:[
+        { name:'Walking Lunge',          sets:'3', reps:'12 each',rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Bench Press',   sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Lat Pulldown',           sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Arnold Press',           sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Leg Raise',              sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
       ]},
     ],
   },
@@ -348,6 +350,92 @@ function DayCard({ day, idx, onChange, onRemove }) {
   )
 }
 
+/* ── AI Generate Modal ───────────────────────────────────────────────────── */
+function AIGenerateModal({ form, setForm, onGenerate, onClose, loading }) {
+  const goalOptions    = [{ v:'gain', l:'بناء العضلات 💪' }, { v:'loss', l:'خسارة الدهون 🔥' }, { v:'maintain', l:'الحفاظ على اللياقة ⚡' }]
+  const levelOptions   = [{ v:'beginner', l:'مبتدئ' }, { v:'intermediate', l:'متوسط' }, { v:'advanced', l:'متقدم' }]
+  const daysOptions    = ['2','3','4','5','6']
+  const equipOptions   = [{ v:'gym', l:'صالة كاملة 🏋️' }, { v:'home', l:'منزل (دمبل+بار) 🏠' }, { v:'bodyweight', l:'بدون معدات 🤸' }]
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="bg-[#0a0a0a] px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#fbbf24]/10 flex items-center justify-center">
+              <Brain className="w-5 h-5 text-[#fbbf24]" />
+            </div>
+            <div>
+              <p className="text-white font-extrabold text-sm">توليد بالذكاء الاصطناعي</p>
+              <p className="text-white/40 text-[11px]">برنامج مخصص في ثوانٍ</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">الهدف</label>
+            <div className="grid grid-cols-3 gap-2">
+              {goalOptions.map(o => (
+                <button key={o.v} type="button" onClick={() => setForm(f => ({ ...f, goal: o.v }))}
+                  className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${form.goal === o.v ? 'bg-[#0a0a0a] text-[#fbbf24] border-[#0a0a0a]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">المستوى</label>
+            <div className="grid grid-cols-3 gap-2">
+              {levelOptions.map(o => (
+                <button key={o.v} type="button" onClick={() => setForm(f => ({ ...f, level: o.v }))}
+                  className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${form.level === o.v ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">أيام التدريب / أسبوع</label>
+            <div className="flex gap-2">
+              {daysOptions.map(d => (
+                <button key={d} type="button" onClick={() => setForm(f => ({ ...f, daysPerWeek: d }))}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-extrabold border transition-all ${form.daysPerWeek === d ? 'bg-[#fbbf24] text-black border-[#fbbf24]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">المعدات</label>
+            <div className="grid grid-cols-3 gap-2">
+              {equipOptions.map(o => (
+                <button key={o.v} type="button" onClick={() => setForm(f => ({ ...f, equipment: o.v }))}
+                  className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${form.equipment === o.v ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">إصابات أو قيود (اختياري)</label>
+            <input value={form.injuries} onChange={e => setForm(f => ({ ...f, injuries: e.target.value }))}
+              placeholder="مثال: ألم في الركبة اليسرى..."
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-[#fbbf24] transition font-medium" />
+          </div>
+          <button onClick={onGenerate} disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#0a0a0a] text-white rounded-2xl font-extrabold text-sm hover:bg-black transition disabled:opacity-60 shadow-lg">
+            {loading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري التوليد...</>
+              : <><Wand2 className="w-4 h-4 text-[#fbbf24]" /> توليد البرنامج</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 function Toast({ msg, onClose }) {
   return (
@@ -401,6 +489,36 @@ export default function PlanBuilder({ client }) {
   const [trainingNote, setTNote] = useState(existing.training?.note       || '')
   const [trainingTips, setTTips] = useState(existing.training?.tips?.join('\n') || '')
   const [days, setDays]         = useState(existing.training?.days        || [])
+
+  // AI generation state
+  const [aiModal, setAiModal]     = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiForm, setAiForm]       = useState({ goal: client.goal || 'gain', level: client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate', daysPerWeek: '3', equipment: 'gym', injuries: '' })
+
+  async function generateWithAI() {
+    setAiLoading(true)
+    try {
+      const res  = await fetch('/api/ai-training', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...aiForm, age: client.age, gender: client.gender }),
+      })
+      const plan = await res.json()
+      setDays(plan.days || [])
+      if (plan.daysPerWeek) setDPW(String(plan.daysPerWeek))
+      if (plan.duration)    setDuration(String(plan.duration))
+      if (plan.level)       setLevel(plan.level === 'beginner' ? 'مبتدئ' : plan.level === 'advanced' ? 'متقدم' : 'متوسط')
+      if (plan.note)        setTNote(plan.note)
+      if (plan.tips?.length) setTTips(plan.tips.join('\n'))
+      setAiModal(false)
+      setToast(plan.ai ? '✨ تم توليد البرنامج بالذكاء الاصطناعي' : '✓ تم تحميل البرنامج الافتراضي')
+    } catch (err) {
+      console.error(err)
+      setToast('حدث خطأ أثناء التوليد')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const updateMeal = (i, val) => { const m = [...meals]; m[i] = val; setMeals(m) }
   const removeMeal = (i) => setMeals(meals.filter((_, j) => j !== i))
@@ -666,6 +784,22 @@ export default function PlanBuilder({ client }) {
             </div>
           </div>
 
+          {/* AI Generate Button */}
+          <button
+            type="button"
+            onClick={() => setAiModal(true)}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border-2 border-dashed border-[#fbbf24]/40 bg-[#fbbf24]/5 hover:bg-[#fbbf24]/10 hover:border-[#fbbf24]/60 transition-all group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#0a0a0a] flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Brain className="w-5 h-5 text-[#fbbf24]" />
+            </div>
+            <div className="text-right">
+              <p className="font-extrabold text-slate-800 text-sm">توليد بالذكاء الاصطناعي</p>
+              <p className="text-[11px] text-slate-400 font-medium">برنامج مخصص بناءً على بيانات العميل</p>
+            </div>
+            <Wand2 className="w-4 h-4 text-[#fbbf24] mr-auto" />
+          </button>
+
           {/* Templates */}
           <div className="bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-100 p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -725,6 +859,17 @@ export default function PlanBuilder({ client }) {
 
       {/* Toast */}
       {toast && <Toast msg={toast} onClose={() => setToast('')} />}
+
+      {/* AI Modal */}
+      {aiModal && (
+        <AIGenerateModal
+          form={aiForm}
+          setForm={setAiForm}
+          onGenerate={generateWithAI}
+          onClose={() => setAiModal(false)}
+          loading={aiLoading}
+        />
+      )}
     </div>
   )
 }

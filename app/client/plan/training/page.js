@@ -14,10 +14,9 @@ function getYoutubeThumbnail(url) {
   return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null
 }
 
-function repsBreakdown(sets, reps) {
-  if (!reps) return null
-  const n = Math.min(parseInt(sets) || 1, 6)
-  return Array(n).fill(String(reps)).join(' · ')
+function repsDisplay(sets, reps) {
+  if (!sets && !reps) return null
+  return { sets: sets ? String(sets) : null, reps: reps ? String(reps) : null }
 }
 
 const MUSCLE_MAP = {
@@ -67,40 +66,51 @@ function SectionBanner({ type }) {
 
 // ─── Exercise Row (Today Card) ────────────────────────────────────────────────
 
-function ExerciseRow({ ex, done, onToggle, isLast }) {
+function ExerciseRow({ ex, done, onToggle, isLast, number }) {
+  const [flash, setFlash] = useState(false)
   const thumb = getYoutubeThumbnail(ex.videoUrl)
-  const breakdown = repsBreakdown(ex.sets, ex.reps)
+  const info  = repsDisplay(ex.sets, ex.reps)
+
+  function handleToggle() {
+    if (!done) { setFlash(true); setTimeout(() => setFlash(false), 600) }
+    onToggle()
+  }
 
   return (
-    <div className={`flex items-center gap-3 py-3.5 transition-all ${!isLast ? 'border-b border-slate-100' : ''}`}>
+    <div className={`flex items-center gap-3 py-3.5 transition-all duration-300 ${!isLast ? 'border-b border-slate-100' : ''} ${done ? 'opacity-50' : ''} ${flash ? 'bg-[#fbbf24]/8' : ''}`}>
+      {/* Number badge */}
+      <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-extrabold transition-all ${done ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+        {done ? '✓' : number}
+      </div>
+
       {/* Thumbnail */}
-      <div className="relative flex-shrink-0 w-[52px] h-[52px] rounded-xl overflow-hidden bg-[#111]">
+      <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#111]">
         {thumb
           ? <img src={thumb} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
           : <div className="w-full h-full flex items-center justify-center">
-              <Dumbbell className="w-5 h-5 text-[#fbbf24]/40" />
+              <Dumbbell className="w-4 h-4 text-[#fbbf24]/40" />
             </div>
         }
         {ex.videoUrl && (
           <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
-            <Play className="w-4 h-4 text-white" fill="white" />
+            <Play className="w-3.5 h-3.5 text-white" fill="white" />
           </a>
         )}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`font-extrabold text-sm leading-tight ${done ? 'line-through text-slate-300' : 'text-slate-900'}`}>
+        <p className={`font-extrabold text-sm leading-tight transition-all ${done ? 'line-through text-slate-300' : 'text-slate-900'}`}>
           {ex.name}
         </p>
-        {breakdown && (
-          <p className="text-[11px] text-slate-400 font-semibold mt-0.5" dir="ltr">
-            Sets: {ex.sets}&nbsp;·&nbsp;{breakdown}
+        {info && (
+          <p className="text-[11px] font-semibold mt-0.5 flex items-center gap-1.5" dir="ltr">
+            {info.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-700 font-extrabold">{info.sets}</span></>}
+            {info.sets && info.reps && <span className="text-slate-200">·</span>}
+            {info.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{info.reps}</span></>}
+            {ex.rest && <><span className="text-slate-200">·</span><span className="text-slate-400">{ex.rest}</span></>}
           </p>
-        )}
-        {ex.rest && (
-          <p className="text-[10px] text-slate-300 mt-0.5">راحة {ex.rest}</p>
         )}
         {ex.note && (
           <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">💡 {ex.note}</p>
@@ -108,11 +118,11 @@ function ExerciseRow({ ex, done, onToggle, isLast }) {
       </div>
 
       {/* Checkbox */}
-      <button onClick={onToggle}
-        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-          done ? 'bg-[#fbbf24] border-[#fbbf24]' : 'border-slate-200 hover:border-[#fbbf24]/60'
+      <button onClick={handleToggle}
+        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 active:scale-90 ${
+          done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24] hover:scale-110'
         }`}>
-        {done && <CheckCircle2 className="w-[14px] h-[14px] text-black" />}
+        {done && <CheckCircle2 className="w-[15px] h-[15px] text-black" />}
       </button>
     </div>
   )
@@ -190,7 +200,7 @@ function TodayWorkout({ day, idx }) {
             <div className="bg-white border border-slate-100 rounded-2xl px-3">
               {exList.map((ex, i) => (
                 <ExerciseRow
-                  key={i} ex={ex}
+                  key={i} ex={ex} number={i + 1}
                   done={!!done[i]}
                   onToggle={() => setDone(d => ({ ...d, [i]: !d[i] }))}
                   isLast={i === exList.length - 1}
@@ -266,7 +276,6 @@ function OtherDay({ day, idx }) {
           <div className="bg-white border border-slate-100 rounded-2xl px-3">
             {day.exercises?.map((ex, i) => {
               const thumb = getYoutubeThumbnail(ex.videoUrl)
-              const bd    = repsBreakdown(ex.sets, ex.reps)
               return (
                 <div key={i}
                   className={`flex items-center gap-3 py-3 ${i < (day.exercises.length - 1) ? 'border-b border-slate-50' : ''}`}>
@@ -280,11 +289,11 @@ function OtherDay({ day, idx }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-xs text-slate-900 truncate">{ex.name}</p>
-                    {bd && (
-                      <p className="text-[10px] text-slate-400 mt-0.5" dir="ltr">
-                        Sets: {ex.sets} · {bd}
-                      </p>
-                    )}
+                    <p className="text-[10px] font-semibold mt-0.5 flex items-center gap-1" dir="ltr">
+                    {ex.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-600 font-bold">{ex.sets}</span></>}
+                    {ex.sets && ex.reps && <span className="text-slate-200 mx-0.5">·</span>}
+                    {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-600 font-bold">{ex.reps}</span></>}
+                  </p>
                   </div>
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
