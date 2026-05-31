@@ -77,8 +77,9 @@ export default function Footer() {
 
         <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/20 text-sm font-medium">
           <p>© {new Date().getFullYear()} AmineFit. جميع الحقوق محفوظة.</p>
-          <p>الدوحة، قطر ·{' '}
+          <p dir="ltr" className="text-right sm:text-left">
             <a href="tel:+97430653759" className="hover:text-gold-400 transition">+974 3065 3759</a>
+            {' '}· الدوحة، قطر
           </p>
         </div>
       </div>
