@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import {
+  calcBMR, calcTDEE, calcTarget, calcExchanges, generateMenu,
+} from '@/lib/nutritionEngine'
 
 const ACTIVITY_LABELS = {
   sedentary:  'خامل (عمل مكتبي، لا رياضة) — معامل 1.20',
@@ -33,23 +33,40 @@ TDEE = BMR × معامل النشاط
 الهدف = TDEE + تعديل الهدف (الحد الأدنى 1200 سعرة)
 
 ═══ مبادئ التوزيع المثالي للوجبات ═══
-الفطور (25-30%): نشا (توست/شوفان/خبز) + بروتين خفيف (جبن/بيض) + دهون متنوعة (زبدة+عسل+مكسرات بنودٍ منفصلة) + فاكهة
-وجبة خفيفة (10-15%): فاكهة + بروتين خفيف + قد يشمل مكسرات
+الفطور (25-30%): توست/خبز + بروتين خفيف (جبن مطبوخة/بيضة) + دهون متنوعة كل بند منفصل (زبدة + عسل + مكسرات) + فاكهة
+وجبة خفيفة (10-15%): فاكهة + بروتين خفيف أو مكسرات
 الغداء (35-40%): نشا رئيسي (أرز/بطاطا/كسكسي) + بروتين رئيسي (دجاج/لحم/سمك) + خضروات + زيت زيتون
 العشاء (15-20%): نشا خفيف + بروتين (سمك/تونة/دجاج) + خضروات أو فاكهة
 
 ═══ قواعد صارمة ═══
-1. الأطعمة الممنوعة: احذفها تماماً من كل الوجبات، وعوّض من مجموعات أخرى
+1. الأطعمة الممنوعة: احذفها تماماً وعوّض من مجموعات أخرى
 2. الأطعمة المفضلة: استخدمها أولاً في الوجبات المناسبة
 3. التنويع: لا تكرر نفس الطعام في وجبتين متتاليتين
-4. المنطق الغذائي: الزبدة/العسل/المكسرات = فطور فقط | زيت الزيتون = غداء/عشاء فقط
-5. الكميات: احسبها بدقة (وحدات × جرام/وحدة = الكمية الفعلية)
-6. الجبن المطبوخ: 30غ = وحدة بروتين خفيفة، مناسبة للفطور والوجبات الخفيفة
-7. أعد JSON فقط بدون أي شرح أو نص خارجه`
+4. المنطق: الزبدة/العسل/المكسرات = فطور فقط | زيت الزيتون = غداء/عشاء فقط
+5. الكميات: احسبها بدقة (وحدات × جرام/وحدة)
+6. أعد JSON فقط بدون أي نص إضافي`
+
+// ── Local fallback: uses the rule-based engine ───────────────────────────────
+function localPlan(form) {
+  const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
+  const tdee   = calcTDEE(bmr, form.activity)
+  const target = calcTarget(tdee, form.goal)
+  const ex     = calcExchanges(target, form.goal, form.avoided)
+  const menu   = generateMenu(ex, +form.meals, form.preferred, form.avoided)
+  return { bmr: Math.round(bmr), tdee, target, ex, menu, form, date: new Date().toISOString(), ai: false }
+}
 
 export async function POST(req) {
+  const form = await req.json()
+
+  // If no API key → use local engine immediately (no error)
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(localPlan(form))
+  }
+
   try {
-    const form = await req.json()
+    const { default: Anthropic } = await import('@anthropic-ai/sdk')
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const userPrompt = `═══ بيانات العميل ═══
 الاسم: ${form.name || 'العميل'}
@@ -61,24 +78,14 @@ export async function POST(req) {
 الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
-═══ المطلوب ═══
-1. احسب BMR، TDEE، السعرات المستهدفة
-2. حدد وحدات التبادل لكل مجموعة
-3. وزّع الوجبات بشكل منطقي ومتنوع
-4. اذكر كل طعام بالاسم العربي والكمية بالجرام
-
-أعد هذا JSON بالضبط (أرقام صحيحة فقط):
+أنشئ خطة غذائية متكاملة وأعد JSON بالضبط:
 {
   "bmr": number,
   "tdee": number,
   "target": number,
   "ex": {
-    "starches": number,
-    "meats": number,
-    "dairy": number,
-    "fats": number,
-    "fruits": number,
-    "vegetables": number,
+    "starches": number, "meats": number, "dairy": number,
+    "fats": number, "fruits": number, "vegetables": number,
     "actualKcal": number,
     "macros": { "carbs": number, "protein": number, "fat": number },
     "pct": { "carbs": number, "protein": number, "fat": number },
@@ -86,21 +93,10 @@ export async function POST(req) {
   },
   "menu": [
     {
-      "name": "اسم الوجبة",
-      "time": "07:30",
-      "icon": "🌅",
-      "kcal": number,
-      "carbs": number,
-      "protein": number,
-      "fat": number,
+      "name": "الفطور", "time": "07:30", "icon": "🌅",
+      "kcal": number, "carbs": number, "protein": number, "fat": number,
       "items": [
-        {
-          "group": "النشويات",
-          "icon": "🌾",
-          "servings": number,
-          "food": "اسم الطعام بالعربية",
-          "amount": "90 غ (3 شرائح)"
-        }
+        { "group": "النشويات", "icon": "🌾", "servings": number, "food": "توست كامل", "amount": "90 غ (3 شرائح)" }
       ]
     }
   ]
@@ -113,14 +109,14 @@ export async function POST(req) {
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const rawText = response.content[0].text.trim()
-    // Strip markdown code blocks if present
-    const jsonText = rawText.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'')
-    const plan = JSON.parse(jsonText)
-
+    const raw = response.content[0].text.trim()
+      .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    const plan = JSON.parse(raw)
     return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true })
+
   } catch (err) {
-    console.error('AI plan error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('AI plan error — falling back to local engine:', err.message)
+    // Any AI error → silent fallback to local engine
+    return NextResponse.json(localPlan(form))
   }
 }

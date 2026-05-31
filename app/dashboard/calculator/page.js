@@ -51,27 +51,26 @@ export default function CalculatorPage() {
   const [form, setForm] = useState(INIT)
   const [result, setRes] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [aiError, setAiError] = useState(null)
-  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null); setAiError(null) }
+  const [isAI, setIsAI] = useState(false)
+  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
 
   async function calculate() {
     if (!valid || loading) return
     setLoading(true)
-    setAiError(null)
     setRes(null)
     try {
-      const res = await fetch('/api/ai-plan', {
+      const res  = await fetch('/api/ai-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
       const plan = await res.json()
-      if (plan.error) throw new Error(plan.error)
+      setIsAI(!!plan.ai)
       setRes(plan)
-    } catch (err) {
-      setAiError(err.message || 'فشل توليد الخطة. تحقق من إعداد ANTHROPIC_API_KEY.')
+    } catch {
+      // silent — should not happen since API always returns local fallback
     } finally {
       setLoading(false)
     }
@@ -194,17 +193,6 @@ export default function CalculatorPage() {
           </button>
         </div>
 
-        {/* AI Error */}
-        {aiError && (
-          <div className="mx-5 mb-5 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-red-700 text-sm">فشل توليد الخطة</p>
-              <p className="text-red-600 text-xs mt-1">{aiError}</p>
-            </div>
-          </div>
-        )}
-
         {/* AI Loading shimmer */}
         {loading && (
           <div className="mx-5 mb-5 bg-gradient-to-r from-violet-50 to-primary-50 border border-violet-200 rounded-xl p-5 text-center space-y-2">
@@ -222,6 +210,11 @@ export default function CalculatorPage() {
 
       {/* ── Results ── */}
       {result && (<>
+        {/* AI/Local badge */}
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${isAI ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+          {isAI ? <><Sparkles className="w-4 h-4" /> تم التوليد بالذكاء الاصطناعي Claude</> : <><Calculator className="w-4 h-4" /> تم التوليد بالمحرك المحلي (المجاني)</>}
+          {!isAI && <span className="mr-auto text-xs font-normal text-slate-400">أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI</span>}
+        </div>
 
         {/* Step 1 — Energy */}
         <StepCard num="1" title="حسابات الطاقة — BMR & TDEE">
