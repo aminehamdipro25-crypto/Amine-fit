@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
+import { requireAdmin } from '@/lib/adminAuth'
 
 export async function POST(req, { params }) {
-  const adminToken = cookies().get('admin_token')?.value
-  const correct    = process.env.DASHBOARD_PASSWORD || 'amine2025'
-  if (!adminToken || adminToken !== correct) {
-    return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
-  }
+  const deny = await requireAdmin()
+  if (deny) return deny
 
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
 
-  // Generate 6-char activation code (easy to read/type, no ambiguous chars)
+  // Generate 6-char activation code using CSPRNG
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  const bytes = (await import('crypto')).randomBytes(6)
   let activationCode = ''
-  for (let i = 0; i < 6; i++) activationCode += chars[Math.floor(Math.random() * chars.length)]
+  for (let i = 0; i < 6; i++) activationCode += chars[bytes[i] % chars.length]
 
   await updateSubmission(params.id, {
     activationCode,
@@ -45,6 +43,10 @@ async function sendActivationEmail(client, activationCode) {
   if (!res.ok) console.error('[approve email resend]', await res.text())
 }
 
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
 function buildEmail(client, activationCode) {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -54,7 +56,7 @@ function buildEmail(client, activationCode) {
 
   <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:24px;text-align:center">
     <div style="font-size:44px">🏋️</div>
-    <h1 style="color:#fff;margin:8px 0 4px;font-size:22px">مرحباً ${client.name || 'عزيزي العميل'}!</h1>
+    <h1 style="color:#fff;margin:8px 0 4px;font-size:22px">مرحباً ${esc(client.name) || 'عزيزي العميل'}!</h1>
     <p style="color:rgba(255,255,255,.9);margin:0;font-size:14px">تمت الموافقة على طلبك في Amine-Fit</p>
   </div>
 
@@ -65,7 +67,7 @@ function buildEmail(client, activationCode) {
 
     <div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
       <p style="margin:0 0 8px;font-weight:bold;color:#92400e;font-size:14px">🔑 كود التفعيل (استخدام واحد فقط)</p>
-      <p style="margin:0;font-family:monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#d97706;direction:ltr">${activationCode}</p>
+      <p style="margin:0;font-family:monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#d97706;direction:ltr">${esc(activationCode)}</p>
     </div>
 
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:20px">

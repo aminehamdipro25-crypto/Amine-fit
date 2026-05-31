@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
+import { isRateLimited } from '@/lib/rateLimit'
 
 function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return crypto.randomInt(100000, 1000000).toString()
 }
 
 async function sendOTP(email, name, otp) {
-  if (!process.env.RESEND_API_KEY) return true // skip if no key
+  if (!process.env.RESEND_API_KEY) return true
 
   const { Resend } = await import('resend')
   const resend = new Resend(process.env.RESEND_API_KEY)
+  const safeName = String(name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 
   await resend.emails.send({
     from: 'Amine-Fit <noreply@amine-fit.vercel.app>',
@@ -21,7 +24,7 @@ async function sendOTP(email, name, otp) {
           <h1 style="margin:0;color:#000;font-size:24px;font-weight:900">⚡ Amine-Fit</h1>
         </div>
         <div style="padding:32px;text-align:center">
-          <p style="color:#fff;font-size:16px;margin-bottom:8px">مرحباً ${name || ''}،</p>
+          <p style="color:#fff;font-size:16px;margin-bottom:8px">مرحباً ${safeName}،</p>
           <p style="color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:24px">رمز التحقق من بريدك الإلكتروني:</p>
           <div style="background:#1a1a1a;border-radius:12px;padding:20px;margin-bottom:24px">
             <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#fbbf24">${otp}</span>
@@ -34,33 +37,61 @@ async function sendOTP(email, name, otp) {
 }
 
 export async function POST(req) {
-  const { action, email, otp, name } = await req.json()
+  try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const { action, email, otp, name } = await req.json()
 
-  if (action === 'send') {
-    const newOTP = generateOTP()
-    const expiry = Date.now() + 10 * 60 * 1000 // 10 min
+    if (!email || typeof email !== 'string' || email.length > 200) {
+      return NextResponse.json({ error: 'بريد غير صالح' }, { status: 400 })
+    }
+    const emailLower = email.toLowerCase().trim()
 
-    const client = await getSubmissionByEmail(email)
-    if (client) {
-      await updateSubmission(client.id, { emailOTP: newOTP, emailOTPExpiry: expiry })
-    } else {
-      // Store temporarily — will be linked after registration
+    if (action === 'send') {
+      // 3 sends per email per hour, 10 per IP per hour
+      if (await isRateLimited(`otp_send_email:${emailLower}`, 3, 3600)) {
+        return NextResponse.json({ sent: true }) // Silent to avoid enumeration
+      }
+      if (await isRateLimited(`otp_send_ip:${ip}`, 10, 3600)) {
+        return NextResponse.json({ sent: true })
+      }
+
+      const newOTP = generateOTP()
+      const expiry = Date.now() + 10 * 60 * 1000
+
+      const client = await getSubmissionByEmail(emailLower)
+      if (client) {
+        await updateSubmission(client.id, { emailOTP: newOTP, emailOTPExpiry: expiry })
+        await sendOTP(emailLower, name, newOTP)
+      }
+      // Always return same response to prevent email enumeration
+      return NextResponse.json({ sent: true })
     }
 
-    await sendOTP(email, name, newOTP)
-    return NextResponse.json({ sent: true })
+    if (action === 'verify') {
+      // 5 verify attempts per email per 15 min
+      if (await isRateLimited(`otp_verify:${emailLower}`, 5, 900)) {
+        return NextResponse.json({ valid: false, reason: 'too_many' })
+      }
+
+      const client = await getSubmissionByEmail(emailLower)
+      // Use constant-time-ish comparison; return generic error for not-found (prevent enumeration)
+      if (!client || !client.emailOTP) {
+        return NextResponse.json({ valid: false, reason: 'invalid' })
+      }
+      if (client.emailOTP !== otp?.toString().trim()) {
+        return NextResponse.json({ valid: false, reason: 'invalid' })
+      }
+      if (Date.now() > client.emailOTPExpiry) {
+        return NextResponse.json({ valid: false, reason: 'expired' })
+      }
+
+      await updateSubmission(client.id, { emailVerified: true, emailOTP: null, emailOTPExpiry: null })
+      return NextResponse.json({ valid: true })
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (err) {
+    console.error('[verify-email]', err.message)
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
-
-  if (action === 'verify') {
-    const client = await getSubmissionByEmail(email)
-    if (!client) return NextResponse.json({ valid: false, reason: 'not_found' })
-
-    if (client.emailOTP !== otp) return NextResponse.json({ valid: false, reason: 'wrong_otp' })
-    if (Date.now() > client.emailOTPExpiry) return NextResponse.json({ valid: false, reason: 'expired' })
-
-    await updateSubmission(client.id, { emailVerified: true, emailOTP: null, emailOTPExpiry: null })
-    return NextResponse.json({ valid: true })
-  }
-
-  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 }

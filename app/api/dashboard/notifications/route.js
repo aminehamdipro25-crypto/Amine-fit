@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { getSubmissions } from '@/lib/submissions'
+import { requireAdmin } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const adminToken = cookies().get('admin_token')?.value
-  const correct = process.env.DASHBOARD_PASSWORD || 'amine2025'
-  if (!adminToken || adminToken !== correct) {
-    return NextResponse.json({ notifications: [] })
-  }
+  const deny = await requireAdmin()
+  if (deny) return NextResponse.json({ notifications: [] })
 
   const clients = await getSubmissions()
   const notifications = []

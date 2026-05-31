@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
 import { hashPassword, verifyPassword } from '@/lib/password'
+import { isRateLimited } from '@/lib/rateLimit'
 
 function setClientCookie(res, clientId) {
   res.cookies.set('client_token', createToken(clientId), {
@@ -24,15 +25,19 @@ async function handleActivation(email, activationCode, password, confirmPassword
   if (password.length < 6) {
     return NextResponse.json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, { status: 400 })
   }
-  if (password.length > 200 || activationCode.length > 20) {
-    return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
+  if (password.length > 200) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
+
+  // Validate activation code format: exactly 6 uppercase alphanumeric
+  const code = activationCode.toUpperCase().trim()
+  if (!/^[A-Z2-9]{6}$/.test(code)) {
+    return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 
   const client = await getSubmissionByEmail(email.toLowerCase().trim())
   if (!client || !client.activationCode) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
-  if (client.activationCode !== activationCode.toUpperCase().trim()) {
+  if (client.activationCode !== code) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 
@@ -74,9 +79,25 @@ async function handleLogin(email, password) {
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const body = await req.json()
+
+    // IP-level rate limit: 20 attempts per 15 min
+    if (await isRateLimited(`client_auth_ip:${ip}`, 20, 900)) {
+      return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
+    }
+
     if (body.activationCode !== undefined) {
+      const emailKey = `client_activate:${String(body.email || '').toLowerCase().trim()}`
+      if (await isRateLimited(emailKey, 5, 900)) {
+        return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
+      }
       return handleActivation(body.email, body.activationCode, body.password, body.confirmPassword)
+    }
+
+    const emailKey = `client_login:${String(body.email || '').toLowerCase().trim()}`
+    if (await isRateLimited(emailKey, 5, 900)) {
+      return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
     }
     return handleLogin(body.email, body.password)
   } catch (err) {

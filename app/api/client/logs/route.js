@@ -18,11 +18,35 @@ export async function GET() {
   return NextResponse.json(logs)
 }
 
+const ALLOWED_LOG_FIELDS = new Set(['water', 'waterGoal', 'notes', 'mood', 'weight'])
+
 export async function POST(req) {
   const id = clientId()
   if (!id) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
-  const { date, ...fields } = await req.json()
-  if (!date) return NextResponse.json({ error: 'date required' }, { status: 400 })
+
+  const body = await req.json()
+  const { date, ...rawFields } = body
+
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: 'تاريخ غير صالح' }, { status: 400 })
+  }
+
+  // Whitelist fields to prevent storing arbitrary data
+  const fields = {}
+  for (const key of Object.keys(rawFields)) {
+    if (!ALLOWED_LOG_FIELDS.has(key)) continue
+    const val = rawFields[key]
+    if (key === 'notes' || key === 'mood') {
+      if (typeof val === 'string') fields[key] = val.slice(0, 500)
+    } else if (key === 'water' || key === 'waterGoal') {
+      const n = Number(val)
+      if (Number.isFinite(n) && n >= 0 && n <= 30) fields[key] = n
+    } else if (key === 'weight') {
+      const n = Number(val)
+      if (Number.isFinite(n) && n >= 0 && n <= 500) fields[key] = n
+    }
+  }
+
   const entry = await upsertDayLog(id, date, fields)
   return NextResponse.json(entry)
 }

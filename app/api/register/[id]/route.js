@@ -3,7 +3,7 @@ import { updateStatus, deleteSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
 
 export async function PATCH(req, { params }) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const { status } = await req.json()
@@ -18,7 +18,7 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const ok = await deleteSubmission(params.id)

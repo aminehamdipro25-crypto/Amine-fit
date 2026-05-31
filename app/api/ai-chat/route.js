@@ -12,7 +12,7 @@ const SYSTEM_PROMPT = `أنت مساعد تغذية للمدرب. تلقّيت �
 أعد JSON فقط بدون أي نص إضافي.`
 
 export async function POST(req) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   const { plan, menu, messages } = await req.json()
 

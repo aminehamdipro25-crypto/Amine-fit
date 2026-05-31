@@ -1,23 +1,51 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
+import { createAdminSession, deleteAdminSession } from '@/lib/adminSession'
+import { isRateLimited } from '@/lib/rateLimit'
 
 export async function POST(req) {
-  const { password } = await req.json()
-  const correct = process.env.DASHBOARD_PASSWORD || 'amine2025'
-  if (password !== correct) {
-    return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 })
+  try {
+    // Rate-limit: 5 attempts per 15 min per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (await isRateLimited(`admin_login:${ip}`, 5, 900)) {
+      return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد 15 دقيقة' }, { status: 429 })
+    }
+
+    const { password } = await req.json()
+    const correct = process.env.DASHBOARD_PASSWORD
+    if (!correct) {
+      console.error('[admin auth] DASHBOARD_PASSWORD env var is not set')
+      return NextResponse.json({ error: 'خطأ في إعداد الخادم' }, { status: 500 })
+    }
+
+    // Timing-safe comparison
+    let match = false
+    try {
+      match = crypto.timingSafeEqual(Buffer.from(password || ''), Buffer.from(correct))
+    } catch { match = false }
+
+    if (!match) {
+      return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 })
+    }
+
+    const sessionToken = await createAdminSession()
+    const res = NextResponse.json({ success: true })
+    res.cookies.set('admin_token', sessionToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+      secure: process.env.NODE_ENV === 'production',
+    })
+    return res
+  } catch {
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
-  const res = NextResponse.json({ success: true })
-  res.cookies.set('admin_token', correct, {
-    httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-    secure: process.env.NODE_ENV === 'production',
-  })
-  return res
 }
 
-export async function DELETE() {
+export async function DELETE(req) {
+  const token = req.cookies?.get?.('admin_token')?.value
+  if (token) await deleteAdminSession(token)
   const res = NextResponse.json({ success: true })
   res.cookies.delete('admin_token')
   return res

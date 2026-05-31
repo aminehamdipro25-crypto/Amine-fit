@@ -1,24 +1,21 @@
 import { getSubmissions } from '@/lib/submissions'
-import { cookies } from 'next/headers'
+import { isAdmin } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req, { params }) {
-  // Admin-only: verify admin_token cookie
-  const token   = cookies().get('admin_token')?.value
-  const correct = process.env.DASHBOARD_PASSWORD || 'amine2025'
-  if (!token || token !== correct) {
-    return new Response('غير مصرح', { status: 401 })
-  }
+  if (!await isAdmin()) return new Response('غير مصرح', { status: 401 })
 
   const list = await getSubmissions()
   const e    = list.find(s => s.id === params.id)
   if (!e) return new Response('Not found', { status: 404 })
 
-  const v  = x => x?.toString().trim() || '—'
-  const yn = x => x === 'yes' ? 'نعم' : x === 'no' ? 'لا' : x === 'sometimes' ? 'أحياناً' : v(x)
-  const r  = (label, value) => `<tr><td class="l">${label}</td><td>${value || '—'}</td></tr>`
-  const s  = t => `<tr class="sec"><td colspan="2">${t}</td></tr>`
+  // HTML-escape all user content to prevent XSS
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;')
+  const v   = x => esc(x?.toString().trim()) || '—'
+  const yn  = x => x === 'yes' ? 'نعم' : x === 'no' ? 'لا' : x === 'sometimes' ? 'أحياناً' : v(x)
+  const r   = (label, value) => `<tr><td class="l">${label}</td><td>${value || '—'}</td></tr>`
+  const s   = t => `<tr class="sec"><td colspan="2">${t}</td></tr>`
   const date = new Date(e.createdAt).toLocaleString('ar', { timeZone: 'Asia/Qatar' })
 
   const html = `<!DOCTYPE html>

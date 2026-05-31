@@ -76,7 +76,7 @@ function localPlan(form) {
 }
 
 export async function POST(req) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
 
   const form = await req.json()

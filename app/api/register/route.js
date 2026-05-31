@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { saveSubmission } from '@/lib/submissions'
+import { saveSubmission, getSubmissionByEmail } from '@/lib/submissions'
 
 export async function POST(req) {
   try {
@@ -15,6 +15,12 @@ export async function POST(req) {
         { error: 'يرجى ملء جميع الحقول الإلزامية', missing },
         { status: 400 }
       )
+    }
+
+    const emailLower = body.email.toLowerCase().trim()
+    const existing = await getSubmissionByEmail(emailLower)
+    if (existing) {
+      return NextResponse.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً' }, { status: 409 })
     }
 
     console.log('[register] saving:', body.name, body.email)

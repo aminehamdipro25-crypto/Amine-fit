@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/adminAuth'
 import { hashPassword } from '@/lib/password'
 
 export async function GET(req, { params }) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
@@ -12,7 +12,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const { plan } = await req.json()
@@ -25,7 +25,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const { clientPassword } = await req.json()

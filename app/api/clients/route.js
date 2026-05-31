@@ -6,18 +6,20 @@ import { hashPassword } from '@/lib/password'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const list = await getSubmissions()
-    return NextResponse.json(list)
+    // Strip sensitive fields before returning
+    const safe = list.map(({ clientPassword, activationCode, emailOTP, emailOTPExpiry, ...rest }) => rest)
+    return NextResponse.json(safe)
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
 
 export async function POST(req) {
-  const deny = requireAdmin()
+  const deny = await requireAdmin()
   if (deny) return deny
   try {
     const { name, email, phone, password, goal, notes } = await req.json()
