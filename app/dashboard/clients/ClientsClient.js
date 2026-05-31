@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -502,15 +502,28 @@ function ClientModal({ client, onClose, onStatusChange, onDelete }) {
   )
 }
 
-export default function ClientsClient({ submissions: initial, error }) {
+export default function ClientsClient({ error }) {
   const router = useRouter()
-  const [clients, setClients]     = useState(initial)
+  const [clients, setClients]     = useState([])
+  const [loading, setLoading]     = useState(true)
   const [query, setQuery]         = useState('')
   const [filterStatus, setFS]     = useState('all')
   const [filterGoal, setFG]       = useState('all')
   const [selected, setSelected]   = useState(null)
   const [deleting, setDeleting]   = useState(null)
   const [addOpen, setAddOpen]     = useState(false)
+
+  async function loadClients() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/clients', { cache: 'no-store' })
+      const data = await res.json()
+      setClients(Array.isArray(data) ? data : [])
+    } catch { setClients([]) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { loadClients() }, [])
 
   const filtered = clients.filter(c => {
     const q = query.toLowerCase()
@@ -553,12 +566,7 @@ export default function ClientsClient({ submissions: initial, error }) {
       {addOpen && (
         <AddClientModal
           onClose={() => setAddOpen(false)}
-          onAdded={newClient => {
-            setClients(cs => [newClient, ...cs])
-            setAddOpen(false)
-            // Reload from server to confirm Redis saved correctly
-            router.refresh()
-          }}
+          onAdded={() => { loadClients() }}
         />
       )}
 
@@ -608,7 +616,12 @@ export default function ClientsClient({ submissions: initial, error }) {
         </div>
 
         {/* Cards */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-24 text-slate-300">
+            <Loader2 className="w-10 h-10 mx-auto mb-3 animate-spin opacity-30" />
+            <p className="text-sm text-slate-400">جاري التحميل...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-24 text-slate-300">
             <User className="w-14 h-14 mx-auto mb-3 opacity-20" />
             <p className="font-bold text-slate-400">لا توجد بيانات بعد</p>

@@ -1,5 +1,16 @@
 import { NextResponse } from 'next/server'
-import { saveSubmission } from '@/lib/submissions'
+import { saveSubmission, getSubmissions } from '@/lib/submissions'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET() {
+  try {
+    const list = await getSubmissions()
+    return NextResponse.json(list)
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
 
 export async function POST(req) {
   try {
@@ -17,7 +28,7 @@ export async function POST(req) {
       source:         'manual',
       status:         'active',
     })
-    return NextResponse.json({ success: true, id: entry.id })
+    return NextResponse.json({ success: true, id: entry.id, entry })
   } catch (err) {
     console.error('[clients/create]', err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
