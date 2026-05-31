@@ -24,7 +24,7 @@ export async function POST(req) {
     return NextResponse.json({ success: true, id: entry.id })
   } catch (err) {
     console.error('[register FAILED]', err.message)
-    return NextResponse.json({ error: 'خطأ في الخادم: ' + err.message }, { status: 500 })
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
 
@@ -153,11 +153,5 @@ function buildEmailHtml(e, printUrl) {
 }
 
 export async function GET() {
-  try {
-    const { getSubmissions } = await import('@/lib/submissions')
-    const list = await getSubmissions()
-    return NextResponse.json(list)
-  } catch {
-    return NextResponse.json([], { status: 200 })
-  }
+  return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 }

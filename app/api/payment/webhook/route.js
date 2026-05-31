@@ -15,7 +15,8 @@ export async function POST(req) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+    console.error('[webhook] signature verification failed:', err.message)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   if (event.type === 'checkout.session.completed') {
@@ -23,13 +24,17 @@ export async function POST(req) {
     const email   = session.customer_email
     const plan    = session.metadata?.plan
 
+    // Validate plan against known values to prevent metadata injection
+    const VALID_PLANS = ['basic', 'premium', 'pro', 'monthly', 'quarterly', 'yearly']
+    const safePlan = VALID_PLANS.includes(plan) ? plan : 'unknown'
+
     if (email) {
       const client = await getSubmissionByEmail(email)
       if (client) {
         await updateSubmission(client.id, {
-          status: 'active',
-          paidPlan: plan,
-          paidAt: new Date().toISOString(),
+          status:    'active',
+          paidPlan:  safePlan,
+          paidAt:    new Date().toISOString(),
           paymentId: session.payment_intent,
         })
       }

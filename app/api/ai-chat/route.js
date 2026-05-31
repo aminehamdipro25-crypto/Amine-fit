@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth'
 
 const SYSTEM_PROMPT = `أنت مساعد تغذية للمدرب. تلقّيت القائمة الغذائية الحالية. عدّلها بناءً على طلب المدرب وأعد JSON فقط بنفس هيكل menu array + حقل 'message' يصف ما تغيّر. لا تغير BMR أو TDEE أو الوحدات الإجمالية.
 
@@ -11,6 +12,8 @@ const SYSTEM_PROMPT = `أنت مساعد تغذية للمدرب. تلقّيت �
 أعد JSON فقط بدون أي نص إضافي.`
 
 export async function POST(req) {
+  const deny = requireAdmin()
+  if (deny) return deny
   const { plan, menu, messages } = await req.json()
 
   if (!process.env.ANTHROPIC_API_KEY) {

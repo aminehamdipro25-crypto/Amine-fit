@@ -37,7 +37,8 @@ export async function POST(req) {
       source:         'manual',
       status:         'active',
     })
-    return NextResponse.json({ success: true, id: entry.id, entry })
+    const { clientPassword: _, ...safeEntry } = entry
+    return NextResponse.json({ success: true, id: entry.id, entry: safeEntry })
   } catch (err) {
     console.error('[clients/create]', err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })

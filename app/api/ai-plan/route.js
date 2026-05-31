@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth'
 import {
   calcBMR, calcTDEE, calcTarget, calcExchanges, generateMenu,
 } from '@/lib/nutritionEngine'
@@ -75,6 +76,9 @@ function localPlan(form) {
 }
 
 export async function POST(req) {
+  const deny = requireAdmin()
+  if (deny) return deny
+
   const form = await req.json()
 
   // If no API key → use local engine immediately (no error)
@@ -140,6 +144,6 @@ ${schemaStr}`
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
-    return NextResponse.json({ ...localPlan(form), aiError: err.message })
+    return NextResponse.json({ ...localPlan(form) })
   }
 }
