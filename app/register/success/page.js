@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { CheckCircle2, Dumbbell, Clock, MessageCircle } from 'lucide-react'
-export const metadata = { title: 'تم التسجيل — Amine-Fit' }
 
 export default function SuccessPage() {
   return (
@@ -23,29 +22,25 @@ export default function SuccessPage() {
         </div>
 
         <h1 className="text-3xl font-extrabold text-white mb-3">
-          تم تسجيلك بنجاح! 🎉
+          تم إرسال استبيانك بنجاح! 🎉
         </h1>
-        <p className="text-white/60 text-lg mb-8 leading-relaxed">
-          مرحباً بك في Amine-Fit. يمكنك الآن الدخول لبوابتك الشخصية
-          أو انتظار خطتك التي سيعدها المدرب قريباً.
+        <p className="text-white/60 text-lg mb-10 leading-relaxed">
+          شكراً لثقتك بـ Amine-Fit. سيتواصل معك المدرب خلال
+          <strong className="text-white"> 24 ساعة </strong>
+          لإعداد برنامجك الغذائي والتدريبي المخصص.
         </p>
 
         {/* Info cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
           <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-right">
             <Clock className="w-8 h-8 text-primary-400 mb-2" />
-            <p className="text-white font-semibold text-sm">إعداد الخطة</p>
-            <p className="text-white/50 text-xs mt-1">سيعد أمين برنامجك خلال 24 ساعة</p>
-          </div>
-          <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-2xl p-4 text-right">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2" />
-            <p className="text-white font-semibold text-sm">حسابك جاهز</p>
-            <p className="text-white/50 text-xs mt-1">ادخل ببريدك وكلمة المرور التي اخترتها</p>
+            <p className="text-white font-semibold text-sm">وقت الاستجابة</p>
+            <p className="text-white/50 text-xs mt-1">سيصلك ردنا خلال 24 ساعة على بريدك الإلكتروني</p>
           </div>
           <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-right">
             <MessageCircle className="w-8 h-8 text-emerald-400 mb-2" />
-            <p className="text-white font-semibold text-sm">تواصل مباشر</p>
-            <p className="text-white/50 text-xs mt-1">واتساب للمتابعة السريعة</p>
+            <p className="text-white font-semibold text-sm">للتواصل المباشر</p>
+            <p className="text-white/50 text-xs mt-1">يمكنك التواصل عبر واتساب للمتابعة السريعة</p>
           </div>
         </div>
 
@@ -54,9 +49,9 @@ export default function SuccessPage() {
             className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-2xl hover:bg-white/20 transition">
             العودة للرئيسية
           </Link>
-          <Link href="/client/login"
+          <Link href="/#pricing"
             className="px-6 py-3 bg-gradient-to-r from-primary-600 to-emerald-500 text-white font-bold rounded-2xl hover:opacity-90 transition shadow-lg">
-            دخول بوابتي الشخصية ←
+            اطلع على الباقات
           </Link>
         </div>
       </div>

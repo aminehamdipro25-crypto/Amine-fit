@@ -8,7 +8,7 @@ export async function PATCH(req, { params }) {
     if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ success: true, entry: updated })
   } catch (err) {
-    console.error('[patch status]', err.message)
+    console.error('[patch status]', err)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
@@ -19,7 +19,7 @@ export async function DELETE(req, { params }) {
     if (!ok) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[delete submission]', err.message)
+    console.error('[delete submission]', err)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

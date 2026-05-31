@@ -19,19 +19,19 @@ export async function POST(req) {
 
     console.log('[register] saving:', body.name, body.email)
     const entry = await saveSubmission(body)
-    console.log('[register] saved OK:', entry.id)
-    sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
+    console.log('[register] saved:', entry.id)
+    sendEmailNotification(entry).catch(err => console.error('[email]', err))
     return NextResponse.json({ success: true, id: entry.id })
   } catch (err) {
-    console.error('[register FAILED]', err.message)
-    return NextResponse.json({ error: 'خطأ في الخادم: ' + err.message }, { status: 500 })
+    console.error('[register]', err)
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }
 
 async function sendEmailNotification(entry) {
   const adminEmail = process.env.NOTIFY_EMAIL || 'amine.hamdi.pro25@gmail.com'
   if (!process.env.RESEND_API_KEY) {
-    console.log('[email] no RESEND_API_KEY, skipping')
+    console.log('[NEW SUBMISSION — no RESEND_API_KEY]', entry.id, entry.name)
     return
   }
   const printUrl = `https://amine-fit.vercel.app/api/print/${entry.id}`
@@ -79,12 +79,14 @@ function buildEmailHtml(e, printUrl) {
 <body style="margin:0;padding:20px;background:#f1f5f9;font-family:Arial,sans-serif">
 <div style="max-width:650px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)">
 
+  <!-- Header -->
   <div style="background:linear-gradient(135deg,#4f46e5,#10b981);padding:28px 24px;text-align:center">
     <div style="font-size:32px">🏋️</div>
     <h1 style="color:#fff;margin:8px 0 4px;font-size:22px">استبيان جديد</h1>
     <p style="color:rgba(255,255,255,.85);margin:0;font-size:14px">Amine-Fit — ${date}</p>
   </div>
 
+  <!-- Alert -->
   <div style="background:#ecfdf5;border-right:4px solid #10b981;padding:14px 16px;margin:20px">
     <p style="margin:0;color:#065f46;font-size:14px">
       ✅ عميل جديد أكمل الاستبيان — <strong>${val(e.name)}</strong> — راجع التفاصيل أدناه
@@ -137,6 +139,7 @@ function buildEmailHtml(e, printUrl) {
 
   </table>
 
+  <!-- Footer -->
   <div style="background:#f8fafc;padding:16px 24px;text-align:center;border-top:1px solid #e2e8f0">
     <a href="${printUrl}"
        style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;margin-left:10px">
