@@ -17,7 +17,7 @@ export default function Sidebar({ open, onClose }) {
 
   async function logout() {
     await fetch('/api/dashboard/auth', { method: 'DELETE' })
-    router.push('/dashboard/login')
+    window.location.href = '/dashboard/login'
   }
 
   return (
