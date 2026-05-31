@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList, LogOut, ExternalLink } from 'lucide-react'
+import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList, LogOut, ExternalLink, BarChart2 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'لوحة التحكم' },
   { href: '/dashboard/clients',     icon: ClipboardList,   label: 'الاستبيانات', badge: true },
   { href: '/dashboard/subscribers', icon: Users,           label: 'المشتركون' },
   { href: '/dashboard/calculator',  icon: Calculator,      label: 'حاسبة التبادل' },
+  { href: '/dashboard/analytics',   icon: BarChart2,       label: 'الإحصائيات' },
 ]
 
 export default function Sidebar({ open, onClose }) {

@@ -9,6 +9,7 @@ const links = [
   { href: '#how',        label: 'كيف يعمل' },
   { href: '#pricing',    label: 'الأسعار' },
   { href: '#calculator', label: 'الحاسبة' },
+  { href: '/blog',       label: 'المدونة', external: true },
   { href: '#contact',    label: 'تواصل معنا' },
 ]
 

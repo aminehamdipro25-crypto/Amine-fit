@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, LogOut, Menu, X } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X } from 'lucide-react'
 
 const navItems = [
   { href: '/client/dashboard',        icon: LayoutDashboard, label: 'الرئيسية' },
   { href: '/client/plan/nutrition',   icon: Utensils,        label: 'الخطة الغذائية' },
   { href: '/client/plan/training',    icon: Dumbbell,        label: 'الخطة التدريبية' },
+  { href: '/client/progress',         icon: TrendingUp,      label: 'متابعة التقدم' },
 ]
 
 export default function ClientLayout({ children }) {
