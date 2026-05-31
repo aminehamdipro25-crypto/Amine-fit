@@ -166,7 +166,6 @@ ${schemaStr}`
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
-    // Any AI error → silent fallback to local engine
-    return NextResponse.json(localPlan(form))
+    return NextResponse.json({ ...localPlan(form), aiError: err.message })
   }
 }
