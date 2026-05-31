@@ -105,8 +105,13 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     fetch('/api/client/me')
-      .then(r => {
+      .then(async r => {
         if (r.status === 401) { router.push('/client/login'); return null }
+        if (r.status === 403) {
+          const d = await r.json()
+          router.push(`/client/login?suspended=1&msg=${encodeURIComponent(d.error || 'تم تعليق حسابك')}`)
+          return null
+        }
         return r.json()
       })
       .then(d => { if (d) setClient(d) })

@@ -63,6 +63,9 @@ async function handleLogin(email, password) {
   if (!client || !match) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 })
   }
+  if (client.status === 'suspended') {
+    return NextResponse.json({ error: 'تم تعليق حسابك. تواصل مع المدرب أمين للاستفسار.' }, { status: 403 })
+  }
 
   const res = NextResponse.json({ success: true, name: client.name })
   setClientCookie(res, client.id)

@@ -263,9 +263,10 @@ const goalMap = {
   performance: { label:'أداء رياضي',       color:'bg-purple-50 text-purple-700 border border-purple-200', icon:'🏃' },
 }
 const statusMap = {
-  new:      { label:'جديد',          color:'bg-amber-100 text-amber-700 border border-amber-200',     icon: Clock },
-  reviewed: { label:'تمت المراجعة',  color:'bg-blue-100 text-blue-700 border border-blue-200',       icon: Eye },
-  active:   { label:'نشط',           color:'bg-emerald-100 text-emerald-700 border border-emerald-200', icon: CheckCircle2 },
+  new:       { label:'جديد',          color:'bg-amber-100 text-amber-700 border border-amber-200',     icon: Clock },
+  reviewed:  { label:'تمت المراجعة',  color:'bg-blue-100 text-blue-700 border border-blue-200',       icon: Eye },
+  active:    { label:'نشط',           color:'bg-emerald-100 text-emerald-700 border border-emerald-200', icon: CheckCircle2 },
+  suspended: { label:'معلق',          color:'bg-red-100 text-red-700 border border-red-200',           icon: AlertCircle },
 }
 const actMap = {
   sedentary:'خامل', light:'خفيف', moderate:'متوسط', high:'عالي'
@@ -564,11 +565,12 @@ export default function ClientsClient({ error }) {
   }
 
   const counts = {
-    all:     clients.length,
-    pending: clients.filter(c => c.status === 'pending').length,
-    new:     clients.filter(c => c.status === 'new').length,
-    reviewed:clients.filter(c => c.status === 'reviewed').length,
-    active:  clients.filter(c => c.status === 'active').length,
+    all:       clients.length,
+    pending:   clients.filter(c => c.status === 'pending').length,
+    new:       clients.filter(c => c.status === 'new').length,
+    reviewed:  clients.filter(c => c.status === 'reviewed').length,
+    active:    clients.filter(c => c.status === 'active').length,
+    suspended: clients.filter(c => c.status === 'suspended').length,
   }
 
   return (
@@ -682,7 +684,7 @@ export default function ClientsClient({ error }) {
 
         {/* Status tabs */}
         <div className="flex gap-2 flex-wrap">
-          {[['all','الكل'],['pending','انتظار'],['new','جديد'],['reviewed','مراجعة'],['active','نشط']].map(([k,l]) => (
+          {[['all','الكل'],['pending','انتظار'],['new','جديد'],['reviewed','مراجعة'],['active','نشط'],['suspended','معلق']].map(([k,l]) => (
             <button key={k} onClick={() => setFS(k)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border
                 ${filterStatus===k
@@ -765,12 +767,24 @@ export default function ClientsClient({ error }) {
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-400 text-black text-[11px] font-extrabold hover:bg-amber-300 transition">
                         ✓ موافقة
                       </button>
+                    ) : c.status === 'suspended' ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); changeStatus(c.id, 'active') }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white text-[11px] font-extrabold hover:bg-emerald-600 transition">
+                        <CheckCircle2 className="w-3 h-3" />
+                        إعادة تفعيل
+                      </button>
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <button title="إنشاء كود تفعيل جديد"
                           onClick={e => { e.stopPropagation(); approveClient(c.id, c.email) }}
                           className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500 hover:bg-amber-50 transition">
                           <Key className="w-3.5 h-3.5" />
+                        </button>
+                        <button title="تعليق الحساب فوراً"
+                          onClick={e => { e.stopPropagation(); changeStatus(c.id, 'suspended') }}
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition">
+                          <AlertCircle className="w-3.5 h-3.5" />
                         </button>
                         <Link href={`/dashboard/clients/${c.id}/plan`}
                           onClick={e => e.stopPropagation()}

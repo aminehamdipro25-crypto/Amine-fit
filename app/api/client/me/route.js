@@ -12,7 +12,10 @@ export async function GET() {
 
   const client = await getSubmissionById(payload.id)
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
+  if (client.status === 'suspended') {
+    return NextResponse.json({ error: 'تم تعليق حسابك، تواصل مع المدرب' }, { status: 403 })
+  }
 
-  const { clientPassword, ...safe } = client
+  const { clientPassword, activationCode, ...safe } = client
   return NextResponse.json(safe)
 }

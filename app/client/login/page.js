@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Zap, Mail, Lock, Loader2, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Zap, Mail, Lock, Loader2, Eye, EyeOff, KeyRound, ShieldCheck, Ban } from 'lucide-react'
 
 const BG_EMOJIS = {
   left:  [
@@ -45,9 +45,17 @@ function PasswordField({ value, onChange, placeholder = '•••••••�
   )
 }
 
-export default function ClientLogin() {
+function ClientLoginInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [tab, setTab] = useState('login') // 'login' | 'activate'
+  const [suspendedMsg, setSuspendedMsg] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('suspended')) {
+      setSuspendedMsg(searchParams.get('msg') || 'تم تعليق حسابك، تواصل مع المدرب')
+    }
+  }, [searchParams])
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('')
@@ -148,6 +156,22 @@ export default function ClientLogin() {
 
       {/* Card */}
       <div className="relative w-full max-w-sm z-10">
+
+        {/* Suspension notice */}
+        {suspendedMsg && (
+          <div className="flex items-start gap-3 bg-red-500/15 border border-red-500/30 rounded-2xl px-4 py-4 mb-5">
+            <Ban className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-300 font-extrabold text-sm">تم تعليق حسابك</p>
+              <p className="text-red-300/70 text-xs mt-1 font-medium">{suspendedMsg}</p>
+              <a href="https://wa.me/97430653759"
+                className="inline-block mt-2 text-xs font-bold text-red-300 hover:text-red-200 transition underline underline-offset-2">
+                تواصل مع المدرب عبر واتساب ←
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gold-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-gold-400/20">
@@ -274,5 +298,13 @@ export default function ClientLogin() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ClientLogin() {
+  return (
+    <Suspense>
+      <ClientLoginInner />
+    </Suspense>
   )
 }
