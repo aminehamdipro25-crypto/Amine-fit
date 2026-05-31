@@ -1,11 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Info } from 'lucide-react'
-import {
-  ACTIVITY_FACTORS, GOALS, EX, calcBMR, calcTDEE, calcTarget,
-  calcExchanges, generateMenu, getGoal, getActivity,
-} from '@/lib/nutritionEngine'
+import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, AlertCircle } from 'lucide-react'
+import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition'
@@ -50,22 +47,34 @@ const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'m
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
 export default function CalculatorPage() {
-  const router  = useRouter()
+  const router   = useRouter()
   const [form, setForm] = useState(INIT)
   const [result, setRes] = useState(null)
-  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
+  const [loading, setLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
+  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null); setAiError(null) }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
 
-  function calculate() {
-    if (!valid) return
-    const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
-    const tdee   = calcTDEE(bmr, form.activity)
-    const target = calcTarget(tdee, form.goal)
-    const ex     = calcExchanges(target, form.goal, form.avoided)
-    const menu   = generateMenu(ex, +form.meals, form.preferred, form.avoided)
-    const plan   = { form, bmr: Math.round(bmr), tdee, target, ex, menu, date: new Date().toISOString() }
-    setRes(plan)
+  async function calculate() {
+    if (!valid || loading) return
+    setLoading(true)
+    setAiError(null)
+    setRes(null)
+    try {
+      const res = await fetch('/api/ai-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const plan = await res.json()
+      if (plan.error) throw new Error(plan.error)
+      setRes(plan)
+    } catch (err) {
+      setAiError(err.message || 'فشل توليد الخطة. تحقق من إعداد ANTHROPIC_API_KEY.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function openReport() {
@@ -79,14 +88,15 @@ export default function CalculatorPage() {
 
       {/* ── Input Card ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-primary-50 to-white">
-          <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-            <Calculator className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
+          <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-primary-600 rounded-xl flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="font-bold text-slate-800">بيانات المشترك</h2>
-            <p className="text-xs text-slate-500">نظام التبادل الغذائي — Harris-Benedict BMR</p>
+            <p className="text-xs text-slate-500">يُولَّد البرنامج بالذكاء الاصطناعي — نظام التبادل الغذائي ADA</p>
           </div>
+          <span className="mr-auto text-[10px] font-extrabold bg-violet-100 text-violet-700 px-2.5 py-1 rounded-full">AI ✦</span>
         </div>
 
         <div className="p-5 space-y-4">
@@ -164,15 +174,50 @@ export default function CalculatorPage() {
         </div>
 
         <div className="px-5 pb-5 flex gap-3">
-          <button onClick={calculate} disabled={!valid}
-            className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-            <Calculator className="w-5 h-5" /> احسب البرنامج الغذائي
+          <button onClick={calculate} disabled={!valid || loading}
+            className="flex-1 bg-gradient-to-r from-violet-600 to-primary-600 hover:from-violet-700 hover:to-primary-700 disabled:from-slate-300 disabled:to-slate-300 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <span>الذكاء الاصطناعي يولّد الخطة...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                <span>توليد البرنامج بالذكاء الاصطناعي</span>
+              </>
+            )}
           </button>
-          <button onClick={() => { setForm(INIT); setRes(null) }} title="إعادة تعيين"
+          <button onClick={() => { setForm(INIT); setRes(null); setAiError(null) }} title="إعادة تعيين"
             className="px-4 py-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition">
             <RefreshCw className="w-5 h-5" />
           </button>
         </div>
+
+        {/* AI Error */}
+        {aiError && (
+          <div className="mx-5 mb-5 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-700 text-sm">فشل توليد الخطة</p>
+              <p className="text-red-600 text-xs mt-1">{aiError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* AI Loading shimmer */}
+        {loading && (
+          <div className="mx-5 mb-5 bg-gradient-to-r from-violet-50 to-primary-50 border border-violet-200 rounded-xl p-5 text-center space-y-2">
+            <div className="w-10 h-10 mx-auto bg-violet-100 rounded-full flex items-center justify-center animate-pulse">
+              <Sparkles className="w-5 h-5 text-violet-600" />
+            </div>
+            <p className="font-bold text-violet-700">الذكاء الاصطناعي يحلّل البيانات...</p>
+            <p className="text-xs text-slate-500">يحسب السعرات • يوزع وحدات التبادل • يبني القائمة الغذائية المثالية</p>
+            <div className="flex justify-center gap-1 pt-1">
+              {[0,1,2].map(i => <div key={i} className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Results ── */}
