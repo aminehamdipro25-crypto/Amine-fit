@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
@@ -501,7 +502,8 @@ function ClientModal({ client, onClose, onStatusChange, onDelete }) {
   )
 }
 
-export default function ClientsClient({ submissions: initial }) {
+export default function ClientsClient({ submissions: initial, error }) {
+  const router = useRouter()
   const [clients, setClients]     = useState(initial)
   const [query, setQuery]         = useState('')
   const [filterStatus, setFS]     = useState('all')
@@ -551,8 +553,20 @@ export default function ClientsClient({ submissions: initial }) {
       {addOpen && (
         <AddClientModal
           onClose={() => setAddOpen(false)}
-          onAdded={newClient => setClients(cs => [newClient, ...cs])}
+          onAdded={newClient => {
+            setClients(cs => [newClient, ...cs])
+            setAddOpen(false)
+            // Reload from server to confirm Redis saved correctly
+            router.refresh()
+          }}
         />
+      )}
+
+      {error === 'not_found' && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700 font-medium">
+          ⚠️ لم يتم العثور على العميل في قاعدة البيانات. قد يكون بسبب مشكلة في الاتصال بـ Redis — تحقق من{' '}
+          <a href="/api/debug" target="_blank" className="underline font-bold">رابط التشخيص</a>.
+        </div>
       )}
 
       <div className="space-y-4">

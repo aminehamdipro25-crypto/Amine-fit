@@ -3,7 +3,8 @@ import ClientsClient from './ClientsClient'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ClientsPage() {
+export default async function ClientsPage({ searchParams }) {
   const submissions = await getSubmissions()
-  return <ClientsClient submissions={submissions} />
+  const error = searchParams?.error
+  return <ClientsClient submissions={submissions} error={error} />
 }
