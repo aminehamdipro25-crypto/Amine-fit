@@ -61,7 +61,10 @@ export default function RootLayout({ children }) {
     <html lang="ar" dir="rtl" className={cairo.variable}>
       <head>
         <meta name="theme-color" content="#fbbf24" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="AmineFit" />
+        <link rel="apple-touch-icon" href="/icon" />
       </head>
       <body className="font-cairo antialiased">
         {GA_ID && <>

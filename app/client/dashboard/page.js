@@ -2,7 +2,96 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, User } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets } from 'lucide-react'
+
+/* ── Water tracker widget ──────────────────────────────────────────────── */
+function WaterWidget() {
+  const [water,   setWater]   = useState(0)
+  const [goal,    setGoal]    = useState(8)
+  const [saving,  setSaving]  = useState(false)
+
+  const today = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
+
+  useEffect(() => {
+    fetch('/api/client/logs')
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return
+        const entry = data.find(l => l.date === today)
+        if (entry) { setWater(entry.water || 0); setGoal(entry.waterGoal || 8) }
+      })
+      .catch(() => {})
+  }, [today])
+
+  async function setGlass(n) {
+    const newVal = Math.max(0, Math.min(goal, n))
+    setWater(newVal)
+    setSaving(true)
+    try {
+      await fetch('/api/client/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: today, water: newVal, waterGoal: goal }),
+      })
+    } finally { setSaving(false) }
+  }
+
+  const pct = goal > 0 ? Math.min(100, Math.round((water / goal) * 100)) : 0
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+            <Droplets className="w-4 h-4 text-blue-500" />
+          </div>
+          <div>
+            <p className="font-extrabold text-slate-800 text-sm">شرب الماء اليوم</p>
+            <p className="text-[10px] text-slate-400 font-medium">اضغط كوب لتسجيله</p>
+          </div>
+        </div>
+        <Link href="/client/journal"
+          className="text-xs font-bold text-blue-500 hover:text-blue-600 transition">
+          عرض السجل ←
+        </Link>
+      </div>
+
+      {/* Cups */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {Array.from({ length: goal }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setGlass(i < water ? i : i + 1)}
+            className={`w-9 h-9 rounded-xl text-lg transition-all active:scale-90 select-none
+              ${i < water ? 'bg-blue-500 shadow-sm' : 'bg-slate-100 grayscale opacity-40'}`}
+          >
+            💧
+          </button>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-extrabold text-slate-800">{water} / {goal} أكواب</span>
+          <span className="text-xs font-bold text-slate-400">{(water * 0.25).toFixed(2)} لتر · {pct}%{saving ? ' ●' : ''}</span>
+        </div>
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        {pct >= 100 && (
+          <p className="text-xs font-bold text-blue-600 text-center">🎉 وصلت هدف اليوم! ممتاز</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 const goalLabels = {
   loss: 'خسارة وزن', gain: 'بناء عضلات',
@@ -220,6 +309,9 @@ export default function ClientDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Water tracker */}
+      <WaterWidget />
 
       {/* Goal + status */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
