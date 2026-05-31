@@ -60,7 +60,7 @@ export default function ClientLayout({ children }) {
   const [open, setOpen] = useState(false)
   const [isPreview, setIsPreview] = useState(false)
 
-  const isLogin = pathname === '/client/login' || pathname === '/client'
+  const isLogin = pathname === '/client/login' || pathname === '/client' || pathname === '/client/demo'
 
   useEffect(() => {
     const match = document.cookie.match(/(?:^|;\s*)coach_preview=([^;]+)/)
