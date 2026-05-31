@@ -4,6 +4,13 @@ import { ACTIVITY_FACTORS, GOALS, EX } from '@/lib/nutritionEngine'
 
 const GENDER_LABEL = { male: 'ذكر', female: 'أنثى' }
 
+const MONTHS_TN = ['جانفي','فيفري','مارس','أفريل','ماي','جوان','جويليه','أوت','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
+function formatDate(isoStr) {
+  const d = isoStr ? new Date(isoStr) : new Date()
+  if (isNaN(d.getTime())) return new Date().toLocaleDateString()
+  return `${d.getDate()} ${MONTHS_TN[d.getMonth()]} ${d.getFullYear()}`
+}
+
 export default function PlanReport() {
   const [plan, setPlan] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -33,10 +40,7 @@ export default function PlanReport() {
   )
 
   const { form, bmr, tdee, target, ex, menu } = plan
-  const dateObj = plan.date ? new Date(plan.date) : null
-  const date = dateObj && !isNaN(dateObj)
-    ? dateObj.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
-    : new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const date = formatDate(plan.date)
   const goal     = GOALS.find(g => g.key === form.goal)     || GOALS[1]
   const activity = ACTIVITY_FACTORS.find(a => a.key === form.activity) || ACTIVITY_FACTORS[2]
 
@@ -176,7 +180,12 @@ export default function PlanReport() {
               </tr>
             </thead>
             <tbody>
-              {EX_ROWS.map((r, i) => (
+              {EX_ROWS.map((r, i) => r.srv === 0 ? (
+                <tr key={r.key} style={{ background: '#fef2f2', opacity: 0.6 }}>
+                  <Td bold style={{ textDecoration: 'line-through', color: '#dc2626' }}>{r.icon} {r.label}</Td>
+                  <Td center colSpan={5} style={{ color: '#dc2626', fontSize: 12 }}>🚫 ممنوع</Td>
+                </tr>
+              ) : (
                 <tr key={r.key} style={{ background: i % 2 === 0 ? '#fafafa' : 'white', borderBottom: '1px solid #eee' }}>
                   <Td bold>{r.icon} {r.label}</Td>
                   <Td center>

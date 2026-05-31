@@ -62,7 +62,7 @@ export default function CalculatorPage() {
     const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
     const tdee   = calcTDEE(bmr, form.activity)
     const target = calcTarget(tdee, form.goal)
-    const ex     = calcExchanges(target, form.goal)
+    const ex     = calcExchanges(target, form.goal, form.avoided)
     const menu   = generateMenu(ex, +form.meals, form.preferred, form.avoided)
     const plan   = { form, bmr: Math.round(bmr), tdee, target, ex, menu, date: new Date().toISOString() }
     setRes(plan)
@@ -223,7 +223,14 @@ export default function CalculatorPage() {
                   { key: 'fats',       ex: EX.fat,       count: result.ex.fats       },
                   { key: 'fruits',     ex: EX.fruit,     count: result.ex.fruits     },
                   { key: 'vegetables', ex: EX.vegetable, count: result.ex.vegetables },
-                ].map(({ key, ex, count }) => (
+                ].map(({ key, ex, count }) => count === 0 ? (
+                  <tr key={key} className="opacity-40 bg-red-50">
+                    <td className="px-3 py-2 border border-slate-200 font-medium line-through text-slate-400">
+                      <span className="mr-1">{ex.icon}</span> {ex.nameAr}
+                    </td>
+                    <td colSpan={5} className="px-3 py-2 border border-slate-200 text-center text-red-400 text-xs">🚫 ممنوع</td>
+                  </tr>
+                ) : (
                   <tr key={key} className="hover:bg-slate-50/50">
                     <td className="px-3 py-2.5 border border-slate-200 font-medium">
                       <span className="mr-1">{ex.icon}</span> {ex.nameAr}
