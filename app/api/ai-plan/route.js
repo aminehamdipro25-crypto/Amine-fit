@@ -46,14 +46,32 @@ TDEE = BMR × معامل النشاط
 5. الكميات: احسبها بدقة (وحدات × جرام/وحدة)
 6. أعد JSON فقط بدون أي نص إضافي`
 
+const DAY_NAMES  = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+const WEEK_NAMES = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع']
+
 // ── Local fallback: uses the rule-based engine ───────────────────────────────
 function localPlan(form) {
-  const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
-  const tdee   = calcTDEE(bmr, form.activity)
-  const target = calcTarget(tdee, form.goal)
-  const ex     = calcExchanges(target, form.goal, form.avoided)
-  const menu   = generateMenu(ex, +form.meals, form.preferred, form.avoided)
-  return { bmr: Math.round(bmr), tdee, target, ex, menu, form, date: new Date().toISOString(), ai: false }
+  const bmr      = calcBMR(form.gender, form.weight, form.height, form.age)
+  const tdee     = calcTDEE(bmr, form.activity)
+  const target   = calcTarget(tdee, form.goal)
+  const ex       = calcExchanges(target, form.goal, form.avoided)
+  const duration = form.duration || 'day'
+  const meals    = +form.meals
+  const pref     = form.preferred
+  const avoided  = form.avoided
+  const base     = { bmr: Math.round(bmr), tdee, target, ex, form, date: new Date().toISOString(), ai: false }
+
+  if (duration === 'week') {
+    const days = DAY_NAMES.map((name, i) => ({ name, menu: generateMenu(ex, meals, pref, avoided, i) }))
+    return { ...base, days, duration: 'week' }
+  }
+  if (duration === 'month') {
+    const weeks = WEEK_NAMES.map((name, i) => ({ name, menu: generateMenu(ex, meals, pref, avoided, i * 3) }))
+    return { ...base, weeks, duration: 'month' }
+  }
+  // day (default)
+  const menu = generateMenu(ex, meals, pref, avoided, 0)
+  return { ...base, menu, duration: 'day' }
 }
 
 export async function POST(req) {
@@ -68,31 +86,9 @@ export async function POST(req) {
     const { default: Anthropic } = await import('@anthropic-ai/sdk')
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const userPrompt = `═══ بيانات العميل ═══
-الاسم: ${form.name || 'العميل'}
-العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
-الوزن: ${form.weight} كغ | الطول: ${form.height} سم
-مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || form.activity}
-الهدف: ${GOAL_LABELS[form.goal] || form.goal}
-الأطعمة المفضلة: ${form.preferred || 'لا يوجد'}
-الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
-عدد الوجبات: ${form.meals} وجبات يومياً
-تعليمات خاصة من المدرب: ${form.notes?.trim() || 'لا يوجد'}
+    const duration = form.duration || 'day'
 
-أنشئ خطة غذائية متكاملة وأعد JSON بالضبط:
-{
-  "bmr": number,
-  "tdee": number,
-  "target": number,
-  "ex": {
-    "starches": number, "meats": number, "dairy": number,
-    "fats": number, "fruits": number, "vegetables": number,
-    "actualKcal": number,
-    "macros": { "carbs": number, "protein": number, "fat": number },
-    "pct": { "carbs": number, "protein": number, "fat": number },
-    "skipped": { "milk": false, "vegetable": false, "fruit": false }
-  },
-  "menu": [
+    const menuSchema = `[
     {
       "name": "الفطور", "time": "07:30", "icon": "🌅",
       "kcal": number, "carbs": number, "protein": number, "fat": number,
@@ -100,12 +96,65 @@ export async function POST(req) {
         { "group": "النشويات", "icon": "🌾", "servings": number, "food": "توست كامل", "amount": "90 غ (3 شرائح)" }
       ]
     }
+  ]`
+
+    let schemaStr
+    if (duration === 'week') {
+      schemaStr = `{
+  "bmr": number, "tdee": number, "target": number,
+  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
+  "duration": "week",
+  "days": [
+    { "name": "الأحد", "menu": ${menuSchema} },
+    { "name": "الاثنين", "menu": ${menuSchema} },
+    { "name": "الثلاثاء", "menu": ${menuSchema} },
+    { "name": "الأربعاء", "menu": ${menuSchema} },
+    { "name": "الخميس", "menu": ${menuSchema} },
+    { "name": "الجمعة", "menu": ${menuSchema} },
+    { "name": "السبت", "menu": ${menuSchema} }
   ]
 }`
+    } else if (duration === 'month') {
+      schemaStr = `{
+  "bmr": number, "tdee": number, "target": number,
+  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
+  "duration": "month",
+  "weeks": [
+    { "name": "الأسبوع الأول", "menu": ${menuSchema} },
+    { "name": "الأسبوع الثاني", "menu": ${menuSchema} },
+    { "name": "الأسبوع الثالث", "menu": ${menuSchema} },
+    { "name": "الأسبوع الرابع", "menu": ${menuSchema} }
+  ]
+}`
+    } else {
+      schemaStr = `{
+  "bmr": number, "tdee": number, "target": number,
+  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
+  "duration": "day",
+  "menu": ${menuSchema}
+}`
+    }
+
+    const userPrompt = `═══ بيانات العميل ═══
+الاسم: ${form.name || 'العميل'}
+العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
+الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
+الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
+مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || form.activity}
+الهدف: ${GOAL_LABELS[form.goal] || form.goal}
+الأطعمة المفضلة: ${form.preferred || 'لا يوجد'}
+الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
+عدد الوجبات: ${form.meals} وجبات يومياً
+مدة البرنامج: ${duration === 'day' ? 'يوم واحد' : duration === 'week' ? 'أسبوع كامل (7 أيام مختلفة)' : 'شهر كامل (4 أسابيع نماذج مختلفة)'}
+
+أنشئ خطة غذائية متكاملة وأعد JSON بالضبط:
+${schemaStr}`
+
+    const maxTokens = duration === 'day' ? 4096 : 8192
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     })
@@ -113,7 +162,7 @@ export async function POST(req) {
     const raw = response.content[0].text.trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
-    return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true })
+    return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || duration })
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)

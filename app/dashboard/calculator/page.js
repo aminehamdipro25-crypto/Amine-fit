@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info } from 'lucide-react'
-import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity, calcIdealWeight } from '@/lib/nutritionEngine'
+import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition'
@@ -43,7 +43,13 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', notes:'', meals:5 }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', duration:'day', meals:5 }
+
+const DURATION_OPTIONS = [
+  { key: 'day',   label: 'يوم واحد',   icon: '📅' },
+  { key: 'week',  label: 'أسبوع كامل', icon: '📆' },
+  { key: 'month', label: 'شهر كامل',   icon: '🗓️' },
+]
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
 export default function CalculatorPage() {
@@ -52,14 +58,37 @@ export default function CalculatorPage() {
   const [result, setRes] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isAI, setIsAI] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [selectedDay, setSelectedDay] = useState(0)
+  const [selectedWeek, setSelectedWeek] = useState(0)
+  const chatEndRef = useRef(null)
+
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
+
+  // currentMenu depends on result — defined at component level so sendChatMessage can access it
+  const currentMenu = result
+    ? (result.duration === 'day'
+        ? result.menu
+        : result.duration === 'week'
+          ? result.days?.[selectedDay]?.menu
+          : result.weeks?.[selectedWeek]?.menu)
+    : null
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
 
   async function calculate() {
     if (!valid || loading) return
     setLoading(true)
     setRes(null)
+    setChatMessages([])
+    setSelectedDay(0)
+    setSelectedWeek(0)
     try {
       const res  = await fetch('/api/ai-plan', {
         method: 'POST',
@@ -82,6 +111,44 @@ export default function CalculatorPage() {
     window.open('/plan-report', '_blank')
   }
 
+  async function sendChatMessage() {
+    if (!chatInput.trim() || chatLoading) return
+    const userMsg = chatInput.trim()
+    setChatInput('')
+    const newMessages = [...chatMessages, { role: 'user', content: userMsg }]
+    setChatMessages(newMessages)
+    setChatLoading(true)
+    try {
+      const res = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: result, menu: currentMenu, messages: newMessages })
+      })
+      const { menu: updatedMenu, message } = await res.json()
+      // Apply the updated menu to the right place in result
+      if (result.duration === 'day') {
+        setRes(r => ({ ...r, menu: updatedMenu }))
+      } else if (result.duration === 'week') {
+        setRes(r => {
+          const days = [...r.days]
+          days[selectedDay] = { ...days[selectedDay], menu: updatedMenu }
+          return { ...r, days }
+        })
+      } else if (result.duration === 'month') {
+        setRes(r => {
+          const weeks = [...r.weeks]
+          weeks[selectedWeek] = { ...weeks[selectedWeek], menu: updatedMenu }
+          return { ...r, weeks }
+        })
+      }
+      setChatMessages(prev => [...prev, { role: 'assistant', content: message }])
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'حدث خطأ في الاتصال — لم تتغير الخطة.' }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-5">
 
@@ -99,7 +166,8 @@ export default function CalculatorPage() {
         </div>
 
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Row 1: Name, Age, Gender */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">الاسم (اختياري)</label>
               <input className={inp} placeholder="أحمد بن علي" value={form.name} onChange={e => set('name', e.target.value)} />
@@ -115,20 +183,30 @@ export default function CalculatorPage() {
                 <option value="female">أنثى</option>
               </select>
             </div>
+          </div>
+
+          {/* Row 2: Weight, Target Weight, Height */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">الوزن (كغ) *</label>
+              <label className="text-sm font-semibold text-slate-700">الوزن الحالي (كغ) *</label>
               <input className={inp} type="number" placeholder="75" value={form.weight} onChange={e => set('weight', e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">الوزن المستهدف (كغ)</label>
+              <input className={inp} type="number" placeholder="70" value={form.targetWeight} onChange={e => set('targetWeight', e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">الطول (سم) *</label>
               <input className={inp} type="number" placeholder="175" value={form.height} onChange={e => set('height', e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">مستوى النشاط</label>
-              <select className={sel} value={form.activity} onChange={e => set('activity', e.target.value)}>
-                {ACTIVITY_FACTORS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
-              </select>
-            </div>
+          </div>
+
+          {/* Row 3: Activity (full width) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">مستوى النشاط</label>
+            <select className={sel} value={form.activity} onChange={e => set('activity', e.target.value)}>
+              {ACTIVITY_FACTORS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
+            </select>
           </div>
 
           {/* Goal */}
@@ -140,6 +218,20 @@ export default function CalculatorPage() {
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-semibold
                     ${form.goal === g.key ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'}`}>
                   <span className="text-2xl">{g.icon}</span>{g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-700">مدة البرنامج</label>
+            <div className="grid grid-cols-3 gap-3">
+              {DURATION_OPTIONS.map(d => (
+                <button key={d.key} onClick={() => set('duration', d.key)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-semibold
+                    ${form.duration === d.key ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'}`}>
+                  <span className="text-2xl">{d.icon}</span>{d.label}
                 </button>
               ))}
             </div>
@@ -169,19 +261,6 @@ export default function CalculatorPage() {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* AI Notes / Special instructions */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-violet-700">🤖 تعليمات خاصة للذكاء الاصطناعي</label>
-            <textarea
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-violet-200 bg-violet-50/40 text-slate-800 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition resize-none"
-              placeholder="مثال: العميل مصاب بالسكري النوع الثاني — تجنب السكريات البسيطة. لا يتناول اللحوم الحمراء. يفضل الوجبات التونسية التقليدية. لديه حساسية من المكسرات..."
-              value={form.notes}
-              onChange={e => set('notes', e.target.value)}
-            />
-            <p className="text-xs text-violet-500">هذه التعليمات تُرسل مباشرة للذكاء الاصطناعي لتخصيص البرنامج — لا تظهر للعميل إلا إذا طبعت التقرير</p>
           </div>
         </div>
 
@@ -253,23 +332,6 @@ export default function CalculatorPage() {
             <p>TDEE = BMR × {getActivity(form.activity).pa} = <strong className="text-primary-600">{result.tdee}</strong> سعرة</p>
             <p>السعرات المستهدفة = {result.tdee} {getGoal(form.goal).adj >= 0 ? '+' : '−'} {Math.abs(getGoal(form.goal).adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة</p>
           </div>
-          {/* Ideal Weight */}
-          {(() => {
-            const iw = calcIdealWeight(+form.height)
-            const w = +form.weight
-            const above = w > iw.max
-            const below = w < iw.min
-            return (
-              <div className="mt-3 flex flex-wrap items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm">
-                <span className="text-xl">⚖️</span>
-                <span className="text-slate-600 font-medium">الوزن المثالي (BMI 18.5–24.9):</span>
-                <span className="font-extrabold text-blue-800 text-base">{iw.min} – {iw.max} كغ</span>
-                {above && <span className="mr-auto font-bold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full text-xs">↑ الوزن الحالي أعلى بـ {w - iw.max} كغ من الحد الأقصى</span>}
-                {below && <span className="mr-auto font-bold text-blue-700 bg-blue-100 border border-blue-200 px-3 py-1 rounded-full text-xs">↓ الوزن الحالي أقل بـ {iw.min - w} كغ من الحد الأدنى</span>}
-                {!above && !below && <span className="mr-auto font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full text-xs">✅ الوزن في النطاق المثالي</span>}
-              </div>
-            )
-          })()}
         </StepCard>
 
         {/* Step 2 — Exchange Table */}
@@ -338,8 +400,29 @@ export default function CalculatorPage() {
 
         {/* Step 3 — Meal Distribution */}
         <StepCard num="3" title="توزيع الوجبات اليومية">
+          {/* Week/Month navigation tabs */}
+          {result.duration === 'week' && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {result.days.map((d, i) => (
+                <button key={i} onClick={() => setSelectedDay(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedDay === i ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+                  {d.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {result.duration === 'month' && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {result.weeks.map((w, i) => (
+                <button key={i} onClick={() => setSelectedWeek(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedWeek === i ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+                  {w.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="space-y-3">
-            {result.menu.map((meal, i) => (
+            {(currentMenu || []).map((meal, i) => (
               <div key={i} className="border border-slate-100 rounded-2xl p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -372,8 +455,29 @@ export default function CalculatorPage() {
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             جميع الكميات محسوبة بالغرام بدقة وفق نظام التبادل الغذائي. الأطعمة المفضلة تظهر أولاً.
           </div>
+          {/* Week/Month navigation tabs */}
+          {result.duration === 'week' && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {result.days.map((d, i) => (
+                <button key={i} onClick={() => setSelectedDay(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedDay === i ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+                  {d.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {result.duration === 'month' && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {result.weeks.map((w, i) => (
+                <button key={i} onClick={() => setSelectedWeek(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedWeek === i ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'}`}>
+                  {w.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="space-y-4">
-            {result.menu.map((meal, i) => (
+            {(currentMenu || []).map((meal, i) => (
               <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
                   <div className="flex items-center gap-2">
@@ -413,6 +517,64 @@ export default function CalculatorPage() {
             <FileText className="w-5 h-5" />
             تصدير الخطة — طباعة PDF احترافية
           </button>
+        </div>
+
+        {/* ── AI Chat Section ── */}
+        <div className="bg-white rounded-2xl border-2 border-violet-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-violet-50 to-white border-b border-violet-100">
+            <div className="w-9 h-9 bg-violet-600 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-violet-800 text-sm">محادثة مع الذكاء الاصطناعي — تعديل البرنامج</h3>
+              <p className="text-xs text-violet-500">للمدرب فقط • لا تظهر في تقرير العميل</p>
+            </div>
+            <span className="mr-auto text-[10px] font-extrabold bg-violet-100 text-violet-700 px-2 py-1 rounded-full">🔒 خاص</span>
+          </div>
+          {/* Messages area */}
+          <div className="p-4 min-h-[100px] max-h-72 overflow-y-auto bg-slate-50/40 space-y-3" id="chat-messages">
+            {chatMessages.length === 0 && (
+              <div className="text-center py-6 text-slate-400">
+                <p className="text-sm font-medium">البرنامج جاهز — يمكنك الآن طلب أي تعديل</p>
+                <p className="text-xs mt-1 text-slate-300">مثال: "قلل الكربوهيدرات في الفطور" — "استبدل الدجاج بالتونة في الغداء"</p>
+              </div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-violet-600 text-white rounded-br-sm'
+                    : 'bg-white border border-violet-100 text-slate-700 rounded-bl-sm shadow-sm'
+                }`}>
+                  {msg.role === 'assistant' && <p className="text-[10px] text-violet-500 font-bold mb-1">Claude AI</p>}
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-violet-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                  <div className="flex gap-1">{[0,1,2].map(i => <div key={i} className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}} />)}</div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          {/* Input */}
+          <div className="flex gap-2 p-3 border-t border-violet-100 bg-white">
+            <input
+              className="flex-1 px-4 py-2.5 rounded-xl border border-violet-200 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition"
+              placeholder="اطلب تعديلاً على البرنامج..."
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !chatLoading && sendChatMessage()}
+              disabled={chatLoading}
+            />
+            <button onClick={sendChatMessage} disabled={chatLoading || !chatInput.trim()}
+              className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-sm font-bold transition">
+              إرسال
+            </button>
+          </div>
         </div>
 
       </>)}

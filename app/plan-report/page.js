@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { ACTIVITY_FACTORS, GOALS, EX, calcIdealWeight } from '@/lib/nutritionEngine'
+import { ACTIVITY_FACTORS, GOALS, EX } from '@/lib/nutritionEngine'
 
 const GENDER_LABEL = { male: 'ذكر', female: 'أنثى' }
 
@@ -39,14 +39,10 @@ export default function PlanReport() {
     </div>
   )
 
-  const { form, bmr, tdee, target, ex, menu } = plan
+  const { form, bmr, tdee, target, ex } = plan
   const date = formatDate(plan.date)
   const goal     = GOALS.find(g => g.key === form.goal)     || GOALS[1]
   const activity = ACTIVITY_FACTORS.find(a => a.key === form.activity) || ACTIVITY_FACTORS[2]
-  const idealW   = calcIdealWeight(+form.height)
-  const currentW = +form.weight
-  const aboveIdeal = currentW > idealW.max
-  const belowIdeal = currentW < idealW.min
 
   const EX_ROWS = [
     { key: 'starches',   label: 'النشويات',         icon: '🌾', srv: ex.starches,   ...EX.starch   },
@@ -61,6 +57,13 @@ export default function PlanReport() {
   const totalC    = EX_ROWS.reduce((s, r) => s + r.srv * r.carbs, 0)
   const totalP    = EX_ROWS.reduce((s, r) => s + r.srv * r.protein, 0)
   const totalF    = EX_ROWS.reduce((s, r) => s + r.srv * r.fat, 0)
+
+  // Resolve plan days for week/month/day display
+  const planDays = plan.duration === 'week'
+    ? plan.days
+    : plan.duration === 'month'
+      ? plan.weeks
+      : [{ name: 'اليوم', menu: plan.menu }]
 
   return (
     <>
@@ -122,41 +125,31 @@ export default function PlanReport() {
         {/* ── Client Profile ─────────────────────────────────────────────── */}
         <SectionTitle num="1" title="البيانات الشخصية" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }} className="avoid-break">
-          <InfoCard label="الجنس"      value={GENDER_LABEL[form.gender] || form.gender} />
-          <InfoCard label="العمر"       value={`${form.age} سنة`} />
+          <InfoCard label="الجنس"        value={GENDER_LABEL[form.gender] || form.gender} />
+          <InfoCard label="العمر"         value={`${form.age} سنة`} />
           <InfoCard label="الوزن الحالي" value={`${form.weight} كغ`} />
-          <InfoCard label="الطول"       value={`${form.height} سم`} />
+          <InfoCard label="الطول"         value={`${form.height} سم`} />
           <InfoCard label="مستوى النشاط" value={activity.label.split('—')[0].trim()} />
-          <InfoCard label="الهدف"       value={goal.label} icon={goal.icon} />
+          <InfoCard label="الهدف"         value={goal.label} icon={goal.icon} />
         </div>
 
-        {/* Ideal weight banner */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 18px', marginBottom: 12 }} className="avoid-break">
-          <span style={{ fontSize: 22 }}>⚖️</span>
-          <div>
-            <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 700 }}>الوزن المثالي المستهدف (BMI 18.5–24.9)</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#1e40af' }}>{idealW.min} – {idealW.max} كغ</div>
+        {/* Target Weight banner */}
+        {form.targetWeight && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 18px', marginBottom: 12 }} className="avoid-break">
+            <span style={{ fontSize: 22 }}>🎯</span>
+            <div>
+              <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>الوزن المستهدف</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#166534' }}>{form.targetWeight} كغ</div>
+            </div>
+            <div style={{ marginRight: 'auto', fontSize: 13, color: '#15803d' }}>
+              {+form.weight > +form.targetWeight && `يحتاج خسارة ${(+form.weight - +form.targetWeight).toFixed(1)} كغ`}
+              {+form.weight < +form.targetWeight && `يحتاج اكتساب ${(+form.targetWeight - +form.weight).toFixed(1)} كغ`}
+              {+form.weight === +form.targetWeight && 'الوزن المستهدف = الوزن الحالي'}
+            </div>
           </div>
-          <div style={{ marginRight: 'auto' }}>
-            {aboveIdeal && (
-              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '6px 14px' }}>
-                <span style={{ color: '#c2410c', fontWeight: 700, fontSize: 13 }}>↑ الوزن الحالي أعلى بـ {currentW - idealW.max} كغ</span>
-              </div>
-            )}
-            {belowIdeal && (
-              <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '6px 14px' }}>
-                <span style={{ color: '#1d4ed8', fontWeight: 700, fontSize: 13 }}>↓ الوزن الحالي أقل بـ {idealW.min - currentW} كغ</span>
-              </div>
-            )}
-            {!aboveIdeal && !belowIdeal && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 14px' }}>
-                <span style={{ color: '#15803d', fontWeight: 700, fontSize: 13 }}>✅ الوزن في النطاق المثالي</span>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
-        {(form.preferred || form.avoided || form.notes) && (
+        {(form.preferred || form.avoided) && (
           <div style={{ display: 'grid', gridTemplateColumns: form.preferred && form.avoided ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 12 }}>
             {form.preferred && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 16px' }}>
@@ -172,13 +165,7 @@ export default function PlanReport() {
             )}
           </div>
         )}
-        {form.notes?.trim() && (
-          <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '10px 16px', marginBottom: 28 }}>
-            <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 700, marginBottom: 4 }}>🤖 ملاحظات خاصة</div>
-            <div style={{ fontSize: 13, color: '#4c1d95' }}>{form.notes}</div>
-          </div>
-        )}
-        {!(form.preferred || form.avoided || form.notes) && <div style={{ marginBottom: 28 }} />}
+        {!(form.preferred || form.avoided) && <div style={{ marginBottom: 28 }} />}
 
         {/* ── BMR / TDEE ─────────────────────────────────────────────────── */}
         <SectionTitle num="2" title="حسابات الطاقة — معادلة هاريس بنيديكت" />
@@ -264,80 +251,98 @@ export default function PlanReport() {
           </div>
         </div>
 
-        {/* ── Meal Distribution ───────────────────────────────────────────── */}
-        <div className="page-break" />
-        <SectionTitle num="4" title={`توزيع الوجبات — ${menu.length} وجبات يومياً`} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 28 }}>
-          {menu.map((meal, i) => (
-            <div key={i} className="avoid-break" style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ background: '#1a1a1a', color: 'white', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{meal.icon} {meal.name}</span>
-                <span style={{ fontSize: 11, color: '#ccc' }}>{meal.time}</span>
-              </div>
-              <div style={{ padding: '10px 14px', background: '#fafafa' }}>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, fontSize: 11, color: '#888', borderBottom: '1px solid #eee', paddingBottom: 6 }}>
-                  <span style={{ fontWeight: 700, color: '#c9973b' }}>{meal.kcal} سعرة</span>
-                  <span>ك: {meal.carbs}غ</span>
-                  <span>ب: {meal.protein}غ</span>
-                  <span>د: {meal.fat}غ</span>
-                </div>
-                {meal.items.map((item, j) => (
-                  <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: j < meal.items.length - 1 ? '1px dashed #f0f0f0' : 'none', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{item.icon} {item.food}</span>
-                    <span style={{ color: '#888', fontSize: 11 }}>{item.amount}</span>
+        {/* ── Meal Plan (Day / Week / Month) ─────────────────────────────── */}
+        {planDays.map((dayOrWeek, di) => {
+          const sectionMenu = dayOrWeek.menu || []
+          const isMultiDay = plan.duration === 'week' || plan.duration === 'month'
+          const sectionNum = 4 + di
+          const titleLabel = plan.duration === 'week'
+            ? `توزيع الوجبات — ${dayOrWeek.name}`
+            : plan.duration === 'month'
+              ? `القائمة الغذائية — ${dayOrWeek.name}`
+              : `توزيع الوجبات — ${sectionMenu.length} وجبات يومياً`
+
+          return (
+            <div key={di}>
+              {di > 0 && <div className="page-break" />}
+              <div className="page-break" />
+              <SectionTitle num={sectionNum} title={titleLabel} />
+
+              {/* Meal distribution cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 28 }}>
+                {sectionMenu.map((meal, i) => (
+                  <div key={i} className="avoid-break" style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{ background: '#1a1a1a', color: 'white', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{meal.icon} {meal.name}</span>
+                      <span style={{ fontSize: 11, color: '#ccc' }}>{meal.time}</span>
+                    </div>
+                    <div style={{ padding: '10px 14px', background: '#fafafa' }}>
+                      <div style={{ display: 'flex', gap: 12, marginBottom: 8, fontSize: 11, color: '#888', borderBottom: '1px solid #eee', paddingBottom: 6 }}>
+                        <span style={{ fontWeight: 700, color: '#c9973b' }}>{meal.kcal} سعرة</span>
+                        <span>ك: {meal.carbs}غ</span>
+                        <span>ب: {meal.protein}غ</span>
+                        <span>د: {meal.fat}غ</span>
+                      </div>
+                      {meal.items.map((item, j) => (
+                        <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: j < meal.items.length - 1 ? '1px dashed #f0f0f0' : 'none', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{item.icon} {item.food}</span>
+                          <span style={{ color: '#888', fontSize: 11 }}>{item.amount}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
-        </div>
 
-        {/* ── Detailed Menu ───────────────────────────────────────────────── */}
-        <SectionTitle num="5" title="القائمة التفصيلية — الكميات بالجرام" />
-        {menu.map((meal, i) => (
-          <div key={i} className="avoid-break" style={{ marginBottom: 20, border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: 'white', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ fontSize: 16, fontWeight: 800 }}>{meal.icon} {meal.name}</span>
-                <span style={{ fontSize: 12, color: '#aaa', marginRight: 10 }}>⏰ {meal.time}</span>
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <span style={{ background: '#c9973b', color: 'white', borderRadius: 20, padding: '3px 12px', fontSize: 13, fontWeight: 700 }}>
-                  {meal.kcal} سعرة
-                </span>
-              </div>
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f3f4f6', color: '#374151' }}>
-                  <Th light>الفئة الغذائية</Th>
-                  <Th light>الطعام</Th>
-                  <Th light center>الوحدات</Th>
-                  <Th light center>الكمية</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {meal.items.map((item, j) => (
-                  <tr key={j} style={{ borderBottom: '1px solid #f0f0f0', background: j % 2 === 0 ? 'white' : '#fafafa' }}>
-                    <Td>{item.icon} {item.group}</Td>
-                    <Td bold>{item.food}</Td>
-                    <Td center>{item.servings}</Td>
-                    <Td center>
-                      <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
-                        {item.amount}
+              {/* Detailed menu table */}
+              <SectionTitle num={sectionNum + (planDays.length > 1 ? 0.5 : 1)} title="القائمة التفصيلية — الكميات بالجرام" />
+              {sectionMenu.map((meal, i) => (
+                <div key={i} className="avoid-break" style={{ marginBottom: 20, border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: 'white', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ fontSize: 16, fontWeight: 800 }}>{meal.icon} {meal.name}</span>
+                      <span style={{ fontSize: 12, color: '#aaa', marginRight: 10 }}>⏰ {meal.time}</span>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <span style={{ background: '#c9973b', color: 'white', borderRadius: 20, padding: '3px 12px', fontSize: 13, fontWeight: 700 }}>
+                        {meal.kcal} سعرة
                       </span>
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div style={{ background: '#fffbf0', padding: '8px 20px', display: 'flex', gap: 20, fontSize: 11, color: '#888' }}>
-              <span>كربوهيدرات: <strong style={{ color: '#f59e0b' }}>{meal.carbs} غ</strong></span>
-              <span>بروتين: <strong style={{ color: '#3b82f6' }}>{meal.protein} غ</strong></span>
-              <span>دهون: <strong style={{ color: '#8b5cf6' }}>{meal.fat} غ</strong></span>
+                    </div>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f3f4f6', color: '#374151' }}>
+                        <Th light>الفئة الغذائية</Th>
+                        <Th light>الطعام</Th>
+                        <Th light center>الوحدات</Th>
+                        <Th light center>الكمية</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {meal.items.map((item, j) => (
+                        <tr key={j} style={{ borderBottom: '1px solid #f0f0f0', background: j % 2 === 0 ? 'white' : '#fafafa' }}>
+                          <Td>{item.icon} {item.group}</Td>
+                          <Td bold>{item.food}</Td>
+                          <Td center>{item.servings}</Td>
+                          <Td center>
+                            <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
+                              {item.amount}
+                            </span>
+                          </Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ background: '#fffbf0', padding: '8px 20px', display: 'flex', gap: 20, fontSize: 11, color: '#888' }}>
+                    <span>كربوهيدرات: <strong style={{ color: '#f59e0b' }}>{meal.carbs} غ</strong></span>
+                    <span>بروتين: <strong style={{ color: '#3b82f6' }}>{meal.protein} غ</strong></span>
+                    <span>دهون: <strong style={{ color: '#8b5cf6' }}>{meal.fat} غ</strong></span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
         <div style={{ marginTop: 40, borderTop: '2px solid #e5e7eb', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -362,7 +367,7 @@ function SectionTitle({ num, title }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
       <div style={{ background: '#c9973b', color: 'white', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
-        {num}
+        {Math.round(num)}
       </div>
       <h2 style={{ fontSize: 18, fontWeight: 800, color: '#1a1a1a', margin: 0 }}>{title}</h2>
       <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
@@ -397,9 +402,9 @@ function Th({ children, center, light, style: s }) {
   )
 }
 
-function Td({ children, bold, center, style: s }) {
+function Td({ children, bold, center, style: s, colSpan }) {
   return (
-    <td style={{ padding: '9px 14px', textAlign: center ? 'center' : 'right', fontWeight: bold ? 600 : 400, ...s }}>
+    <td colSpan={colSpan} style={{ padding: '9px 14px', textAlign: center ? 'center' : 'right', fontWeight: bold ? 600 : 400, ...s }}>
       {children}
     </td>
   )
