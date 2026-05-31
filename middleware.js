@@ -42,7 +42,7 @@ export async function middleware(request) {
   }
 
   // Protect client portal — verify token signature + expiry
-  if (pathname.startsWith('/client') && pathname !== '/client/login' && pathname !== '/client') {
+  if (pathname.startsWith('/client') && pathname !== '/client/login' && pathname !== '/client' && pathname !== '/client/demo') {
     const token = request.cookies.get('client_token')?.value
     const valid = await verifyClientToken(token)
     if (!valid) {
