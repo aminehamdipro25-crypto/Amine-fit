@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, AlertCircle } from 'lucide-react'
+import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
@@ -187,7 +187,7 @@ export default function CalculatorPage() {
               </>
             )}
           </button>
-          <button onClick={() => { setForm(INIT); setRes(null); setAiError(null) }} title="إعادة تعيين"
+          <button onClick={() => { setForm(INIT); setRes(null) }} title="إعادة تعيين"
             className="px-4 py-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition">
             <RefreshCw className="w-5 h-5" />
           </button>
