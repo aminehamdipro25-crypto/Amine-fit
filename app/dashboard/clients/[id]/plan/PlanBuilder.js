@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Plus, Trash2, Save, ArrowRight,
-  ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap, Sparkles,
+  ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap, Sparkles, LogIn,
 } from 'lucide-react'
 
 const emptyMeal     = () => ({ name:'', time:'', calories:'', description:'', items:[], macros:{ protein:'', carbs:'', fats:'' } })
@@ -282,6 +282,19 @@ function DayCard({ day, idx, onChange, onRemove }) {
 export default function PlanBuilder({ client }) {
   const router = useRouter()
   const existing = client.plan || {}
+  const [previewing, setPreviewing] = useState(false)
+
+  async function previewAsClient() {
+    if (!confirm(`ستدخل كالعميل "${client.name}" وستُفتح بوابته في تبويب جديد. هل تريد المتابعة؟`)) return
+    setPreviewing(true)
+    try {
+      const res = await fetch(`/api/admin/preview-client/${client.id}`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) window.open('/client/dashboard', '_blank')
+    } finally {
+      setPreviewing(false)
+    }
+  }
 
   const [tab, setTab] = useState('nutrition')
   const [saving, setSaving] = useState(false)
@@ -352,15 +365,22 @@ export default function PlanBuilder({ client }) {
           <h1 className="text-xl font-extrabold text-slate-900">{client.name}</h1>
           <p className="text-xs text-slate-400 mt-0.5" dir="ltr">{client.email}</p>
         </div>
-        <button onClick={save} disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#0a0a0a] text-white rounded-xl font-bold text-sm hover:bg-black transition disabled:opacity-50 shadow-sm">
-          {saving
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري الحفظ...</>
-            : saved
-              ? <><CheckCircle2 className="w-4 h-4 text-emerald-400" /> تم الحفظ</>
-              : <><Save className="w-4 h-4" /> حفظ الخطة</>
-          }
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={previewAsClient} disabled={previewing}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 transition disabled:opacity-50 shadow-sm">
+            {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+            دخول كالعميل
+          </button>
+          <button onClick={save} disabled={saving}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#0a0a0a] text-white rounded-xl font-bold text-sm hover:bg-black transition disabled:opacity-50 shadow-sm">
+            {saving
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري الحفظ...</>
+              : saved
+                ? <><CheckCircle2 className="w-4 h-4 text-emerald-400" /> تم الحفظ</>
+                : <><Save className="w-4 h-4" /> حفظ الخطة</>
+            }
+          </button>
+        </div>
       </div>
 
       {/* How it works banner */}
