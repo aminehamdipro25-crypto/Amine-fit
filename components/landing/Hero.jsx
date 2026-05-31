@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Star, Zap, Shield, Award } from 'lucide-react'
 
 const stats = [
@@ -12,8 +13,29 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[#0a0a0a]">
 
+      {/* ── Coach photo — desktop only ───────────────────────────── */}
+      <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
+        <Image
+          src="/coach-hero.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          style={{ objectPosition: '35% center' }}
+        />
+        {/* Gradient: right side dark (text) → left side shows coach */}
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(to right, rgba(10,10,10,0.08) 0%, rgba(10,10,10,0.55) 38%, rgba(10,10,10,0.92) 58%, #0a0a0a 78%)',
+        }} />
+        {/* Top & bottom fade for cleaner edges */}
+        <div className="absolute inset-x-0 top-0 h-40"
+          style={{ background: 'linear-gradient(to bottom, #0a0a0a 0%, transparent 100%)' }} />
+        <div className="absolute inset-x-0 bottom-0 h-40"
+          style={{ background: 'linear-gradient(to top, #0a0a0a 0%, transparent 100%)' }} />
+      </div>
+
       {/* Grid overlay */}
-      <div className="absolute inset-0 opacity-[0.04]"
+      <div className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',
           backgroundSize: '60px 60px',
