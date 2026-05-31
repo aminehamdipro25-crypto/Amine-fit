@@ -82,11 +82,16 @@ export async function POST(req) {
     return NextResponse.json(localPlan(form))
   }
 
+  const duration = form.duration || 'day'
+
+  // Week/month plans exceed haiku's 8192-token output limit → use local engine
+  if (duration === 'week' || duration === 'month') {
+    return NextResponse.json(localPlan(form))
+  }
+
   try {
     const { default: Anthropic } = await import('@anthropic-ai/sdk')
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-    const duration = form.duration || 'day'
 
     const menuSchema = `[
     {
@@ -98,42 +103,12 @@ export async function POST(req) {
     }
   ]`
 
-    let schemaStr
-    if (duration === 'week') {
-      schemaStr = `{
-  "bmr": number, "tdee": number, "target": number,
-  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
-  "duration": "week",
-  "days": [
-    { "name": "الأحد", "menu": ${menuSchema} },
-    { "name": "الاثنين", "menu": ${menuSchema} },
-    { "name": "الثلاثاء", "menu": ${menuSchema} },
-    { "name": "الأربعاء", "menu": ${menuSchema} },
-    { "name": "الخميس", "menu": ${menuSchema} },
-    { "name": "الجمعة", "menu": ${menuSchema} },
-    { "name": "السبت", "menu": ${menuSchema} }
-  ]
-}`
-    } else if (duration === 'month') {
-      schemaStr = `{
-  "bmr": number, "tdee": number, "target": number,
-  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
-  "duration": "month",
-  "weeks": [
-    { "name": "الأسبوع الأول", "menu": ${menuSchema} },
-    { "name": "الأسبوع الثاني", "menu": ${menuSchema} },
-    { "name": "الأسبوع الثالث", "menu": ${menuSchema} },
-    { "name": "الأسبوع الرابع", "menu": ${menuSchema} }
-  ]
-}`
-    } else {
-      schemaStr = `{
+    const schemaStr = `{
   "bmr": number, "tdee": number, "target": number,
   "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
   "duration": "day",
   "menu": ${menuSchema}
 }`
-    }
 
     const userPrompt = `═══ بيانات العميل ═══
 الاسم: ${form.name || 'العميل'}
@@ -145,12 +120,11 @@ export async function POST(req) {
 الأطعمة المفضلة: ${form.preferred || 'لا يوجد'}
 الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
 عدد الوجبات: ${form.meals} وجبات يومياً
-مدة البرنامج: ${duration === 'day' ? 'يوم واحد' : duration === 'week' ? 'أسبوع كامل (7 أيام مختلفة)' : 'شهر كامل (4 أسابيع نماذج مختلفة)'}
 
-أنشئ خطة غذائية متكاملة وأعد JSON بالضبط:
+أنشئ خطة غذائية ليوم واحد وأعد JSON بالضبط:
 ${schemaStr}`
 
-    const maxTokens = duration === 'day' ? 4096 : 8192
+    const maxTokens = 4096
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
