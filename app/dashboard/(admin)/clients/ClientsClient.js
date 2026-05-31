@@ -512,6 +512,7 @@ export default function ClientsClient({ error }) {
   const [selected, setSelected]   = useState(null)
   const [deleting, setDeleting]   = useState(null)
   const [addOpen, setAddOpen]     = useState(false)
+  const [approvalCode, setApprovalCode] = useState(null) // { email, code }
 
   async function loadClients() {
     setLoading(true)
@@ -552,14 +553,14 @@ export default function ClientsClient({ error }) {
   }
 
   async function approveClient(id, email) {
-    if (!confirm(`هل تريد الموافقة على هذا الطلب وإرسال بيانات الدخول إلى ${email}؟`)) return
+    if (!confirm(`هل تريد الموافقة على هذا الطلب؟\n\nسيتم إنشاء كود تفعيل للعميل يجب أن ترسله له.`)) return
     try {
       const res  = await fetch(`/api/dashboard/approve/${id}`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { alert(data.error || 'حدث خطأ'); return }
       setClients(cs => cs.map(c => c.id === id ? { ...c, status: 'active' } : c))
       if (selected?.id === id) setSelected(null)
-      alert(`✅ تمت الموافقة! تم إرسال بيانات الدخول إلى ${data.email}`)
+      setApprovalCode({ email: data.email, code: data.activationCode })
     } catch { alert('حدث خطأ، حاول مرة أخرى') }
   }
 
@@ -581,6 +582,56 @@ export default function ClientsClient({ error }) {
           onClose={() => setAddOpen(false)}
           onAdded={() => { loadClients() }}
         />
+      )}
+
+      {/* Activation code modal shown after approving a client */}
+      {approvalCode && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={e => e.target === e.currentTarget && setApprovalCode(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-6 text-center">
+              <div className="text-5xl mb-2">✅</div>
+              <h2 className="text-xl font-extrabold text-black">تمت الموافقة!</h2>
+              <p className="text-black/70 text-sm mt-1">{approvalCode.email}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-slate-600 text-sm font-medium text-center">
+                أرسل كود التفعيل هذا للعميل عبر واتساب أو البريد الإلكتروني
+              </p>
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-center">
+                <p className="text-xs text-amber-600 font-bold uppercase tracking-wide mb-2">كود التفعيل</p>
+                <p className="font-mono text-4xl font-black tracking-widest text-amber-600 select-all" dir="ltr">
+                  {approvalCode.code}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-500 font-medium space-y-1">
+                <p>• سيدخل العميل هذا الكود في صفحة "تفعيل الحساب"</p>
+                <p>• يستخدم الكود مرة واحدة فقط ثم يُحذف</p>
+                <p>• العميل سينشئ كلمة مروره بنفسه عند التفعيل</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(approvalCode.code)
+                    .catch(() => {})
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border-2 border-amber-300 text-amber-600 font-extrabold text-sm hover:bg-amber-50 transition">
+                  نسخ الكود
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`مرحباً! تم قبول طلبك في Amine-Fit 🎉\n\nكود التفعيل الخاص بك:\n${approvalCode.code}\n\nاذهب إلى: https://amine-fit.vercel.app/client/login\nواختر "تفعيل الحساب"`)}`}
+                  target="_blank" rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-500 text-white font-extrabold text-sm hover:bg-green-600 transition">
+                  واتساب
+                </a>
+              </div>
+              <button onClick={() => setApprovalCode(null)}
+                className="w-full py-2.5 rounded-xl bg-[#0a0a0a] text-white font-bold text-sm hover:bg-black transition">
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {error === 'not_found' && (

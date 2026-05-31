@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
-import { hashPassword } from '@/lib/password'
 
 export async function POST(req, { params }) {
   const adminToken = cookies().get('admin_token')?.value
@@ -13,25 +12,26 @@ export async function POST(req, { params }) {
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
 
-  // Generate random 8-char password (easy to read, no ambiguous chars)
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
-  let pass = ''
-  for (let i = 0; i < 8; i++) pass += chars[Math.floor(Math.random() * chars.length)]
+  // Generate 6-char activation code (easy to read/type, no ambiguous chars)
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  let activationCode = ''
+  for (let i = 0; i < 6; i++) activationCode += chars[Math.floor(Math.random() * chars.length)]
 
   await updateSubmission(params.id, {
-    clientPassword: hashPassword(pass),
+    activationCode,
+    clientPassword: null,
     status:         'active',
     approvedAt:     new Date().toISOString(),
   })
 
   if (process.env.RESEND_API_KEY && client.email) {
-    sendWelcomeEmail(client, pass).catch(e => console.error('[approve email]', e.message))
+    sendActivationEmail(client, activationCode).catch(e => console.error('[approve email]', e.message))
   }
 
-  return NextResponse.json({ success: true, email: client.email })
+  return NextResponse.json({ success: true, email: client.email, activationCode })
 }
 
-async function sendWelcomeEmail(client, password) {
+async function sendActivationEmail(client, activationCode) {
   const res = await fetch('https://api.resend.com/emails', {
     method:  'POST',
     headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -39,13 +39,13 @@ async function sendWelcomeEmail(client, password) {
       from:    'AmineFit <onboarding@resend.dev>',
       to:      [client.email],
       subject: `🎉 تمت الموافقة على طلبك — Amine-Fit`,
-      html:    buildEmail(client, password),
+      html:    buildEmail(client, activationCode),
     }),
   })
   if (!res.ok) console.error('[approve email resend]', await res.text())
 }
 
-function buildEmail(client, password) {
+function buildEmail(client, activationCode) {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -60,30 +60,31 @@ function buildEmail(client, password) {
 
   <div style="padding:24px">
     <p style="font-size:14px;color:#374151;margin-bottom:20px;line-height:1.7">
-      تم قبول طلبك من قِبل المدرب أمين. يمكنك الآن الدخول لبوابتك الشخصية لمتابعة برنامجك اليومي.
+      تم قبول طلبك من قِبل المدرب أمين. استخدم كود التفعيل أدناه لإنشاء كلمة مرورك والدخول لبوابتك الشخصية.
     </p>
 
-    <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;padding:16px;margin-bottom:20px">
-      <p style="margin:0 0 10px;font-weight:bold;color:#92400e;font-size:14px">🔑 بيانات الدخول</p>
-      <table style="width:100%;font-size:13px;border-collapse:collapse">
-        <tr>
-          <td style="padding:6px 0;color:#6b7280;width:40%">البريد الإلكتروني:</td>
-          <td style="font-weight:bold;direction:ltr;text-align:right">${client.email}</td>
-        </tr>
-        <tr>
-          <td style="padding:6px 0;color:#6b7280">كلمة المرور:</td>
-          <td style="font-weight:bold;font-family:monospace;font-size:18px;letter-spacing:3px;color:#d97706">${password}</td>
-        </tr>
-      </table>
+    <div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
+      <p style="margin:0 0 8px;font-weight:bold;color:#92400e;font-size:14px">🔑 كود التفعيل (استخدام واحد فقط)</p>
+      <p style="margin:0;font-family:monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#d97706;direction:ltr">${activationCode}</p>
+    </div>
+
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:20px">
+      <p style="margin:0 0 8px;font-weight:bold;color:#166534;font-size:13px">📋 خطوات التفعيل:</p>
+      <ol style="margin:0;padding-right:20px;font-size:13px;color:#374151;line-height:2">
+        <li>اذهب إلى بوابة العميل</li>
+        <li>اختر تبويب "تفعيل الحساب"</li>
+        <li>أدخل بريدك الإلكتروني وكود التفعيل</li>
+        <li>أنشئ كلمة مرورك الخاصة</li>
+      </ol>
     </div>
 
     <a href="https://amine-fit.vercel.app/client/login"
        style="display:block;text-align:center;background:#f59e0b;color:#000;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;margin-bottom:16px">
-      ⚡ دخول البوابة الشخصية
+      ⚡ تفعيل الحساب الآن
     </a>
 
     <p style="font-size:11px;color:#9ca3af;text-align:center;margin:0">
-      احتفظ بكلمة المرور هذه في مكان آمن
+      هذا الكود للاستخدام مرة واحدة فقط — لا تشاركه مع أحد
     </p>
   </div>
 
