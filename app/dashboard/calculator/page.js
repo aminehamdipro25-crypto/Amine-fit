@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info } from 'lucide-react'
-import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
+import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity, calcIdealWeight } from '@/lib/nutritionEngine'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition'
@@ -43,7 +43,7 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', meals:5 }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', notes:'', meals:5 }
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
 export default function CalculatorPage() {
@@ -170,6 +170,19 @@ export default function CalculatorPage() {
               </div>
             </div>
           </div>
+
+          {/* AI Notes / Special instructions */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-violet-700">🤖 تعليمات خاصة للذكاء الاصطناعي</label>
+            <textarea
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl border border-violet-200 bg-violet-50/40 text-slate-800 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition resize-none"
+              placeholder="مثال: العميل مصاب بالسكري النوع الثاني — تجنب السكريات البسيطة. لا يتناول اللحوم الحمراء. يفضل الوجبات التونسية التقليدية. لديه حساسية من المكسرات..."
+              value={form.notes}
+              onChange={e => set('notes', e.target.value)}
+            />
+            <p className="text-xs text-violet-500">هذه التعليمات تُرسل مباشرة للذكاء الاصطناعي لتخصيص البرنامج — لا تظهر للعميل إلا إذا طبعت التقرير</p>
+          </div>
         </div>
 
         <div className="px-5 pb-5 flex gap-3">
@@ -240,6 +253,23 @@ export default function CalculatorPage() {
             <p>TDEE = BMR × {getActivity(form.activity).pa} = <strong className="text-primary-600">{result.tdee}</strong> سعرة</p>
             <p>السعرات المستهدفة = {result.tdee} {getGoal(form.goal).adj >= 0 ? '+' : '−'} {Math.abs(getGoal(form.goal).adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة</p>
           </div>
+          {/* Ideal Weight */}
+          {(() => {
+            const iw = calcIdealWeight(+form.height)
+            const w = +form.weight
+            const above = w > iw.max
+            const below = w < iw.min
+            return (
+              <div className="mt-3 flex flex-wrap items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm">
+                <span className="text-xl">⚖️</span>
+                <span className="text-slate-600 font-medium">الوزن المثالي (BMI 18.5–24.9):</span>
+                <span className="font-extrabold text-blue-800 text-base">{iw.min} – {iw.max} كغ</span>
+                {above && <span className="mr-auto font-bold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full text-xs">↑ الوزن الحالي أعلى بـ {w - iw.max} كغ من الحد الأقصى</span>}
+                {below && <span className="mr-auto font-bold text-blue-700 bg-blue-100 border border-blue-200 px-3 py-1 rounded-full text-xs">↓ الوزن الحالي أقل بـ {iw.min - w} كغ من الحد الأدنى</span>}
+                {!above && !below && <span className="mr-auto font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full text-xs">✅ الوزن في النطاق المثالي</span>}
+              </div>
+            )
+          })()}
         </StepCard>
 
         {/* Step 2 — Exchange Table */}

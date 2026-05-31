@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { ACTIVITY_FACTORS, GOALS, EX } from '@/lib/nutritionEngine'
+import { ACTIVITY_FACTORS, GOALS, EX, calcIdealWeight } from '@/lib/nutritionEngine'
 
 const GENDER_LABEL = { male: 'ذكر', female: 'أنثى' }
 
@@ -43,6 +43,10 @@ export default function PlanReport() {
   const date = formatDate(plan.date)
   const goal     = GOALS.find(g => g.key === form.goal)     || GOALS[1]
   const activity = ACTIVITY_FACTORS.find(a => a.key === form.activity) || ACTIVITY_FACTORS[2]
+  const idealW   = calcIdealWeight(+form.height)
+  const currentW = +form.weight
+  const aboveIdeal = currentW > idealW.max
+  const belowIdeal = currentW < idealW.min
 
   const EX_ROWS = [
     { key: 'starches',   label: 'النشويات',         icon: '🌾', srv: ex.starches,   ...EX.starch   },
@@ -117,16 +121,43 @@ export default function PlanReport() {
 
         {/* ── Client Profile ─────────────────────────────────────────────── */}
         <SectionTitle num="1" title="البيانات الشخصية" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: form.preferred || form.avoided ? 12 : 28 }} className="avoid-break">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }} className="avoid-break">
           <InfoCard label="الجنس"      value={GENDER_LABEL[form.gender] || form.gender} />
           <InfoCard label="العمر"       value={`${form.age} سنة`} />
-          <InfoCard label="الوزن"       value={`${form.weight} كغ`} />
+          <InfoCard label="الوزن الحالي" value={`${form.weight} كغ`} />
           <InfoCard label="الطول"       value={`${form.height} سم`} />
           <InfoCard label="مستوى النشاط" value={activity.label.split('—')[0].trim()} />
           <InfoCard label="الهدف"       value={goal.label} icon={goal.icon} />
         </div>
-        {(form.preferred || form.avoided) && (
-          <div style={{ display: 'grid', gridTemplateColumns: form.preferred && form.avoided ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 28 }}>
+
+        {/* Ideal weight banner */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 18px', marginBottom: 12 }} className="avoid-break">
+          <span style={{ fontSize: 22 }}>⚖️</span>
+          <div>
+            <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 700 }}>الوزن المثالي المستهدف (BMI 18.5–24.9)</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#1e40af' }}>{idealW.min} – {idealW.max} كغ</div>
+          </div>
+          <div style={{ marginRight: 'auto' }}>
+            {aboveIdeal && (
+              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '6px 14px' }}>
+                <span style={{ color: '#c2410c', fontWeight: 700, fontSize: 13 }}>↑ الوزن الحالي أعلى بـ {currentW - idealW.max} كغ</span>
+              </div>
+            )}
+            {belowIdeal && (
+              <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '6px 14px' }}>
+                <span style={{ color: '#1d4ed8', fontWeight: 700, fontSize: 13 }}>↓ الوزن الحالي أقل بـ {idealW.min - currentW} كغ</span>
+              </div>
+            )}
+            {!aboveIdeal && !belowIdeal && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 14px' }}>
+                <span style={{ color: '#15803d', fontWeight: 700, fontSize: 13 }}>✅ الوزن في النطاق المثالي</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {(form.preferred || form.avoided || form.notes) && (
+          <div style={{ display: 'grid', gridTemplateColumns: form.preferred && form.avoided ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 12 }}>
             {form.preferred && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 16px' }}>
                 <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, marginBottom: 4 }}>✅ الأطعمة المفضلة</div>
@@ -141,6 +172,13 @@ export default function PlanReport() {
             )}
           </div>
         )}
+        {form.notes?.trim() && (
+          <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '10px 16px', marginBottom: 28 }}>
+            <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 700, marginBottom: 4 }}>🤖 ملاحظات خاصة</div>
+            <div style={{ fontSize: 13, color: '#4c1d95' }}>{form.notes}</div>
+          </div>
+        )}
+        {!(form.preferred || form.avoided || form.notes) && <div style={{ marginBottom: 28 }} />}
 
         {/* ── BMR / TDEE ─────────────────────────────────────────────────── */}
         <SectionTitle num="2" title="حسابات الطاقة — معادلة هاريس بنيديكت" />

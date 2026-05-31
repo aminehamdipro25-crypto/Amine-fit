@@ -77,6 +77,7 @@ export async function POST(req) {
 الأطعمة المفضلة: ${form.preferred || 'لا يوجد'}
 الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
 عدد الوجبات: ${form.meals} وجبات يومياً
+تعليمات خاصة من المدرب: ${form.notes?.trim() || 'لا يوجد'}
 
 أنشئ خطة غذائية متكاملة وأعد JSON بالضبط:
 {
