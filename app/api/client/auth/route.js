@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSubmissionByEmail } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
+import { verifyPassword } from '@/lib/password'
 
 export async function POST(req) {
   try {
@@ -8,13 +9,16 @@ export async function POST(req) {
     if (!email || !password) {
       return NextResponse.json({ error: 'البريد وكلمة المرور مطلوبان' }, { status: 400 })
     }
-
-    const client = await getSubmissionByEmail(email)
-    if (!client || !client.clientPassword) {
-      return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 })
+    if (email.length > 200 || password.length > 200) {
+      return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
     }
 
-    if (client.clientPassword !== password) {
+    const client = await getSubmissionByEmail(email.toLowerCase().trim())
+    // Constant-time response to prevent email enumeration
+    const stored = client?.clientPassword || ''
+    const match  = stored && verifyPassword(password, stored)
+
+    if (!client || !match) {
       return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 })
     }
 

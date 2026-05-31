@@ -3,62 +3,60 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/clientAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
-async function getClient(req) {
+function getPayload() {
   const token = cookies().get('client_token')?.value
-  if (!token) return null
-  const payload = verifyToken(token)
-  if (!payload) return null
-  return payload
+  return verifyToken(token)
 }
 
-export async function GET(req) {
-  const payload = await getClient(req)
-  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET() {
+  const payload = getPayload()
+  if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
-  const client = await getSubmissionById(payload.clientId)
-  if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const client = await getSubmissionById(payload.id)
+  if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   return NextResponse.json(client.progress || [])
 }
 
 export async function POST(req) {
-  const payload = await getClient(req)
-  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = getPayload()
+  if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
-  const body = await req.json()
-  const { weight, waist, chest, hips, arm, thigh, note } = body
+  const { weight, waist, chest, hips, arm, thigh, note } = await req.json()
 
-  const client = await getSubmissionById(payload.clientId)
-  if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const toNum = v => (v !== undefined && v !== '' && !isNaN(+v)) ? +v : null
+
+  const client = await getSubmissionById(payload.id)
+  if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   const entry = {
-    id: Date.now().toString(),
-    date: new Date().toISOString(),
-    weight: weight ? +weight : null,
-    waist: waist ? +waist : null,
-    chest: chest ? +chest : null,
-    hips: hips ? +hips : null,
-    arm: arm ? +arm : null,
-    thigh: thigh ? +thigh : null,
-    note: note || '',
+    id:     Date.now().toString(),
+    date:   new Date().toISOString(),
+    weight: toNum(weight),
+    waist:  toNum(waist),
+    chest:  toNum(chest),
+    hips:   toNum(hips),
+    arm:    toNum(arm),
+    thigh:  toNum(thigh),
+    note:   note?.toString().slice(0, 500) || '',
   }
 
   const progress = [...(client.progress || []), entry]
-  await updateSubmission(payload.clientId, { progress })
-
+  await updateSubmission(payload.id, { progress })
   return NextResponse.json(entry)
 }
 
 export async function DELETE(req) {
-  const payload = await getClient(req)
-  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = getPayload()
+  if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
   const { id } = await req.json()
-  const client = await getSubmissionById(payload.clientId)
-  if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  const client = await getSubmissionById(payload.id)
+  if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   const progress = (client.progress || []).filter(e => e.id !== id)
-  await updateSubmission(payload.clientId, { progress })
-
+  await updateSubmission(payload.id, { progress })
   return NextResponse.json({ ok: true })
 }

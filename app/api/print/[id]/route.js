@@ -1,8 +1,16 @@
 import { getSubmissions } from '@/lib/submissions'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req, { params }) {
+  // Admin-only: verify admin_token cookie
+  const token   = cookies().get('admin_token')?.value
+  const correct = process.env.DASHBOARD_PASSWORD || 'amine2025'
+  if (!token || token !== correct) {
+    return new Response('غير مصرح', { status: 401 })
+  }
+
   const list = await getSubmissions()
   const e    = list.find(s => s.id === params.id)
   if (!e) return new Response('Not found', { status: 404 })
