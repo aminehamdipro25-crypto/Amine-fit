@@ -18,7 +18,7 @@ export async function POST(req) {
     }
 
     console.log('[register] saving:', body.name, body.email)
-    const entry = await saveSubmission(body)
+    const entry = await saveSubmission({ ...body, status: 'pending' })
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
     return NextResponse.json({ success: true, id: entry.id })

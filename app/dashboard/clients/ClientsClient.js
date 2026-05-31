@@ -551,11 +551,24 @@ export default function ClientsClient({ error }) {
     }
   }
 
+  async function approveClient(id, email) {
+    if (!confirm(`هل تريد الموافقة على هذا الطلب وإرسال بيانات الدخول إلى ${email}؟`)) return
+    try {
+      const res  = await fetch(`/api/dashboard/approve/${id}`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || 'حدث خطأ'); return }
+      setClients(cs => cs.map(c => c.id === id ? { ...c, status: 'active' } : c))
+      if (selected?.id === id) setSelected(null)
+      alert(`✅ تمت الموافقة! تم إرسال بيانات الدخول إلى ${data.email}`)
+    } catch { alert('حدث خطأ، حاول مرة أخرى') }
+  }
+
   const counts = {
-    all: clients.length,
-    new: clients.filter(c => c.status === 'new').length,
-    reviewed: clients.filter(c => c.status === 'reviewed').length,
-    active: clients.filter(c => c.status === 'active').length,
+    all:     clients.length,
+    pending: clients.filter(c => c.status === 'pending').length,
+    new:     clients.filter(c => c.status === 'new').length,
+    reviewed:clients.filter(c => c.status === 'reviewed').length,
+    active:  clients.filter(c => c.status === 'active').length,
   }
 
   return (
@@ -598,18 +611,39 @@ export default function ClientsClient({ error }) {
           </button>
         </div>
 
+        {/* Pending banner */}
+        {counts.pending > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⏳</span>
+              <div>
+                <p className="font-extrabold text-amber-800 text-sm">
+                  {counts.pending} طلب{counts.pending > 1 ? 'ات' : ''} تنتظر موافقتك
+                </p>
+                <p className="text-xs text-amber-600">راجع الطلبات وأرسل بيانات الدخول</p>
+              </div>
+            </div>
+            <button onClick={() => setFS('pending')}
+              className="px-4 py-2 bg-amber-400 text-black font-extrabold text-xs rounded-xl hover:bg-amber-300 transition flex-shrink-0">
+              عرض الطلبات
+            </button>
+          </div>
+        )}
+
         {/* Status tabs */}
         <div className="flex gap-2 flex-wrap">
-          {[['all','الكل'],['new','جديد'],['reviewed','مراجعة'],['active','نشط']].map(([k,l]) => (
+          {[['all','الكل'],['pending','انتظار'],['new','جديد'],['reviewed','مراجعة'],['active','نشط']].map(([k,l]) => (
             <button key={k} onClick={() => setFS(k)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border
                 ${filterStatus===k
-                  ? 'bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-sm'
+                  ? k==='pending' ? 'bg-amber-400 text-black border-amber-400 shadow-sm' : 'bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-sm'
                   : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'}`}>
               {l}
               <span className={`text-xs px-2 py-0.5 rounded-full font-extrabold
-                ${filterStatus===k ? 'bg-gold-400 text-black' : 'bg-slate-100 text-slate-500'}`}>
-                {counts[k]}
+                ${filterStatus===k
+                  ? k==='pending' ? 'bg-black/20 text-black' : 'bg-gold-400 text-black'
+                  : k==='pending' && counts.pending > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                {counts[k] ?? 0}
               </span>
             </button>
           ))}
@@ -675,12 +709,20 @@ export default function ClientsClient({ error }) {
                       ? <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${goal.color}`}>{goal.icon} {goal.label}</span>
                       : <span className="text-xs text-slate-300">—</span>
                     }
-                    <Link href={`/dashboard/clients/${c.id}/plan`}
-                      onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] text-gold-400 text-[11px] font-extrabold hover:bg-black transition">
-                      <Dumbbell className="w-3 h-3" />
-                      {c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek ? 'تعديل الخطة' : 'بناء الخطة'}
-                    </Link>
+                    {c.status === 'pending' ? (
+                      <button
+                        onClick={e => { e.stopPropagation(); approveClient(c.id, c.email) }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-400 text-black text-[11px] font-extrabold hover:bg-amber-300 transition">
+                        ✓ موافقة
+                      </button>
+                    ) : (
+                      <Link href={`/dashboard/clients/${c.id}/plan`}
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] text-gold-400 text-[11px] font-extrabold hover:bg-black transition">
+                        <Dumbbell className="w-3 h-3" />
+                        {c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek ? 'تعديل الخطة' : 'بناء الخطة'}
+                      </Link>
+                    )}
                   </div>
                 </div>
               )

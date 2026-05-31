@@ -369,12 +369,15 @@ export default function PlanBuilder({ client }) {
     if (!confirm(`ستدخل كالعميل "${client.name}" وستُفتح بوابته في تبويب جديد. هل تريد المتابعة؟`)) return
     setPreviewing(true)
     try {
-      const res = await fetch(`/api/admin/preview-client/${client.id}`, { method: 'POST' })
+      const res  = await fetch(`/api/admin/preview-client/${client.id}`, { method: 'POST' })
       const data = await res.json()
-      if (data.success) window.open('/client/dashboard', '_blank')
-    } finally {
-      setPreviewing(false)
-    }
+      if (!res.ok) { alert(data.error || 'فشل تسجيل الدخول كالعميل'); return }
+      if (data.success) {
+        const tab = window.open('/client/dashboard', '_blank')
+        if (!tab) alert('يرجى السماح بفتح النوافذ المنبثقة في المتصفح')
+      }
+    } catch { alert('حدث خطأ، تحقق من الاتصال') }
+    finally { setPreviewing(false) }
   }
 
   const [tab, setTab]     = useState('nutrition')

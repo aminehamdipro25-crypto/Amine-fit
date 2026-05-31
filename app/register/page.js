@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Eye, EyeOff, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2 } from 'lucide-react'
 
 /* ─── helpers ─── */
 function Inp({ label, required, error, children, hint }) {
@@ -75,7 +75,7 @@ const STEPS = [
   { title: 'النمط الغذائي',                     icon: '🥗', sub: 'Dietary Habits' },
   { title: 'الأهداف والقياسات',                 icon: '🎯', sub: 'Goals & Measurements' },
   { title: 'الحالة الصحية والنشاط البدني',     icon: '🏃', sub: 'Health & Activity' },
-  { title: 'نمط الحياة وإنشاء الحساب',         icon: '🔐', sub: 'Lifestyle & Account' },
+  { title: 'نمط الحياة والالتزام',              icon: '🌙', sub: 'Lifestyle & Commitment' },
 ]
 
 const INIT = {
@@ -88,7 +88,7 @@ const INIT = {
   waterIntake:'', hasChronicDisease:'', medications:'',
   activityLevel:'', sportType:'',
   sleepHours:'', hasPsychStress:'', foodPrep:'',
-  clientPassword:'', confirmPassword:'',
+  motivation:'', previousPrograms:'', commitment:'', heardFrom:'', notes:'',
 }
 
 /* ─── validation per step ─── */
@@ -121,10 +121,6 @@ function validate(step, form) {
     if (!form.sleepHours)    errs.sleepHours     = 'ساعات النوم مطلوبة'
     if (!form.hasPsychStress)errs.hasPsychStress = 'هذا الحقل مطلوب'
     if (!form.foodPrep)      errs.foodPrep       = 'هذا الحقل مطلوب'
-    if (!form.clientPassword || form.clientPassword.length < 6)
-      errs.clientPassword = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
-    if (form.clientPassword !== form.confirmPassword)
-      errs.confirmPassword = 'كلمتا المرور غير متطابقتين'
   }
   return errs
 }
@@ -137,9 +133,6 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState({})
   const [loading, setLoad]  = useState(false)
   const [apiErr, setApiErr] = useState('')
-  const [showPw, setShowPw] = useState(false)
-  const [showCp, setShowCp] = useState(false)
-
   function next() {
     const errs = validate(step, form)
     if (Object.keys(errs).length) { setErrors(errs); return }
@@ -159,7 +152,6 @@ export default function RegisterPage() {
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoad(true); setApiErr('')
     try {
-      // 1. Save registration with clientPassword
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -167,19 +159,7 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'خطأ')
-
-      // 2. Auto-login: set client_token cookie immediately
-      const loginRes = await fetch('/api/client/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, password: form.clientPassword }),
-      })
-      if (loginRes.ok) {
-        router.push('/client/dashboard')
-      } else {
-        // Login failed but registration succeeded — go to success page
-        router.push('/register/success')
-      }
+      router.push('/register/success')
     } catch (e) {
       setApiErr(e.message)
     } finally {
@@ -401,45 +381,12 @@ export default function RegisterPage() {
                   form={form} setForm={setForm} errors={errors} />
               </Inp>
 
-              {/* Password section */}
-              <div className="mt-2 p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Lock className="w-4 h-4 text-primary-500" />
-                  <p className="text-sm font-extrabold text-slate-700">إنشاء كلمة مرور لحسابك</p>
-                </div>
-                <p className="text-xs text-slate-400 -mt-2">ستستخدمها لتسجيل الدخول لبوابتك الشخصية لاحقاً</p>
-                <Inp label="كلمة المرور" required error={errors.clientPassword}>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={form.clientPassword}
-                      onChange={e => setForm(f => ({ ...f, clientPassword: e.target.value }))}
-                      placeholder="6 أحرف على الأقل"
-                      className={`${cls(errors.clientPassword)} pr-10 pl-10`}
-                    />
-                    <button type="button" onClick={() => setShowPw(v => !v)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
-                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </Inp>
-                <Inp label="تأكيد كلمة المرور" required error={errors.confirmPassword}>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                    <input
-                      type={showCp ? 'text' : 'password'}
-                      value={form.confirmPassword}
-                      onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                      placeholder="أعد كتابة كلمة المرور"
-                      className={`${cls(errors.confirmPassword)} pr-10 pl-10`}
-                    />
-                    <button type="button" onClick={() => setShowCp(v => !v)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
-                      {showCp ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </Inp>
+              {/* Pending approval notice */}
+              <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                <p className="text-sm font-extrabold text-amber-800 mb-1">⏳ ماذا سيحدث بعد الإرسال؟</p>
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  سيراجع المدرب أمين طلبك ويرسل لك بيانات الدخول على بريدك الإلكتروني خلال 24 ساعة.
+                </p>
               </div>
 
               {/* Summary box */}
@@ -482,7 +429,7 @@ export default function RegisterPage() {
                   className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-primary-600 hover:opacity-90 disabled:opacity-60 text-white font-bold rounded-xl transition shadow-md">
                   {loading
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري إنشاء حسابك...</>
-                    : <><CheckCircle2 className="w-4 h-4" /> إنشاء حسابي والدخول</>
+                    : <><CheckCircle2 className="w-4 h-4" /> إرسال الطلب</>}
                   }
                 </button>
             }

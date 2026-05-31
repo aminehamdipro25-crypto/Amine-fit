@@ -23,24 +23,24 @@ export default function SuccessPage() {
         </div>
 
         <h1 className="text-3xl font-extrabold text-white mb-3">
-          تم تسجيلك بنجاح! 🎉
+          تم إرسال طلبك! ⏳
         </h1>
         <p className="text-white/60 text-lg mb-8 leading-relaxed">
-          مرحباً بك في Amine-Fit. يمكنك الآن الدخول لبوابتك الشخصية
-          أو انتظار خطتك التي سيعدها المدرب قريباً.
+          استلمنا طلبك بنجاح. سيراجعه المدرب أمين ويرسل لك بيانات الدخول
+          على بريدك الإلكتروني خلال 24 ساعة.
         </p>
 
         {/* Info cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
           <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-right">
             <Clock className="w-8 h-8 text-primary-400 mb-2" />
-            <p className="text-white font-semibold text-sm">إعداد الخطة</p>
-            <p className="text-white/50 text-xs mt-1">سيعد أمين برنامجك خلال 24 ساعة</p>
+            <p className="text-white font-semibold text-sm">مراجعة الطلب</p>
+            <p className="text-white/50 text-xs mt-1">سيراجع أمين طلبك خلال 24 ساعة</p>
           </div>
           <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-2xl p-4 text-right">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2" />
-            <p className="text-white font-semibold text-sm">حسابك جاهز</p>
-            <p className="text-white/50 text-xs mt-1">ادخل ببريدك وكلمة المرور التي اخترتها</p>
+            <p className="text-white font-semibold text-sm">بريد إلكتروني</p>
+            <p className="text-white/50 text-xs mt-1">ستصلك كلمة المرور على بريدك</p>
           </div>
           <div className="bg-white/10 border border-white/15 rounded-2xl p-4 text-right">
             <MessageCircle className="w-8 h-8 text-emerald-400 mb-2" />
@@ -54,10 +54,10 @@ export default function SuccessPage() {
             className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-2xl hover:bg-white/20 transition">
             العودة للرئيسية
           </Link>
-          <Link href="/client/login"
-            className="px-6 py-3 bg-gradient-to-r from-primary-600 to-emerald-500 text-white font-bold rounded-2xl hover:opacity-90 transition shadow-lg">
-            دخول بوابتي الشخصية ←
-          </Link>
+          <a href="https://wa.me/97430653759"
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold rounded-2xl hover:opacity-90 transition shadow-lg">
+            تواصل عبر واتساب ←
+          </a>
         </div>
       </div>
     </div>
