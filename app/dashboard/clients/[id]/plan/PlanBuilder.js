@@ -3,13 +3,103 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Plus, Trash2, Save, ArrowRight,
-  ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap, Droplets
+  ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap, Sparkles,
 } from 'lucide-react'
 
-const emptyMeal = () => ({ name: '', time: '', calories: '', description: '', items: [], macros: { protein: '', carbs: '', fats: '' } })
-const emptyItem = () => ({ food: '', amount: '' })
-const emptyExercise = () => ({ name: '', sets: '', reps: '', rest: '', note: '' })
-const emptyDay = () => ({ name: '', focus: '', description: '', exercises: [] })
+const emptyMeal     = () => ({ name:'', time:'', calories:'', description:'', items:[], macros:{ protein:'', carbs:'', fats:'' } })
+const emptyItem     = () => ({ food:'', amount:'' })
+const emptyExercise = () => ({ name:'', sets:'', reps:'', rest:'', note:'', videoUrl:'' })
+const emptyDay      = () => ({ name:'', focus:'', description:'', exercises:[] })
+
+/* ── Training templates ──────────────────────────────────────────────────── */
+const TEMPLATES = {
+  ppl: {
+    label: 'Push / Pull / Legs',
+    emoji: '💪',
+    days: [
+      { name:'يوم الدفع (Push)', focus:'صدر وكتف وذراعين', description:'تمارين الدفع — صدر، كتف، ترايسبس', exercises:[
+        { name:'بنش بريس', sets:'4', reps:'10-12', rest:'90 ثانية', note:'احرص على لمس الصدر في كل تكرار', videoUrl:'' },
+        { name:'الدمبل الإمالة', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'ضغط الكتف بالبار', sets:'4', reps:'10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'رفع جانبي دمبل', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'ترايسبس كيبل', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'يوم السحب (Pull)', focus:'ظهر وبايسبس', description:'تمارين السحب — ظهر، بايسبس', exercises:[
+        { name:'سحب بار عريض', sets:'4', reps:'8-10', rest:'90 ثانية', note:'ابدأ بالعضلة لا الذراع', videoUrl:'' },
+        { name:'رو بار', sets:'4', reps:'10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'سحب كيبل ضيق', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'بايسبس كيبل', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'هامر كيرل دمبل', sets:'3', reps:'12', rest:'45 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'يوم الأرجل (Legs)', focus:'أرجل وبطن', description:'تمارين الأرجل والبطن', exercises:[
+        { name:'سكوات', sets:'5', reps:'8-10', rest:'2 دقيقة', note:'ظهر مستقيم، ركبة لا تتجاوز القدم', videoUrl:'' },
+        { name:'ليغ بريس', sets:'4', reps:'12', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'ليغ كيرل', sets:'3', reps:'15', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'كاف ريز', sets:'4', reps:'20', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'بلانك', sets:'3', reps:'60 ثانية', rest:'30 ثانية', note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+  upper_lower: {
+    label: 'Upper / Lower',
+    emoji: '🔄',
+    days: [
+      { name:'يوم الجزء العلوي (أ)', focus:'صدر وظهر', description:'صدر وظهر — حجم', exercises:[
+        { name:'بنش بريس', sets:'4', reps:'8-10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'سحب بار', sets:'4', reps:'8-10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'دمبل كتف', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'رو دمبل', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'يوم الجزء السفلي (أ)', focus:'أرجل', description:'سكوات وتمارين الحجم', exercises:[
+        { name:'سكوات', sets:'4', reps:'8-10', rest:'2 دقيقة', note:'', videoUrl:'' },
+        { name:'ليغ بريس', sets:'3', reps:'12', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'ليغ كيرل', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'كاف ريز', sets:'4', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'يوم الجزء العلوي (ب)', focus:'كتف وذراعين', description:'كتف وذراعين — قوة', exercises:[
+        { name:'ضغط الكتف أوفر هيد', sets:'4', reps:'10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'رفع جانبي', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'بايسبس بار', sets:'3', reps:'10', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'ترايسبس دمبل', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'يوم الجزء السفلي (ب)', focus:'أرجل وبطن', description:'ديدليفت وتمارين الطاقة', exercises:[
+        { name:'ديدليفت', sets:'4', reps:'5-6', rest:'2 دقيقة', note:'ظهر مستقيم', videoUrl:'' },
+        { name:'لانج', sets:'3', reps:'12 (كل رجل)', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'بطن جهاز', sets:'3', reps:'20', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'هايبر اكستنشن', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+  full_body: {
+    label: 'Full Body 3x',
+    emoji: '⚡',
+    days: [
+      { name:'اليوم الكامل (أ)', focus:'كامل', description:'تمارين كاملة — قوة', exercises:[
+        { name:'سكوات', sets:'3', reps:'8', rest:'2 دقيقة', note:'', videoUrl:'' },
+        { name:'بنش بريس', sets:'3', reps:'8', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'سحب بار', sets:'3', reps:'8', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'ضغط الكتف', sets:'3', reps:'10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'بلانك', sets:'3', reps:'45 ثانية', rest:'30 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'اليوم الكامل (ب)', focus:'كامل', description:'تمارين كاملة — حجم', exercises:[
+        { name:'ديدليفت رومانياني', sets:'3', reps:'10', rest:'90 ثانية', note:'', videoUrl:'' },
+        { name:'دمبل إمالة', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'رو كيبل', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'رفع جانبي', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+        { name:'كرانش', sets:'3', reps:'20', rest:'30 ثانية', note:'', videoUrl:'' },
+      ]},
+      { name:'اليوم الكامل (ج)', focus:'كامل', description:'تمارين كاملة — تحمل', exercises:[
+        { name:'لانج', sets:'3', reps:'12 (كل رجل)', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'بنش دمبل', sets:'3', reps:'15', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'سحب كيبل', sets:'3', reps:'15', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'برباج', sets:'3', reps:'12', rest:'60 ثانية', note:'', videoUrl:'' },
+        { name:'ليغ ريز', sets:'3', reps:'15', rest:'45 ثانية', note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+}
+
+const FOCUS_OPTIONS = ['صدر', 'ظهر', 'كتف', 'ذراعين', 'أرجل', 'بطن', 'كارديو', 'كامل', 'صدر وكتف', 'ظهر وبايسبس']
 
 function MealCard({ meal, idx, onChange, onRemove }) {
   const [open, setOpen] = useState(true)
@@ -135,8 +225,11 @@ function DayCard({ day, idx, onChange, onRemove }) {
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">التركيز</label>
-              <input value={day.focus} onChange={e => update('focus', e.target.value)} placeholder="صدر وكتف..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
+              <select value={day.focus} onChange={e => update('focus', e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium bg-white">
+                <option value="">اختر العضلة...</option>
+                {FOCUS_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
             </div>
           </div>
 
@@ -172,8 +265,10 @@ function DayCard({ day, idx, onChange, onRemove }) {
                     className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
                   <input value={ex.rest} onChange={e => updateEx(i, 'rest', e.target.value)} placeholder="الراحة (60 ثانية)"
                     className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
-                  <input value={ex.note} onChange={e => updateEx(i, 'note', e.target.value)} placeholder="ملاحظة"
+                  <input value={ex.note} onChange={e => updateEx(i, 'note', e.target.value)} placeholder="ملاحظة للعميل"
                     className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
+                  <input value={ex.videoUrl || ''} onChange={e => updateEx(i, 'videoUrl', e.target.value)} placeholder="رابط فيديو (YouTube)"
+                    className="col-span-2 px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
                 </div>
               </div>
             ))}
@@ -377,6 +472,25 @@ export default function PlanBuilder({ client }) {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">نصائح (سطر لكل نصيحة)</label>
               <textarea value={trainingTips} onChange={e => setTTips(e.target.value)} rows={3} placeholder="احمِّ عضلاتك قبل التمرين&#10;اشرب ماء كافياً..."
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium resize-none" />
+            </div>
+          </div>
+
+          {/* Templates */}
+          <div className="bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-gold-500" />
+              <h3 className="font-extrabold text-slate-700 text-sm">قوالب جاهزة</h3>
+              <span className="text-xs text-slate-400 font-medium">— اختر نموذجاً كنقطة انطلاق</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(TEMPLATES).map(([key, tpl]) => (
+                <button key={key} type="button"
+                  onClick={() => { if (confirm(`هل تريد تحميل قالب "${tpl.label}"؟ سيُستبدل الأيام الحالية.`)) setDays(tpl.days.map(d => ({ ...d, exercises: d.exercises.map(e => ({ ...e })) }))) }}
+                  className="flex flex-col items-center gap-1 p-3 rounded-xl border border-slate-200 hover:border-gold-400 hover:bg-gold-50 transition text-center">
+                  <span className="text-2xl">{tpl.emoji}</span>
+                  <span className="text-[10px] font-extrabold text-slate-700 leading-tight">{tpl.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
