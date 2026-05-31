@@ -7,7 +7,7 @@ export async function PATCH(req, { params }) {
   if (deny) return deny
   try {
     const { status } = await req.json()
-    const allowed = ['new', 'active', 'reviewed', 'inactive']
+    const allowed = ['new', 'active', 'reviewed', 'inactive', 'suspended']
     if (!allowed.includes(status)) return NextResponse.json({ error: 'قيمة غير صالحة' }, { status: 400 })
     const updated = await updateStatus(params.id, status)
     if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
