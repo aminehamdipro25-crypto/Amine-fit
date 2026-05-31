@@ -350,6 +350,7 @@ export default function PlanBuilder({ client }) {
         <div className="flex-1">
           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">بناء الخطة</p>
           <h1 className="text-xl font-extrabold text-slate-900">{client.name}</h1>
+          <p className="text-xs text-slate-400 mt-0.5" dir="ltr">{client.email}</p>
         </div>
         <button onClick={save} disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#0a0a0a] text-white rounded-xl font-bold text-sm hover:bg-black transition disabled:opacity-50 shadow-sm">
@@ -360,6 +361,19 @@ export default function PlanBuilder({ client }) {
               : <><Save className="w-4 h-4" /> حفظ الخطة</>
           }
         </button>
+      </div>
+
+      {/* How it works banner */}
+      <div className="bg-[#0a0a0a] rounded-2xl px-5 py-4 flex items-start gap-3">
+        <Sparkles className="w-4 h-4 text-gold-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-white text-xs font-extrabold mb-1">كيف تصل الخطة للعميل؟</p>
+          <p className="text-white/40 text-xs leading-relaxed">
+            ابنِ الخطة الغذائية والتدريبية ثم اضغط <span className="text-gold-400 font-bold">حفظ الخطة</span> — سيجدها العميل فوراً حين يدخل بوابته على{' '}
+            <span className="text-gold-400 font-bold" dir="ltr">amine-fit.vercel.app/client/login</span>{' '}
+            ببريده الإلكتروني وكلمة المرور التي ضبطتها له.
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}

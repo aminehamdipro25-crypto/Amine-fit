@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
-  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock
+  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell
 } from 'lucide-react'
 
 function AddClientModal({ onClose, onAdded }) {
@@ -648,9 +648,12 @@ export default function ClientsClient({ submissions: initial }) {
                       ? <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${goal.color}`}>{goal.icon} {goal.label}</span>
                       : <span className="text-xs text-slate-300">—</span>
                     }
-                    <span className="text-xs text-slate-300 font-medium">
-                      {new Date(c.createdAt).toLocaleDateString('ar-DZ')}
-                    </span>
+                    <Link href={`/dashboard/clients/${c.id}/plan`}
+                      onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] text-gold-400 text-[11px] font-extrabold hover:bg-black transition">
+                      <Dumbbell className="w-3 h-3" />
+                      {c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek ? 'تعديل الخطة' : 'بناء الخطة'}
+                    </Link>
                   </div>
                 </div>
               )
