@@ -553,7 +553,6 @@ export default function ClientsClient({ error }) {
   }
 
   async function approveClient(id, email) {
-    if (!confirm(`هل تريد الموافقة على هذا الطلب؟\n\nسيتم إنشاء كود تفعيل للعميل يجب أن ترسله له.`)) return
     try {
       const res  = await fetch(`/api/dashboard/approve/${id}`, { method: 'POST' })
       const data = await res.json()
@@ -767,12 +766,19 @@ export default function ClientsClient({ error }) {
                         ✓ موافقة
                       </button>
                     ) : (
-                      <Link href={`/dashboard/clients/${c.id}/plan`}
-                        onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] text-gold-400 text-[11px] font-extrabold hover:bg-black transition">
-                        <Dumbbell className="w-3 h-3" />
-                        {c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek ? 'تعديل الخطة' : 'بناء الخطة'}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <button title="إنشاء كود تفعيل جديد"
+                          onClick={e => { e.stopPropagation(); approveClient(c.id, c.email) }}
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500 hover:bg-amber-50 transition">
+                          <Key className="w-3.5 h-3.5" />
+                        </button>
+                        <Link href={`/dashboard/clients/${c.id}/plan`}
+                          onClick={e => e.stopPropagation()}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] text-gold-400 text-[11px] font-extrabold hover:bg-black transition">
+                          <Dumbbell className="w-3 h-3" />
+                          {c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek ? 'تعديل الخطة' : 'بناء الخطة'}
+                        </Link>
+                      </div>
                     )}
                   </div>
                 </div>
