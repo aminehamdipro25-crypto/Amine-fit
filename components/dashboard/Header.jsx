@@ -1,8 +1,8 @@
 'use client'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, User, Clock, ChevronLeft } from 'lucide-react'
+import { Menu, Bell, User, Clock, ChevronLeft, X } from 'lucide-react'
 
 const titles = {
   '/dashboard':             'لوحة التحكم',
@@ -14,6 +14,7 @@ const titles = {
 
 export default function Header({ onMenuClick }) {
   const pathname = usePathname()
+  const router   = useRouter()
   const title = titles[pathname] || 'لوحة التحكم'
 
   const [open, setOpen]           = useState(false)
@@ -106,11 +107,18 @@ export default function Header({ onMenuClick }) {
               </div>
             )}
 
-            <div className="px-4 py-3 border-t border-slate-100">
-              <Link href="/dashboard/clients" onClick={() => setOpen(false)}
+            <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+              <button
+                onClick={() => { setOpen(false); router.push('/dashboard/clients'); router.refresh() }}
                 className="flex items-center gap-1 text-xs font-bold text-gold-600 hover:text-gold-700 transition">
                 عرض كل العملاء <ChevronLeft className="w-3.5 h-3.5" />
-              </Link>
+              </button>
+              {notifications.length > 0 && (
+                <button onClick={() => setNotes([])}
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition">
+                  <X className="w-3 h-3" /> مسح الكل
+                </button>
+              )}
             </div>
           </div>
         )}
