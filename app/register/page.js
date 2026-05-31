@@ -429,7 +429,7 @@ export default function RegisterPage() {
                   className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-primary-600 hover:opacity-90 disabled:opacity-60 text-white font-bold rounded-xl transition shadow-md">
                   {loading
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري إنشاء حسابك...</>
-                    : <><CheckCircle2 className="w-4 h-4" /> إرسال الطلب</>}
+                    : <><CheckCircle2 className="w-4 h-4" /> إرسال الطلب</>
                   }
                 </button>
             }
