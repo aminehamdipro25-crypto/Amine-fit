@@ -33,7 +33,10 @@ export default function PlanReport() {
   )
 
   const { form, bmr, tdee, target, ex, menu } = plan
-  const date = plan.date ? new Date(plan.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
+  const dateObj = plan.date ? new Date(plan.date) : null
+  const date = dateObj && !isNaN(dateObj)
+    ? dateObj.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
+    : new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
   const goal     = GOALS.find(g => g.key === form.goal)     || GOALS[1]
   const activity = ACTIVITY_FACTORS.find(a => a.key === form.activity) || ACTIVITY_FACTORS[2]
 
@@ -110,7 +113,7 @@ export default function PlanReport() {
 
         {/* ── Client Profile ─────────────────────────────────────────────── */}
         <SectionTitle num="1" title="البيانات الشخصية" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }} className="avoid-break">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: form.preferred || form.avoided ? 12 : 28 }} className="avoid-break">
           <InfoCard label="الجنس"      value={GENDER_LABEL[form.gender] || form.gender} />
           <InfoCard label="العمر"       value={`${form.age} سنة`} />
           <InfoCard label="الوزن"       value={`${form.weight} كغ`} />
@@ -118,6 +121,22 @@ export default function PlanReport() {
           <InfoCard label="مستوى النشاط" value={activity.label.split('—')[0].trim()} />
           <InfoCard label="الهدف"       value={goal.label} icon={goal.icon} />
         </div>
+        {(form.preferred || form.avoided) && (
+          <div style={{ display: 'grid', gridTemplateColumns: form.preferred && form.avoided ? '1fr 1fr' : '1fr', gap: 12, marginBottom: 28 }}>
+            {form.preferred && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 16px' }}>
+                <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, marginBottom: 4 }}>✅ الأطعمة المفضلة</div>
+                <div style={{ fontSize: 13, color: '#166534' }}>{form.preferred}</div>
+              </div>
+            )}
+            {form.avoided && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 16px' }}>
+                <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginBottom: 4 }}>🚫 الأطعمة الممنوعة</div>
+                <div style={{ fontSize: 13, color: '#991b1b' }}>{form.avoided}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── BMR / TDEE ─────────────────────────────────────────────────── */}
         <SectionTitle num="2" title="حسابات الطاقة — معادلة هاريس بنيديكت" />

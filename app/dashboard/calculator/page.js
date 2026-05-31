@@ -46,7 +46,7 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', meals:5 }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', meals:5 }
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
 export default function CalculatorPage() {
@@ -63,8 +63,8 @@ export default function CalculatorPage() {
     const tdee   = calcTDEE(bmr, form.activity)
     const target = calcTarget(tdee, form.goal)
     const ex     = calcExchanges(target, form.goal)
-    const menu   = generateMenu(ex, +form.meals, form.preferred)
-    const plan   = { form, bmr: Math.round(bmr), tdee, target, ex, menu, date: new Date().toLocaleDateString('ar-TN') }
+    const menu   = generateMenu(ex, +form.meals, form.preferred, form.avoided)
+    const plan   = { form, bmr: Math.round(bmr), tdee, target, ex, menu, date: new Date().toISOString() }
     setRes(plan)
   }
 
@@ -136,12 +136,17 @@ export default function CalculatorPage() {
             </div>
           </div>
 
-          {/* Preferred foods + meals */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Preferred / avoided / meals */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">الأطعمة المفضلة</label>
-              <input className={inp} placeholder="دجاج، أرز، بطاطا، تونة..." value={form.preferred} onChange={e => set('preferred', e.target.value)} />
-              <p className="text-xs text-slate-400">ستُدرج كأولوية في القائمة الغذائية</p>
+              <label className="text-sm font-semibold text-slate-700">✅ الأطعمة المفضلة</label>
+              <input className={inp} placeholder="دجاج، أرز، تونة..." value={form.preferred} onChange={e => set('preferred', e.target.value)} />
+              <p className="text-xs text-slate-400">ستُدرج كأولوية في القائمة</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-red-600">🚫 الأطعمة الممنوعة</label>
+              <input className={`${inp} border-red-200 focus:border-red-400 focus:ring-red-100`} placeholder="لحم أحمر، حليب، مكسرات..." value={form.avoided} onChange={e => set('avoided', e.target.value)} />
+              <p className="text-xs text-red-400">لن تظهر في البرنامج الغذائي</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">عدد الوجبات</label>
