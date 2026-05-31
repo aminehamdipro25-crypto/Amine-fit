@@ -73,7 +73,9 @@ export default function DashboardLogin() {
 
         <div className="rounded-2xl p-7 border border-white/8" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)' }}>
           <h2 className="text-xl font-extrabold text-white mb-1">دخول المدرب</h2>
-          <p className="text-white/30 text-sm mb-4 font-medium">أدخل كلمة المرور للوصول للوحة التحكم</p>
+          <p className="text-white/30 text-sm mb-4 font-medium">
+            هذه بوابة خاصة بالمدرب أمين فقط — لا تحتاج إلى بريد إلكتروني، فقط كلمة المرور
+          </p>
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="text-white/40 text-xs font-bold uppercase tracking-wide block mb-1.5">كلمة المرور</label>
