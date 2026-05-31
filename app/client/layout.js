@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil } from 'lucide-react'
 
 const navItems = [
   { href: '/client/dashboard',        icon: LayoutDashboard, label: 'الرئيسية' },
@@ -11,14 +11,63 @@ const navItems = [
   { href: '/client/progress',         icon: TrendingUp,      label: 'متابعة التقدم' },
 ]
 
+function CoachPreviewBar() {
+  const [previewData, setPreviewData] = useState(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    // Read non-httpOnly coach_preview cookie
+    const match = document.cookie.match(/(?:^|;\s*)coach_preview=([^;]+)/)
+    if (match) {
+      try { setPreviewData(JSON.parse(decodeURIComponent(match[1]))) } catch {}
+    }
+  }, [])
+
+  async function exitPreview() {
+    // Clear preview cookie
+    document.cookie = 'coach_preview=; Max-Age=0; path=/'
+    // Clear client token too
+    await fetch('/api/client/logout', { method: 'POST' })
+    router.push('/dashboard/clients')
+  }
+
+  if (!previewData) return null
+
+  return (
+    <div className="fixed top-0 inset-x-0 z-50 bg-emerald-600 text-white px-4 py-2.5 flex items-center gap-3 shadow-lg">
+      <Eye className="w-4 h-4 flex-shrink-0" />
+      <span className="text-sm font-bold flex-1">
+        أنت تشاهد بوابة العميل: <span className="text-emerald-200">{previewData.name}</span>
+      </span>
+      <Link href={`/dashboard/clients/${previewData.id}/plan`}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-xs font-bold transition">
+        <Pencil className="w-3.5 h-3.5" />
+        تعديل الخطة
+      </Link>
+      <button onClick={exitPreview}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold transition">
+        <ArrowRight className="w-3.5 h-3.5" />
+        خروج من المعاينة
+      </button>
+    </div>
+  )
+}
+
 export default function ClientLayout({ children }) {
   const router   = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [isPreview, setIsPreview] = useState(false)
 
   const isLogin = pathname === '/client/login' || pathname === '/client'
 
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)coach_preview=([^;]+)/)
+    setIsPreview(!!match)
+  }, [])
+
   async function logout() {
+    document.cookie = 'coach_preview=; Max-Age=0; path=/'
     await fetch('/api/client/logout', { method: 'POST' })
     router.push('/client/login')
   }
@@ -26,7 +75,9 @@ export default function ClientLayout({ children }) {
   if (isLogin) return <>{children}</>
 
   return (
-    <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
+    <div className={`flex bg-[#f5f5f5] overflow-hidden ${isPreview ? 'h-[calc(100vh-44px)] mt-[44px]' : 'h-screen'}`}>
+      <CoachPreviewBar />
+
       {/* Sidebar */}
       <>
         {open && <div className="fixed inset-0 bg-black/70 z-20 lg:hidden backdrop-blur-sm" onClick={() => setOpen(false)} />}
@@ -35,6 +86,7 @@ export default function ClientLayout({ children }) {
           bg-[#0a0a0a] flex flex-col border-l border-white/5
           lg:static transition-transform duration-300
           ${open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+          ${isPreview ? 'pt-[44px] lg:pt-0' : ''}
         `}>
           <div className="flex items-center justify-between px-5 py-6 border-b border-white/5">
             <div className="flex items-center gap-2.5">
