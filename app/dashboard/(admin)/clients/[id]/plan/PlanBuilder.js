@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Plus, Trash2, Save, ArrowRight,
   ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap,
-  Sparkles, LogIn, Download, Info, X,
+  Sparkles, LogIn, Download, Info, X, Brain, Wand2,
 } from 'lucide-react'
 
 const emptyMeal     = () => ({ name:'', time:'', calories:'', description:'', items:[], macros:{ protein:'', carbs:'', fats:'' } })
