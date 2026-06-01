@@ -900,9 +900,10 @@ export default function PlanBuilder({ client }) {
   const [genAvoided,    setGenAvoided]    = useState(
     [client.dislikedFoods, client.foodAllergy].filter(Boolean).join('، ')
   )
-  // For week/month: store all generated days so admin picks one
+  // For week/month: store all generated days, keep in memory for navigation
   const [genDays,       setGenDays]       = useState(null) // [{name, menu}]
   const [genPickDay,    setGenPickDay]    = useState(false)
+  const [activeDayIdx,  setActiveDayIdx]  = useState(0)
 
   // Convert a raw menu array → PlanBuilder meals (shared helper)
   function menuToMeals(menu) {
@@ -928,18 +929,29 @@ export default function PlanBuilder({ client }) {
     })
   }
 
-  function importDay(menu, macros) {
+  function importDay(menu, idx) {
     setMeals(menuToMeals(menu))
-    if (macros) {
-      setProtein(String(Math.round(macros.protein || 0)))
-      setCarbs(String(Math.round(macros.carbs    || 0)))
-      setFats(String(Math.round(macros.fat       || 0)))
-    }
+    setActiveDayIdx(idx)
     setGenPickDay(false)
-    setGenDays(null)
     setShowGenPanel(false)
     setImportStatus('ok')
+    setChatMessages([])
     setTimeout(() => setImportStatus(''), 4000)
+  }
+
+  // Save current meal edits back into genDays before switching days
+  function switchDay(idx) {
+    if (!genDays) return
+    // persist current meals into genDays[activeDayIdx]
+    const updatedDays = genDays.map((d, i) =>
+      i === activeDayIdx
+        ? { ...d, menu: mealsToMenuFormat(meals) }
+        : d
+    )
+    setGenDays(updatedDays)
+    setActiveDayIdx(idx)
+    setMeals(menuToMeals(updatedDays[idx].menu))
+    setChatMessages([])
   }
 
   async function generateNutritionPlan() {
@@ -978,22 +990,28 @@ export default function PlanBuilder({ client }) {
       }
 
       if (genDuration === 'day' && Array.isArray(plan.menu) && plan.menu.length > 0) {
-        // Day plan → import directly
         setMeals(menuToMeals(plan.menu))
+        setGenDays(null)
         setShowGenPanel(false)
+        setChatMessages([])
         setImportStatus('ok')
         setTimeout(() => setImportStatus(''), 4000)
       } else if (genDuration === 'week' && Array.isArray(plan.days)) {
-        // Week plan → let admin pick which day
         setGenDays(plan.days)
+        setActiveDayIdx(0)
         setGenPickDay(true)
+        // Auto-load first day immediately
+        setMeals(menuToMeals(plan.days[0].menu))
+        setChatMessages([])
       } else if (genDuration === 'month' && Array.isArray(plan.weeks)) {
-        // Month plan → flatten weeks into days list
         const allDays = plan.weeks.flatMap(w =>
           (w.menu ? [{ name: w.name, menu: w.menu }] : [])
         )
         setGenDays(allDays)
+        setActiveDayIdx(0)
         setGenPickDay(true)
+        setMeals(menuToMeals(allDays[0]?.menu || []))
+        setChatMessages([])
       }
     } catch {
       setImportStatus('حدث خطأ أثناء التوليد — تحقق من الاتصال.')
@@ -1439,25 +1457,33 @@ export default function PlanBuilder({ client }) {
               </div>
             )}
 
-            {/* Day picker after week/month generation */}
-            {genPickDay && genDays && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
-                <p className="text-sm font-extrabold text-emerald-800 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  تم التوليد — اختر اليوم الذي تريد استيراد وجباته
-                </p>
-                <div className="flex flex-wrap gap-2">
+            {/* Persistent week/month day navigator — stays visible until admin clears it */}
+            {genPickDay && genDays && genDays.length > 0 && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-extrabold text-emerald-800 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    تنقّل بين الأيام — التعديلات تُحفظ عند الانتقال
+                  </p>
+                  <button type="button" onClick={() => { setGenPickDay(false); setGenDays(null) }}
+                    className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <X className="w-3 h-3" /> إغلاق
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
                   {genDays.map((d, i) => (
-                    <button key={i} type="button" onClick={() => importDay(d.menu)}
-                      className="px-4 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-bold text-sm hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition">
+                    <button key={i} type="button" onClick={() => switchDay(i)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all border
+                        ${activeDayIdx === i
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white border-emerald-200 text-emerald-800 hover:border-emerald-400'}`}>
                       {d.name}
                     </button>
                   ))}
                 </div>
-                <button type="button" onClick={() => { setGenPickDay(false); setGenDays(null) }}
-                  className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
-                  <X className="w-3 h-3" /> إلغاء
-                </button>
+                <p className="text-[10px] text-slate-400">
+                  يمكنك تعديل كل يوم بخانة الذكاء الاصطناعي ثم الانتقال للتالي • احفظ الخطة عند الانتهاء
+                </p>
               </div>
             )}
 
