@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
-  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon
+  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon,
+  Calendar, CreditCard, RefreshCw
 } from 'lucide-react'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -289,6 +290,200 @@ function printClientPDF(client) {
   win.document.close()
 }
 
+// ── Subscription helpers ──────────────────────────────────────────────────────
+const PLANS_INFO = {
+  basic:    { label: 'الأساسي',   short: 'أساسي',   color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
+  standard: { label: 'المتوسط',   short: 'متوسط',   color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
+  premium:  { label: 'البريميوم', short: 'بريميوم', color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 30 },
+}
+
+function subStatus(client) {
+  if (!client.subscriptionEndDate) return null
+  const ms = new Date(client.subscriptionEndDate).getTime() - Date.now()
+  const absH = Math.floor(Math.abs(ms) / 3600000)
+  return {
+    plan:      client.subscriptionPlan,
+    endDate:   client.subscriptionEndDate,
+    startDate: client.subscriptionStartDate,
+    days:      client.subscriptionDays,
+    msLeft:    ms,
+    daysLeft:  Math.max(0, Math.floor(ms / 86400000)),
+    hoursLeft: absH % 24,
+    expired:   ms <= 0,
+  }
+}
+
+function SubBadge({ client }) {
+  const sub = subStatus(client)
+  if (!sub) return null
+  const info = PLANS_INFO[sub.plan]
+  if (!info) return null
+  if (sub.expired) return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-200 whitespace-nowrap">
+      ⛔ {info.short} · منتهي
+    </span>
+  )
+  const urgentColor = sub.daysLeft <= 7 ? 'bg-amber-50 text-amber-700 border-amber-200' : info.color
+  const t = sub.daysLeft < 1 ? `${sub.hoursLeft}س` : `${sub.daysLeft}ي`
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${urgentColor} whitespace-nowrap`}>
+      ⭐ {info.short} · {t}
+    </span>
+  )
+}
+
+function SubscriptionSection({ client, onUpdate }) {
+  const sub = subStatus(client)
+  const [plan, setPlan]           = useState(client.subscriptionPlan || 'basic')
+  const [duration, setDuration]   = useState(
+    client.subscriptionDays || PLANS_INFO[client.subscriptionPlan || 'basic']?.days || 30
+  )
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
+  const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
+  const [clearing, setClearing]   = useState(false)
+
+  async function saveSubscription() {
+    setSaving(true)
+    try {
+      const res  = await fetch(`/api/admin/clients/${client.id}/subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, durationDays: duration, startDate }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        onUpdate(client.id, {
+          subscriptionPlan:      plan,
+          subscriptionStartDate: data.subscription.startDate,
+          subscriptionEndDate:   data.subscription.endDate,
+          subscriptionDays:      data.subscription.days,
+          status:                'active',
+        })
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } finally { setSaving(false) }
+  }
+
+  async function clearSubscription() {
+    if (!confirm('حذف بيانات الاشتراك؟')) return
+    setClearing(true)
+    await fetch(`/api/admin/clients/${client.id}/subscription`, { method: 'DELETE' })
+    onUpdate(client.id, { subscriptionPlan: null, subscriptionStartDate: null, subscriptionEndDate: null, subscriptionDays: null })
+    setClearing(false)
+  }
+
+  const previewEnd = startDate
+    ? new Date(new Date(startDate).getTime() + duration * 86400000).toLocaleDateString('ar', {
+        year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
+      })
+    : null
+
+  return (
+    <div>
+      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">الاشتراك</h3>
+      <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+
+        {/* Current subscription status */}
+        {sub ? (
+          <div className={`rounded-xl p-3 border ${
+            sub.expired                             ? 'bg-red-50 border-red-200' :
+            sub.daysLeft <= 3                       ? 'bg-red-50 border-red-200' :
+            sub.daysLeft <= 7                       ? 'bg-amber-50 border-amber-200' :
+            'bg-emerald-50 border-emerald-200'}`}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">الباقة الحالية</p>
+                <p className="font-extrabold text-slate-900 text-sm">{PLANS_INFO[sub.plan]?.label ?? sub.plan}</p>
+              </div>
+              <div className="text-xs text-slate-500 font-medium text-left space-y-0.5" dir="ltr">
+                <p>Start: {new Date(sub.startDate).toLocaleDateString('ar', { timeZone: 'Asia/Qatar' })}</p>
+                <p>End: {new Date(sub.endDate).toLocaleDateString('ar', { timeZone: 'Asia/Qatar' })}</p>
+              </div>
+            </div>
+            {sub.expired ? (
+              <p className="text-red-600 font-extrabold text-sm mt-2">⛔ انتهى الاشتراك — سيتم تعليق الحساب تلقائياً</p>
+            ) : (
+              <p className={`font-extrabold text-sm mt-2 ${
+                sub.daysLeft <= 3 ? 'text-red-600' :
+                sub.daysLeft <= 7 ? 'text-amber-600' :
+                'text-emerald-600'}`}>
+                ⏱ متبقي: {sub.daysLeft} يوم{sub.hoursLeft > 0 ? ` و ${sub.hoursLeft} ساعة` : ''}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 font-medium bg-white rounded-xl p-3 border border-slate-200">
+            لم يُضبط اشتراك بعد — الحساب مفتوح بدون قيد زمني
+          </p>
+        )}
+
+        {/* Set / renew form */}
+        <div className="space-y-3">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+            {sub ? 'تجديد / تغيير الاشتراك' : 'تحديد اشتراك جديد'}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs font-bold text-slate-400 block mb-1">الباقة</label>
+              <select
+                value={plan}
+                onChange={e => {
+                  const p = e.target.value
+                  setPlan(p)
+                  setDuration(PLANS_INFO[p]?.days || 30)
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-gold-400 appearance-none">
+                <option value="basic">الأساسي — 200 ر.ق</option>
+                <option value="standard">المتوسط — 350 ر.ق</option>
+                <option value="premium">البريميوم — 550 ر.ق</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-400 block mb-1">المدة (أيام)</label>
+              <input
+                type="number" value={duration}
+                onChange={e => setDuration(Math.max(1, Math.min(365, parseInt(e.target.value) || 30)))}
+                min="1" max="365"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-gold-400" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-400 block mb-1">تاريخ البداية</label>
+            <input
+              type="date" value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-gold-400"
+              dir="ltr" />
+          </div>
+          {previewEnd && (
+            <p className="text-xs text-slate-500 font-medium bg-white rounded-lg px-3 py-2 border border-slate-200">
+              📅 ينتهي الاشتراك في: <strong className="text-slate-700">{previewEnd}</strong>
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={saveSubscription} disabled={saving}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#0a0a0a] text-white font-bold text-sm hover:bg-black transition disabled:opacity-50">
+              {saving    ? <Loader2 className="w-4 h-4 animate-spin" /> :
+               saved     ? '✓ تم الحفظ' :
+               <><RefreshCw className="w-3.5 h-3.5" /> {sub ? 'تجديد الاشتراك' : 'حفظ الاشتراك'}</>}
+            </button>
+            {sub && (
+              <button
+                onClick={clearSubscription} disabled={clearing}
+                className="px-3 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition disabled:opacity-40">
+                {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const goalMap = {
   loss:        { label:'خسارة وزن',       color:'bg-amber-50 text-amber-700 border border-amber-200',   icon:'📉' },
   gain:        { label:'بناء عضلات',       color:'bg-blue-50 text-blue-700 border border-blue-200',      icon:'💪' },
@@ -330,7 +525,7 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   )
 }
 
-function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, onKick }) {
+function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, onKick, onUpdate }) {
   const goal = goalMap[client.goal]
   const [pw, setPw]             = useState('')
   const [pwSaving, setPwSaving] = useState(false)
@@ -389,6 +584,7 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
                     {goal.icon} {goal.label}
                   </span>
                 )}
+                <SubBadge client={client} />
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border
                   ${onlineStatus === 'online'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                     onlineStatus === 'away'    ? 'bg-amber-50 text-amber-700 border-amber-200' :
@@ -484,6 +680,9 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
               </Link>
             </div>
           </div>
+
+          {/* Subscription */}
+          <SubscriptionSection client={client} onUpdate={onUpdate} />
 
           {/* Client password */}
           <div>
@@ -629,6 +828,11 @@ export default function ClientsClient({ error }) {
     if (selected?.id === id) setSelected(s => ({ ...s, status }))
   }
 
+  function updateClient(id, fields) {
+    setClients(cs => cs.map(c => c.id === id ? { ...c, ...fields } : c))
+    if (selected?.id === id) setSelected(s => ({ ...s, ...fields }))
+  }
+
   async function deleteClient(id) {
     if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return
     setDeleting(id)
@@ -671,6 +875,7 @@ export default function ClientsClient({ error }) {
           onDelete={deleteClient}
           onlineInfo={onlineData[selected.id]}
           onKick={id => setOnlineData(prev => ({ ...prev, [id]: { lastSeen: null, loginTime: null } }))}
+          onUpdate={updateClient}
         />
       )}
       {addOpen && (
@@ -849,7 +1054,7 @@ export default function ClientsClient({ error }) {
                   </div>
 
                   {/* Stats row */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     {[
                       { label:'العمر',  val: c.age    ? `${c.age}س`    : '—' },
                       { label:'الوزن',  val: c.weight ? `${c.weight}كغ` : '—' },
@@ -861,6 +1066,13 @@ export default function ClientsClient({ error }) {
                       </div>
                     ))}
                   </div>
+
+                  {/* Subscription badge */}
+                  {c.subscriptionPlan && (
+                    <div className="mb-3">
+                      <SubBadge client={c} />
+                    </div>
+                  )}
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100">

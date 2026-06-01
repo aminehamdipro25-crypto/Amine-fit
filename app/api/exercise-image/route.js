@@ -130,6 +130,44 @@ const STATIC_MAP = {
   'Leg Raise':                     IMG('Flat_Bench_Lying_Leg_Raise'),
   'Mountain Climbers':             IMG('Mountain_Climbers'),
   'Mountain Climber':              IMG('Mountain_Climbers'),
+  // ── Additional common AI-generated names ──────────────────────────────────
+  'Barbell Back Squat':            IMG('Barbell_Full_Squat'),
+  'Back Squat':                    IMG('Barbell_Full_Squat'),
+  'Front Squat':                   IMG('Barbell_Full_Squat'),
+  'Reverse Curl':                  IMG('Barbell_Curl'),
+  'Cable Crunch':                  IMG('Cross-Body_Crunch'),
+  'Ab Crunch':                     IMG('Cross-Body_Crunch'),
+  'Goblet Squat':                  IMG('Dumbbell_Squat'),
+  'Dumbbell Row':                  IMG('Bent_Over_Barbell_Row'),
+  'Single Arm Dumbbell Row':       IMG('Bent_Over_Barbell_Row'),
+  'One Arm Dumbbell Row':          IMG('Bent_Over_Barbell_Row'),
+  'Seated Dumbbell Press':         IMG('Barbell_Shoulder_Press'),
+  'Tricep Overhead Extension':     IMG('Triceps_Pushdown'),
+  'Skull Crushers':                IMG('Triceps_Pushdown'),
+  'Incline Curl':                  IMG('Dumbbell_Alternate_Bicep_Curl'),
+  'Spider Curl':                   IMG('Dumbbell_Alternate_Bicep_Curl'),
+  'Cable Lateral Raise':           IMG('Side_Lateral_Raise'),
+  'Machine Lateral Raise':         IMG('Side_Lateral_Raise'),
+  'Hip Abduction':                 IMG('Glute_Kickback'),
+  'Seated Leg Curl':               IMG('Lying_Leg_Curls'),
+  'Seated Calf Raise':             IMG('Standing_Barbell_Calf_Raise'),
+  'Jump Rope':                     IMG('Mountain_Climbers'),
+  'Box Jump':                      IMG('Barbell_Full_Squat'),
+  'Burpee':                        IMG('Mountain_Climbers'),
+  'Russian Twist':                 IMG('Cross-Body_Crunch'),
+  'Bicycle Crunch':                IMG('Cross-Body_Crunch'),
+  'Hanging Leg Raise':             IMG('Flat_Bench_Lying_Leg_Raise'),
+  'Ab Wheel Rollout':              IMG('Plank'),
+  'Superman':                      IMG('Good_Morning'),
+  'Hyperextension':                IMG('Good_Morning'),
+  'Back Extension':                IMG('Good_Morning'),
+  'Rack Pull':                     IMG('Barbell_Deadlift'),
+  'Trap Bar Deadlift':             IMG('Barbell_Deadlift'),
+  'Hex Bar Deadlift':              IMG('Barbell_Deadlift'),
+  'Step Up':                       IMG('Barbell_Lunge'),
+  'Reverse Lunge':                 IMG('Barbell_Lunge'),
+  'Curtsy Lunge':                  IMG('Barbell_Lunge'),
+  'Lateral Lunge':                 IMG('Barbell_Lunge'),
 }
 
 // Prefixes the AI prepends — strip and retry lookup
@@ -141,8 +179,8 @@ const PREFIXES = [
 ]
 
 function normalize(s) {
-  // Collapse extra spaces, trim, lowercase
-  return s?.replace(/\s+/g,' ').trim().toLowerCase() ?? ''
+  // Normalize hyphens to spaces, collapse extra spaces, trim, lowercase
+  return s?.replace(/-/g,' ').replace(/\s+/g,' ').trim().toLowerCase() ?? ''
 }
 
 function lookup(name) {
