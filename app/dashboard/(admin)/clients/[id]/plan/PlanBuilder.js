@@ -895,14 +895,58 @@ export default function PlanBuilder({ client }) {
   const [showGenPanel,  setShowGenPanel]  = useState(false)
   const [genLoading,    setGenLoading]    = useState(false)
   const [genMeals,      setGenMeals]      = useState(5)
+  const [genDuration,   setGenDuration]   = useState('day')
   const [genPreferred,  setGenPreferred]  = useState(client.preferredFoods || '')
   const [genAvoided,    setGenAvoided]    = useState(
     [client.dislikedFoods, client.foodAllergy].filter(Boolean).join('، ')
   )
+  // For week/month: store all generated days so admin picks one
+  const [genDays,       setGenDays]       = useState(null) // [{name, menu}]
+  const [genPickDay,    setGenPickDay]    = useState(false)
+
+  // Convert a raw menu array → PlanBuilder meals (shared helper)
+  function menuToMeals(menu) {
+    return (menu || []).map(m => {
+      const linkedItems = (m.items || []).map(item => {
+        const dbFood = findFoodInDB(item.food)
+        if (dbFood) return makeDBItem(dbFood, item.servings || 1)
+        return { food: item.food || '', amount: item.amount || '' }
+      })
+      const totals = calcItemTotals(linkedItems)
+      return {
+        name:     m.name || '',
+        time:     m.time || '',
+        calories: totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
+        description: '',
+        macros: {
+          protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
+          carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
+          fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
+        },
+        items: linkedItems,
+      }
+    })
+  }
+
+  function importDay(menu, macros) {
+    setMeals(menuToMeals(menu))
+    if (macros) {
+      setProtein(String(Math.round(macros.protein || 0)))
+      setCarbs(String(Math.round(macros.carbs    || 0)))
+      setFats(String(Math.round(macros.fat       || 0)))
+    }
+    setGenPickDay(false)
+    setGenDays(null)
+    setShowGenPanel(false)
+    setImportStatus('ok')
+    setTimeout(() => setImportStatus(''), 4000)
+  }
 
   async function generateNutritionPlan() {
     setGenLoading(true)
     setImportStatus('')
+    setGenPickDay(false)
+    setGenDays(null)
     try {
       const form = {
         name:         client.name         || '',
@@ -916,7 +960,7 @@ export default function PlanBuilder({ client }) {
         preferred:    genPreferred,
         avoided:      genAvoided,
         meals:        genMeals,
-        duration:     'day',
+        duration:     genDuration,
       }
       const res  = await fetch('/api/ai-plan', {
         method: 'POST',
@@ -924,39 +968,33 @@ export default function PlanBuilder({ client }) {
         body: JSON.stringify(form),
       })
       const plan = await res.json()
-      const { target, ex, menu } = plan
 
-      if (target) setCalories(String(Math.round(target)))
-      if (ex?.macros) {
-        setProtein(String(Math.round(ex.macros.protein || 0)))
-        setCarbs(String(Math.round(ex.macros.carbs    || 0)))
-        setFats(String(Math.round(ex.macros.fat       || 0)))
+      // Set shared macros from plan
+      if (plan.target) setCalories(String(Math.round(plan.target)))
+      if (plan.ex?.macros) {
+        setProtein(String(Math.round(plan.ex.macros.protein || 0)))
+        setCarbs(String(Math.round(plan.ex.macros.carbs    || 0)))
+        setFats(String(Math.round(plan.ex.macros.fat       || 0)))
       }
-      if (Array.isArray(menu) && menu.length > 0) {
-        setMeals(menu.map(m => {
-          const linkedItems = (m.items || []).map(item => {
-            const dbFood = findFoodInDB(item.food)
-            if (dbFood) return makeDBItem(dbFood, item.servings || 1)
-            return { food: item.food || '', amount: item.amount || '' }
-          })
-          const totals = calcItemTotals(linkedItems)
-          return {
-            name:     m.name || '',
-            time:     m.time || '',
-            calories: totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
-            description: '',
-            macros: {
-              protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
-              carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
-              fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
-            },
-            items: linkedItems,
-          }
-        }))
+
+      if (genDuration === 'day' && Array.isArray(plan.menu) && plan.menu.length > 0) {
+        // Day plan → import directly
+        setMeals(menuToMeals(plan.menu))
+        setShowGenPanel(false)
+        setImportStatus('ok')
+        setTimeout(() => setImportStatus(''), 4000)
+      } else if (genDuration === 'week' && Array.isArray(plan.days)) {
+        // Week plan → let admin pick which day
+        setGenDays(plan.days)
+        setGenPickDay(true)
+      } else if (genDuration === 'month' && Array.isArray(plan.weeks)) {
+        // Month plan → flatten weeks into days list
+        const allDays = plan.weeks.flatMap(w =>
+          (w.menu ? [{ name: w.name, menu: w.menu }] : [])
+        )
+        setGenDays(allDays)
+        setGenPickDay(true)
       }
-      setImportStatus('ok')
-      setShowGenPanel(false)
-      setTimeout(() => setImportStatus(''), 4000)
     } catch {
       setImportStatus('حدث خطأ أثناء التوليد — تحقق من الاتصال.')
     } finally {
@@ -1105,30 +1143,6 @@ export default function PlanBuilder({ client }) {
         amount:   item.amount   || '',
       })),
     }))
-  }
-
-  // Convert ai-chat menu format → PlanBuilder meals (same logic as generateNutritionPlan)
-  function menuToMeals(menu) {
-    return menu.map(m => {
-      const linkedItems = (m.items || []).map(item => {
-        const dbFood = findFoodInDB(item.food)
-        if (dbFood) return makeDBItem(dbFood, item.servings || 1)
-        return { food: item.food || '', amount: item.amount || '' }
-      })
-      const totals = calcItemTotals(linkedItems)
-      return {
-        name:     m.name || '',
-        time:     m.time || '',
-        calories: totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
-        description: '',
-        macros: {
-          protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
-          carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
-          fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
-        },
-        items: linkedItems,
-      }
-    })
   }
 
   async function sendNutritionChat() {
@@ -1363,9 +1377,31 @@ export default function PlanBuilder({ client }) {
                   ))}
                 </div>
 
+                {/* Duration — day costs API credits, week/month are free */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">
+                    مدة الخطة
+                    <span className="mr-2 font-normal text-slate-400 text-[10px]">الأسبوع والشهر مجاناً (محرك محلي) • اليوم يستخدم Claude AI</span>
+                  </label>
+                  <div className="flex gap-2">
+                    {[
+                      { key:'day',   label:'يوم واحد', badge:'AI 💳', badgeColor:'bg-amber-100 text-amber-700' },
+                      { key:'week',  label:'أسبوع كامل', badge:'مجاناً ✓', badgeColor:'bg-emerald-100 text-emerald-700' },
+                      { key:'month', label:'شهر كامل',   badge:'مجاناً ✓', badgeColor:'bg-emerald-100 text-emerald-700' },
+                    ].map(d => (
+                      <button key={d.key} type="button" onClick={() => setGenDuration(d.key)}
+                        className={`flex-1 py-2 px-1 rounded-xl border-2 font-bold text-xs transition-all flex flex-col items-center gap-0.5
+                          ${genDuration === d.key ? 'border-violet-500 bg-violet-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'}`}>
+                        <span>{d.label}</span>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${genDuration === d.key ? 'bg-white/20 text-white' : d.badgeColor}`}>{d.badge}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Meal count — user picks */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">عدد الوجبات</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">عدد الوجبات في اليوم</label>
                   <div className="flex gap-2">
                     {[3, 4, 5].map(n => (
                       <button key={n} type="button" onClick={() => setGenMeals(n)}
@@ -1379,7 +1415,7 @@ export default function PlanBuilder({ client }) {
 
                 {/* Preferred foods — pre-filled, editable */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">✅ الأطعمة المفضلة <span className="font-normal text-slate-400">(مسبقاً من الاستبيان — يمكنك التعديل)</span></label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">✅ الأطعمة المفضلة <span className="font-normal text-slate-400">(من الاستبيان — يمكنك التعديل)</span></label>
                   <input value={genPreferred} onChange={e => setGenPreferred(e.target.value)}
                     placeholder="دجاج، أرز، تونة..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-violet-400 transition" />
@@ -1387,7 +1423,7 @@ export default function PlanBuilder({ client }) {
 
                 {/* Avoided foods — pre-filled, editable */}
                 <div>
-                  <label className="text-xs font-bold text-red-600 block mb-1">🚫 الأطعمة الممنوعة <span className="font-normal text-slate-400">(مسبقاً من الاستبيان — يمكنك التعديل)</span></label>
+                  <label className="text-xs font-bold text-red-600 block mb-1">🚫 الأطعمة الممنوعة <span className="font-normal text-slate-400">(من الاستبيان — يمكنك التعديل)</span></label>
                   <input value={genAvoided} onChange={e => setGenAvoided(e.target.value)}
                     placeholder="لحم أحمر، حليب..."
                     className="w-full px-3 py-2 rounded-xl border border-red-200 bg-white text-sm outline-none focus:border-red-400 transition" />
@@ -1397,8 +1433,30 @@ export default function PlanBuilder({ client }) {
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-primary-600 text-white font-bold text-sm hover:from-violet-700 hover:to-primary-700 disabled:from-slate-300 disabled:to-slate-300 transition shadow-lg shadow-violet-500/20">
                   {genLoading
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري التوليد...</>
-                    : <><Sparkles className="w-4 h-4" /> توليد {genMeals} وجبات بالذكاء الاصطناعي</>
+                    : <><Sparkles className="w-4 h-4" /> توليد {genMeals} وجبات — {{day:'يوم',week:'أسبوع',month:'شهر'}[genDuration]}</>
                   }
+                </button>
+              </div>
+            )}
+
+            {/* Day picker after week/month generation */}
+            {genPickDay && genDays && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+                <p className="text-sm font-extrabold text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  تم التوليد — اختر اليوم الذي تريد استيراد وجباته
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {genDays.map((d, i) => (
+                    <button key={i} type="button" onClick={() => importDay(d.menu)}
+                      className="px-4 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-bold text-sm hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition">
+                      {d.name}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" onClick={() => { setGenPickDay(false); setGenDays(null) }}
+                  className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                  <X className="w-3 h-3" /> إلغاء
                 </button>
               </div>
             )}
@@ -1413,7 +1471,7 @@ export default function PlanBuilder({ client }) {
             {importStatus === 'ok' && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-bold">
                 <CheckCircle2 className="w-4 h-4" />
-                تم استيراد البيانات من الحاسبة بنجاح
+                تم توليد الخطة بنجاح ✓
               </div>
             )}
 
