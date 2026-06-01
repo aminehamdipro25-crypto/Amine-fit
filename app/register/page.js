@@ -226,7 +226,7 @@ export default function RegisterPage() {
             {/* ── STEP 0: Basic Info ── */}
             {step === 0 && <>
               <Inp label="البريد الإلكتروني" required error={errors.email}>
-                <TextInput field="email" type="email" placeholder="exemple@gmail.com"
+                <TextInput field="email" type="email" placeholder="example@gmail.com"
                   dir="ltr" form={form} setForm={setForm} errors={errors} />
               </Inp>
               <Inp label="الإسم الكامل" required error={errors.name}>

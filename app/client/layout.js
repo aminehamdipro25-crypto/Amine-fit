@@ -59,6 +59,7 @@ export default function ClientLayout({ children }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [isPreview, setIsPreview] = useState(false)
+  const [clientInitial, setClientInitial] = useState('؟')
 
   const isLogin = pathname === '/client/login' || pathname === '/client' || pathname === '/client/demo'
 
@@ -66,6 +67,13 @@ export default function ClientLayout({ children }) {
     const match = document.cookie.match(/(?:^|;\s*)coach_preview=([^;]+)/)
     setIsPreview(!!match)
   }, [])
+
+  useEffect(() => {
+    if (isLogin) return
+    fetch('/api/client/me').then(r => r.ok ? r.json() : null).then(data => {
+      if (data?.name) setClientInitial(data.name.trim()[0].toUpperCase())
+    }).catch(() => {})
+  }, [isLogin])
 
   async function logout() {
     document.cookie = 'coach_preview=; Max-Age=0; path=/'
@@ -137,7 +145,7 @@ export default function ClientLayout({ children }) {
           </button>
           <div className="flex-1" />
           <div className="w-8 h-8 rounded-full bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-sm">
-            ع
+            {clientInitial}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
