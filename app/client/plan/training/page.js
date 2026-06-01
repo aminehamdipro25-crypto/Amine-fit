@@ -267,47 +267,60 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
         <ChevronDown className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}/>
       </div>
 
-      {/* ── Expanded set tracker ── */}
+      {/* ── Expanded: image left + set tracker right ── */}
       {expanded && (
-        <div className="pb-4 px-1">
+        <div className="pb-3 px-1">
           {ex.note && (
-            <p className="text-[10px] text-slate-400 mb-2 px-2 leading-relaxed">💡 {ex.note}</p>
+            <p className="text-[10px] text-slate-400 mb-2 px-1 leading-relaxed">💡 {ex.note}</p>
           )}
-          <div className="rounded-xl overflow-hidden border border-slate-100">
-            {/* Table header */}
-            <div className="grid grid-cols-[22px_1fr_1fr_28px] gap-1.5 items-center px-2.5 py-1.5 bg-slate-50 border-b border-slate-100">
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase">#</p>
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">kg</p>
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">✓</p>
+          <div className="flex gap-2 items-stretch" dir="ltr">
+
+            {/* Large image — left */}
+            <div className="flex-shrink-0 w-[120px] rounded-xl overflow-hidden bg-slate-100 self-stretch min-h-[100px]">
+              {imgSrc
+                ? <img src={imgSrc} alt={name} className="w-full h-full object-cover"
+                    onError={() => setImgSrc(null)} />
+                : <div className="w-full h-full flex items-center justify-center">
+                    <Dumbbell className="w-8 h-8 text-slate-300"/>
+                  </div>}
             </div>
-            {/* Set rows */}
-            {sets.map((s,i) => (
-              <div key={i} className={`grid grid-cols-[22px_1fr_1fr_28px] gap-1.5 items-center px-2.5 py-1.5 transition-colors
-                ${i < sets.length-1 ? 'border-b border-slate-50' : ''}
-                ${s.done ? 'bg-emerald-50/60' : 'bg-white'}`}>
-                <p className={`text-[11px] font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
-                <input
-                  type="number" inputMode="numeric"
-                  placeholder={targetReps || '—'}
-                  value={s.reps}
-                  onChange={e => updateSet(i,'reps',e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
-                />
-                <input
-                  type="number" inputMode="decimal"
-                  placeholder="—"
-                  value={s.weight}
-                  onChange={e => updateSet(i,'weight',e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
-                />
-                <button onClick={()=>toggleSet(i)}
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
-                    ${s.done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24]'}`}>
-                  {s.done && <CheckCircle2 className="w-3 h-3 text-black"/>}
-                </button>
+
+            {/* Set tracker — right */}
+            <div className="flex-1 rounded-xl overflow-hidden border border-slate-100">
+              <div className="grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 bg-slate-50 border-b border-slate-100">
+                <p className="text-[8px] font-extrabold text-slate-400 uppercase">#</p>
+                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
+                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">kg</p>
+                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">✓</p>
               </div>
-            ))}
+              {sets.map((s,i) => (
+                <div key={i} className={`grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 transition-colors
+                  ${i < sets.length-1 ? 'border-b border-slate-50' : ''}
+                  ${s.done ? 'bg-emerald-50/60' : 'bg-white'}`}>
+                  <p className={`text-[10px] font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
+                  <input
+                    type="number" inputMode="numeric"
+                    placeholder={targetReps || '—'}
+                    value={s.reps}
+                    onChange={e => updateSet(i,'reps',e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                  />
+                  <input
+                    type="number" inputMode="decimal"
+                    placeholder="—"
+                    value={s.weight}
+                    onChange={e => updateSet(i,'weight',e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                  />
+                  <button onClick={()=>toggleSet(i)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
+                      ${s.done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24]'}`}>
+                    {s.done && <CheckCircle2 className="w-2.5 h-2.5 text-black"/>}
+                  </button>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       )}
