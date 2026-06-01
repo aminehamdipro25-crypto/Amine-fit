@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createAdminSession, deleteAdminSession } from '@/lib/adminSession'
 import { isRateLimited } from '@/lib/rateLimit'
+import { sendSecurityAlert } from '@/lib/securityAlert'
 
 export async function POST(req) {
   try {
     // Rate-limit: 5 attempts per 15 min per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     if (await isRateLimited(`admin_login:${ip}`, 5, 900)) {
+      // Alert admin immediately on brute-force detection
+      sendSecurityAlert({ type: 'admin_brute_force', ip, detail: 'تجاوز 5 محاولات خاطئة في 15 دقيقة' }).catch(() => {})
       return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد 15 دقيقة' }, { status: 429 })
     }
 
@@ -34,6 +37,8 @@ export async function POST(req) {
     }
 
     const sessionToken = await createAdminSession()
+    // Notify admin of successful login (so they know if it wasn't them)
+    sendSecurityAlert({ type: 'admin_login', ip, detail: 'تم تسجيل الدخول بنجاح' }).catch(() => {})
     const res = NextResponse.json({ success: true })
     res.cookies.set('admin_token', sessionToken, {
       httpOnly: true,

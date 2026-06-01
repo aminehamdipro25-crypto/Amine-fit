@@ -3,6 +3,7 @@ import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
+import { sendSecurityAlert } from '@/lib/securityAlert'
 
 function setClientCookie(res, clientId) {
   res.cookies.set('client_token', createToken(clientId), {
@@ -84,6 +85,7 @@ export async function POST(req) {
 
     // IP-level rate limit: 20 attempts per 15 min
     if (await isRateLimited(`client_auth_ip:${ip}`, 20, 900)) {
+      sendSecurityAlert({ type: 'client_brute_force', ip, detail: 'تجاوز 20 محاولة دخول على بوابة العملاء' }).catch(() => {})
       return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
     }
 
