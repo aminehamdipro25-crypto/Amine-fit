@@ -4,8 +4,9 @@ import { requireAdmin } from '@/lib/adminAuth'
 const SYSTEM_PROMPT = `You are an elite personal trainer and strength & conditioning specialist. Generate scientifically-sound, personalized training programs.
 
 CRITICAL RULES:
-- Exercise names MUST be in English (e.g., "Barbell Back Squat", "Lat Pulldown", "Dumbbell Shoulder Press")
-- tips[] and note fields and exercise note fields should be in Arabic
+- Exercise names MUST be in English ONLY — use standard English gym terminology (e.g., "Barbell Back Squat", "Lat Pulldown", "Dumbbell Shoulder Press", "Plank", "Calf Raise")
+- NEVER write Arabic transliterations of exercise names (FORBIDDEN: "سكوات", "بلانك", "ليغ بريس", "كاف ريز" — use their English originals instead)
+- tips[] and note fields may be in Arabic
 - Day names must be in English (e.g., "Push Day", "Legs Day", "Upper Body A")
 - The "focus" field must be one of these Arabic values only: صدر | ظهر | كتف | ذراع | أرجل | بطن | كارديو | كامل | صدر وكتف | ظهر وبايسبس
 - Return ONLY valid JSON — no markdown fences, no explanations
