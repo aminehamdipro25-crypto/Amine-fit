@@ -890,16 +890,20 @@ export default function PlanBuilder({ client }) {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiForm, setAiForm]       = useState({ goal: client.goal || 'gain', level: client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate', daysPerWeek: '3', equipment: 'gym', injuries: '' })
 
-  // One-click AI nutrition generation from client survey data
-  const [autoAiLoading, setAutoAiLoading] = useState(false)
-
+  // Nutrition AI generation panel
   const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
+  const [showGenPanel,  setShowGenPanel]  = useState(false)
+  const [genLoading,    setGenLoading]    = useState(false)
+  const [genMeals,      setGenMeals]      = useState(5)
+  const [genPreferred,  setGenPreferred]  = useState(client.preferredFoods || '')
+  const [genAvoided,    setGenAvoided]    = useState(
+    [client.dislikedFoods, client.foodAllergy].filter(Boolean).join('، ')
+  )
 
-  async function generateNutritionFromSurvey() {
-    setAutoAiLoading(true)
+  async function generateNutritionPlan() {
+    setGenLoading(true)
     setImportStatus('')
     try {
-      const avoided = [client.dislikedFoods, client.foodAllergy].filter(Boolean).join('، ')
       const form = {
         name:         client.name         || '',
         age:          client.age          || '',
@@ -909,9 +913,9 @@ export default function PlanBuilder({ client }) {
         targetWeight: client.targetWeight || '',
         activity:     client.activityLevel || 'moderate',
         goal:         GOAL_MAP[client.goal] || 'maintain',
-        preferred:    client.preferredFoods || '',
-        avoided,
-        meals:        5,
+        preferred:    genPreferred,
+        avoided:      genAvoided,
+        meals:        genMeals,
         duration:     'day',
       }
       const res  = await fetch('/api/ai-plan', {
@@ -951,11 +955,12 @@ export default function PlanBuilder({ client }) {
         }))
       }
       setImportStatus('ok')
+      setShowGenPanel(false)
       setTimeout(() => setImportStatus(''), 4000)
     } catch {
       setImportStatus('حدث خطأ أثناء التوليد — تحقق من الاتصال.')
     } finally {
-      setAutoAiLoading(false)
+      setGenLoading(false)
     }
   }
 
@@ -1234,18 +1239,17 @@ export default function PlanBuilder({ client }) {
                   </p>
                 )}
               </div>
-              {/* One-click AI generation from survey data */}
+              {/* Generate / Import buttons */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={generateNutritionFromSurvey}
-                  disabled={autoAiLoading || !client.age || !client.weight || !client.height}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-violet-300 bg-violet-50 text-violet-700 text-xs font-bold hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  onClick={() => setShowGenPanel(p => !p)}
+                  disabled={!client.age || !client.weight || !client.height}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed
+                    ${showGenPanel ? 'border-violet-400 bg-violet-600 text-white' : 'border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
                 >
-                  {autoAiLoading
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري التوليد...</>
-                    : <><Sparkles className="w-3.5 h-3.5" /> توليد AI مباشر</>
-                  }
+                  <Sparkles className="w-3.5 h-3.5" />
+                  توليد AI
                 </button>
                 <button
                   type="button"
@@ -1257,6 +1261,68 @@ export default function PlanBuilder({ client }) {
                 </button>
               </div>
             </div>
+
+            {/* AI Generation Panel — asks for options BEFORE generating */}
+            {showGenPanel && (
+              <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 space-y-3">
+                <p className="text-xs font-extrabold text-violet-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> إعدادات الخطة الغذائية
+                </p>
+
+                {/* Client summary — read-only */}
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  {[
+                    { l: 'الاسم', v: client.name },
+                    { l: 'العمر', v: client.age ? client.age + ' سنة' : null },
+                    { l: 'الوزن', v: client.weight ? client.weight + ' كغ' : null },
+                    { l: 'الطول', v: client.height ? client.height + ' سم' : null },
+                    { l: 'الهدف', v: { loss:'خسارة وزن', gain:'بناء عضلات', maintain:'حفاظ', performance:'أداء رياضي' }[client.goal] || client.goal },
+                  ].filter(x => x.v).map(x => (
+                    <span key={x.l} className="bg-white border border-violet-200 text-violet-800 font-semibold px-2 py-0.5 rounded-lg">
+                      {x.l}: {x.v}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Meal count — user picks */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">عدد الوجبات</label>
+                  <div className="flex gap-2">
+                    {[3, 4, 5].map(n => (
+                      <button key={n} type="button" onClick={() => setGenMeals(n)}
+                        className={`flex-1 py-2 rounded-xl border-2 font-bold text-sm transition-all
+                          ${genMeals === n ? 'border-violet-500 bg-violet-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'}`}>
+                        {n} وجبات
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preferred foods — pre-filled, editable */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">✅ الأطعمة المفضلة <span className="font-normal text-slate-400">(مسبقاً من الاستبيان — يمكنك التعديل)</span></label>
+                  <input value={genPreferred} onChange={e => setGenPreferred(e.target.value)}
+                    placeholder="دجاج، أرز، تونة..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-violet-400 transition" />
+                </div>
+
+                {/* Avoided foods — pre-filled, editable */}
+                <div>
+                  <label className="text-xs font-bold text-red-600 block mb-1">🚫 الأطعمة الممنوعة <span className="font-normal text-slate-400">(مسبقاً من الاستبيان — يمكنك التعديل)</span></label>
+                  <input value={genAvoided} onChange={e => setGenAvoided(e.target.value)}
+                    placeholder="لحم أحمر، حليب..."
+                    className="w-full px-3 py-2 rounded-xl border border-red-200 bg-white text-sm outline-none focus:border-red-400 transition" />
+                </div>
+
+                <button type="button" onClick={generateNutritionPlan} disabled={genLoading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-primary-600 text-white font-bold text-sm hover:from-violet-700 hover:to-primary-700 disabled:from-slate-300 disabled:to-slate-300 transition shadow-lg shadow-violet-500/20">
+                  {genLoading
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري التوليد...</>
+                    : <><Sparkles className="w-4 h-4" /> توليد {genMeals} وجبات بالذكاء الاصطناعي</>
+                  }
+                </button>
+              </div>
+            )}
 
             {/* Import status message */}
             {importStatus && importStatus !== 'ok' && (
