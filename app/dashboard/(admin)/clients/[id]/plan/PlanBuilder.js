@@ -260,6 +260,90 @@ function ExerciseRow({ ex, idx, onChange, onRemove }) {
   )
 }
 
+/* ── Search aliases: Arabic category terms + English → food groups ───────── */
+const CATEGORY_ALIASES = {
+  // Arabic — فئات وأسماء شائعة
+  'مكسرات':       ['fat'],
+  'نات':           ['fat'],
+  'دهون':         ['fat'],
+  'دهن':          ['fat'],
+  'زيوت':         ['fat'],
+  'زيت':          ['fat'],
+  'بروتين':       ['meat'],
+  'لحوم':         ['meat'],
+  'بروتينات':     ['meat'],
+  'دجاج':         ['meat'],
+  'سمك':          ['meat'],
+  'بيض':          ['meat'],
+  'لحم':          ['meat'],
+  'نشويات':       ['starch'],
+  'نشا':          ['starch'],
+  'كارب':         ['starch'],
+  'كربوهيدرات':   ['starch'],
+  'خبز':          ['starch'],
+  'أرز':          ['starch'],
+  'فاكهة':        ['fruit'],
+  'فواكه':        ['fruit'],
+  'فاكهه':        ['fruit'],
+  'خضار':         ['vegetable'],
+  'خضروات':       ['vegetable'],
+  'خضراوات':      ['vegetable'],
+  'سلطة':         ['vegetable'],
+  'حليب':         ['milk'],
+  'ألبان':        ['milk'],
+  'لبن':          ['milk'],
+  'زبادي':        ['milk'],
+  // English — groups and common food terms
+  'nuts':         ['fat'],
+  'nut':          ['fat'],
+  'fat':          ['fat'],
+  'fats':         ['fat'],
+  'oil':          ['fat'],
+  'oils':         ['fat'],
+  'protein':      ['meat'],
+  'meat':         ['meat'],
+  'chicken':      ['meat'],
+  'fish':         ['meat'],
+  'egg':          ['meat'],
+  'eggs':         ['meat'],
+  'tuna':         ['meat'],
+  'starch':       ['starch'],
+  'starches':     ['starch'],
+  'carb':         ['starch'],
+  'carbs':        ['starch'],
+  'rice':         ['starch'],
+  'bread':        ['starch'],
+  'fruit':        ['fruit'],
+  'fruits':       ['fruit'],
+  'vegetable':    ['vegetable'],
+  'vegetables':   ['vegetable'],
+  'veggies':      ['vegetable'],
+  'salad':        ['vegetable'],
+  'dairy':        ['milk'],
+  'milk':         ['milk'],
+  'yogurt':       ['milk'],
+  'yoghurt':      ['milk'],
+}
+
+// Smart food search: category alias → group, then name/keyword match
+function searchFoods(q) {
+  const trimmed = q.trim()
+  if (!trimmed) return []
+  const lq = trimmed.toLowerCase()
+
+  // 1. Category alias match → show all foods in that group
+  const groups = CATEGORY_ALIASES[trimmed] || CATEGORY_ALIASES[lq]
+  if (groups) {
+    return ALL_FOODS.filter(f => groups.includes(f.group))
+  }
+
+  // 2. Food name + keyword match (Arabic and English)
+  return ALL_FOODS.filter(f =>
+    f.nameAr.includes(trimmed) ||
+    f.keywords.some(k => k.includes(lq) || lq.includes(k))
+  )
+}
+
 /* ── FoodSearchInput ─────────────────────────────────────────────────────── */
 function FoodSearchInput({ onAdd }) {
   const [q, setQ]       = useState('')
@@ -272,12 +356,7 @@ function FoodSearchInput({ onAdd }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const results = q.trim().length >= 1
-    ? ALL_FOODS.filter(f => {
-        const lq = q.toLowerCase()
-        return f.nameAr.includes(q) || f.keywords.some(k => k.includes(lq) || lq.includes(k))
-      }).slice(0, 9)
-    : []
+  const results = searchFoods(q).slice(0, 10)
 
   return (
     <div ref={ref} className="relative">
@@ -287,7 +366,7 @@ function FoodSearchInput({ onAdd }) {
           value={q}
           onChange={e => { setQ(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          placeholder="ابحث عن طعام... (موز، دجاج، أرز)"
+          placeholder="ابحث... موز، nuts، مكسرات، chicken، أرز"
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 font-medium"
         />
         {q && <button type="button" onClick={() => { setQ(''); setOpen(false) }} className="text-slate-300 hover:text-slate-500"><X className="w-3.5 h-3.5" /></button>}
