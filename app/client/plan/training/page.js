@@ -213,31 +213,29 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
 
       {/* ── Header row ── */}
       <div
-        className={`flex items-center gap-3 py-3.5 cursor-pointer select-none transition-colors ${expanded ? 'opacity-100' : ''}`}
+        className="flex items-center gap-3 py-3 cursor-pointer select-none"
         onClick={() => setExpanded(e=>!e)}>
 
-        {/* Badge */}
-        <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-extrabold transition-all
-          ${allDone ? 'bg-emerald-100 text-emerald-600 scale-110'
-            : doneSets > 0 ? 'bg-[#fbbf24]/20 text-[#d97706]'
-            : 'bg-slate-100 text-slate-500'}`}>
-          {allDone ? '✓' : doneSets > 0 ? `${doneSets}/${numSets}` : number}
-        </div>
-
-        {/* Thumbnail */}
-        <div className="relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100">
+        {/* Square image — always visible, left-most */}
+        <div className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
           {imgSrc
             ? <img src={imgSrc} alt={name} className="w-full h-full object-cover" loading="lazy"
                 onError={() => setImgSrc(null)} />
-            : <div className="w-full h-full flex items-center justify-center">
-                <Dumbbell className="w-5 h-5 text-slate-300"/>
+            : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                <Dumbbell className="w-6 h-6 text-slate-300"/>
               </div>}
           {ex.videoUrl && (
             <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
               onClick={e=>e.stopPropagation()}
-              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
-              <Play className="w-3.5 h-3.5 text-white" fill="white"/>
+              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity rounded-xl">
+              <Play className="w-5 h-5 text-white" fill="white"/>
             </a>
+          )}
+          {/* Completion overlay */}
+          {allDone && (
+            <div className="absolute inset-0 bg-emerald-500/80 flex items-center justify-center">
+              <span className="text-white text-xl font-extrabold">✓</span>
+            </div>
           )}
         </div>
 
@@ -247,15 +245,23 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
             ${allDone ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
             {name}
           </p>
-          <p className="text-[11px] font-semibold mt-0.5 flex items-center gap-1.5 flex-wrap" dir="ltr">
+          <p className="text-[11px] font-semibold mt-1 flex items-center gap-1.5 flex-wrap" dir="ltr">
             {ex.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-700 font-extrabold">{ex.sets}</span></>}
             {ex.sets && ex.reps && <span className="text-slate-200">·</span>}
             {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
             {showRest && <><span className="text-slate-200">·</span><span className="text-slate-400 text-[10px]">{ex.rest}</span></>}
           </p>
           {doneSets > 0 && !allDone && (
-            <p className="text-[10px] text-[#d97706] font-bold mt-0.5">{doneSets}/{numSets} sets done</p>
+            <p className="text-[10px] text-[#d97706] font-bold mt-1">{doneSets}/{numSets} sets done</p>
           )}
+        </div>
+
+        {/* Badge number */}
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold
+          ${allDone ? 'bg-emerald-100 text-emerald-600'
+            : doneSets > 0 ? 'bg-amber-100 text-amber-600'
+            : 'bg-slate-100 text-slate-500'}`}>
+          {doneSets > 0 && !allDone ? `${doneSets}/${numSets}` : number}
         </div>
 
         <ChevronDown className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}/>
@@ -264,13 +270,6 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
       {/* ── Expanded set tracker ── */}
       {expanded && (
         <div className="pb-4 px-1">
-          {/* Exercise illustration */}
-          {imgSrc && !ytThumb && (
-            <div className="mb-3 rounded-xl overflow-hidden h-40 bg-slate-100">
-              <img src={imgSrc} alt={name} className="w-full h-full object-cover object-center"
-                onError={() => setImgSrc(null)} />
-            </div>
-          )}
           {ex.note && (
             <p className="text-[10px] text-slate-400 mb-2 px-2 leading-relaxed">💡 {ex.note}</p>
           )}
