@@ -13,7 +13,7 @@ const SCHEDULE = {
 }
 
 // ─── Labels (Maghrebi / North-African Arabic month names) ─────────────────────
-const DAY_SHORT     = ['أح','ن','ث','أر','خ','ج','س']
+const DAY_SHORT     = ['Su','Mo','Tu','We','Th','Fr','Sa']
 const MONTHS_MAGHREBI = [
   'جانفي','فيفري','مارس','أفريل','ماي','جوان',
   'جويلية','أوت','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
@@ -44,8 +44,6 @@ const TRANS_MAP = {
   'بلانك بسط':'Plank Hold','سايد بلانك':'Side Plank',
   'ابغ بريس':'Leg Press','ارف كيرل':'Leg Curl',
 }
-const LEVEL_AR = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
-
 function normalizeName(name) {
   if (!name) return name
   if (/^[a-zA-Z0-9\s\-\/()]+$/.test(name)) return name  // already English
@@ -110,12 +108,12 @@ function SectionBanner({type}) {
         <div>
           <p className="text-white font-extrabold text-sm tracking-wide">{wu?'WARM UP':'COOL DOWN'}</p>
           <p className="text-white/35 text-[11px] font-medium">
-            {wu ? 'تنشيط المفاصل · تسخين العضلات' : 'تمدد · تسريع التعافي'}
+            {wu ? 'Mobilize joints · warm up muscles' : 'Stretch · accelerate recovery'}
           </p>
         </div>
       </div>
       <span className="text-[#fbbf24] font-extrabold text-xs bg-[#fbbf24]/10 px-3 py-1 rounded-full flex-shrink-0">
-        {wu ? '10 د' : '5 د'}
+        {wu ? '10 min' : '5 min'}
       </span>
     </div>
   )
@@ -190,13 +188,13 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
             {name}
           </p>
           <p className="text-[11px] font-semibold mt-0.5 flex items-center gap-1.5 flex-wrap" dir="ltr">
-            {ex.sets && <><span className="text-slate-400">م:</span><span className="text-slate-700 font-extrabold">{ex.sets}</span></>}
+            {ex.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-700 font-extrabold">{ex.sets}</span></>}
             {ex.sets && ex.reps && <span className="text-slate-200">·</span>}
-            {ex.reps && <><span className="text-slate-400">ت:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
+            {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
             {showRest && <><span className="text-slate-200">·</span><span className="text-slate-400 text-[10px]">{ex.rest}</span></>}
           </p>
           {doneSets > 0 && !allDone && (
-            <p className="text-[10px] text-[#d97706] font-bold mt-0.5">{doneSets}/{numSets} مجموعة منجزة</p>
+            <p className="text-[10px] text-[#d97706] font-bold mt-0.5">{doneSets}/{numSets} sets done</p>
           )}
         </div>
 
@@ -213,8 +211,8 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
             {/* Table header */}
             <div className="grid grid-cols-[28px_1fr_1fr_32px] gap-2 items-center px-3 py-2 bg-slate-50 border-b border-slate-100">
               <p className="text-[9px] font-extrabold text-slate-400 uppercase">#</p>
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">تكرار</p>
-              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">كغ</p>
+              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
+              <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">kg</p>
               <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">✓</p>
             </div>
             {/* Set rows */}
@@ -332,7 +330,7 @@ function WorkoutCard({day, date, isToday}) {
           {info.emoji}
         </span>
         <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-[#fbbf24] text-black px-3 py-1 rounded-full uppercase tracking-widest mb-4">
-          {isToday ? '✦ تمرين اليوم' : '✦ التمرين'}
+          {isToday ? "✦ TODAY'S WORKOUT" : '✦ WORKOUT'}
         </div>
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -342,13 +340,13 @@ function WorkoutCard({day, date, isToday}) {
           </div>
           <div className="text-right flex-shrink-0 pb-1">
             <p className="text-4xl font-black text-[#fbbf24] leading-none">{total}</p>
-            <p className="text-white/30 text-[10px] font-bold mt-1 uppercase tracking-wide">تمرين</p>
+            <p className="text-white/30 text-[10px] font-bold mt-1 uppercase tracking-wide">Exercises</p>
           </div>
         </div>
         {doneCount > 0 && (
           <div className="mt-5">
             <div className="flex justify-between mb-1.5">
-              <span className="text-[11px] text-white/30 font-bold uppercase tracking-wide">التقدم</span>
+              <span className="text-[11px] text-white/30 font-bold uppercase tracking-wide">Progress</span>
               <span className="text-[11px] text-[#fbbf24] font-extrabold">{doneCount}/{total}</span>
             </div>
             <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -362,7 +360,7 @@ function WorkoutCard({day, date, isToday}) {
       {/* Exercises */}
       <div className="bg-white">
         <div className="px-5 pt-4 pb-3 border-b border-slate-50 flex items-center justify-between">
-          <p className="text-[11px] font-extrabold text-slate-300 uppercase tracking-[0.15em]">البرنامج</p>
+          <p className="text-[11px] font-extrabold text-slate-300 uppercase tracking-[0.15em]">Program Preview</p>
           {day.description && <p className="text-[10px] text-slate-300 max-w-[160px] truncate">{day.description}</p>}
         </div>
         <div className="px-4 pt-3 pb-5 space-y-2">
@@ -378,12 +376,12 @@ function WorkoutCard({day, date, isToday}) {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-slate-300 text-sm">لا تمارين لهذا اليوم</div>
+            <div className="py-8 text-center text-slate-300 text-sm">No exercises for this day</div>
           )}
           <SectionBanner type="cooldown"/>
           {allDone && (
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center py-4 rounded-2xl font-extrabold text-sm shadow-lg shadow-emerald-500/25">
-              🏆 أتممت التمرين! عمل رائع!
+              🏆 Workout Complete! Great job!
             </div>
           )}
         </div>
@@ -400,13 +398,13 @@ function RestCard({date, isToday}) {
         <span className="absolute inset-0 flex items-center justify-center text-[140px] leading-none opacity-[0.04] select-none pointer-events-none">🌙</span>
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-white/8 text-white/40 px-3 py-1 rounded-full uppercase tracking-widest mb-5">
-            {isToday ? '✦ اليوم' : '✦ راحة'}
+            {isToday ? '✦ TODAY' : '✦ DAY OFF'}
           </div>
           <h2 className="text-5xl font-black text-white leading-none tracking-tighter">REST</h2>
           <p className="text-white/50 font-bold text-base mt-2">يوم الراحة</p>
           <p className="text-white/25 text-xs mt-1 font-medium">{fmtDate(date)}</p>
           <p className="text-white/20 text-xs mt-4 max-w-xs mx-auto leading-relaxed font-medium">
-            الراحة جزء من البرنامج — دع عضلاتك تتعافى وتصبح أقوى
+            Rest is part of the program — let your muscles recover and grow stronger
           </p>
         </div>
       </div>
@@ -418,10 +416,10 @@ function RestCard({date, isToday}) {
 function StatsBar({plan}) {
   const totalEx = plan.days.reduce((acc,d)=>acc+(d.exercises?.length||0),0)
   const items = [
-    {icon:'💪',label:'تمرين',    val:totalEx||null},
-    {icon:'🎯',label:'المستوى', val:plan.level ? (LEVEL_AR[plan.level] || plan.level) : null},
-    {icon:'⏱️',label:'المدة',   val:plan.duration?`${plan.duration} د`:null},
-    {icon:'📅',label:'أيام/أسبوع', val:plan.daysPerWeek||plan.days.length||null},
+    {icon:'💪',label:'Exercises',val:totalEx||null},
+    {icon:'🎯',label:'Level',    val:plan.level||null},
+    {icon:'⏱️',label:'Duration', val:plan.duration?`${plan.duration}m`:null},
+    {icon:'📅',label:'Days/wk',  val:plan.daysPerWeek||plan.days.length||null},
   ].filter(i=>i.val)
   if (!items.length) return null
   return (
