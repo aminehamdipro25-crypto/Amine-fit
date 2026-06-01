@@ -1079,6 +1079,85 @@ export default function PlanBuilder({ client }) {
   const updateDay  = (i, val) => { const d = [...days]; d[i] = val; setDays(d) }
   const removeDay  = (i) => setDays(days.filter((_, j) => j !== i))
 
+  // Nutrition AI chat refinement
+  const [chatMessages,  setChatMessages]  = useState([])
+  const [chatInput,     setChatInput]     = useState('')
+  const [chatLoading,   setChatLoading]   = useState(false)
+  const chatEndRef = useRef(null)
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatMessages, chatLoading])
+
+  // Convert PlanBuilder meals → ai-chat menu format
+  function mealsToMenuFormat(mealsList) {
+    return mealsList.map(m => ({
+      name:    m.name,
+      time:    m.time,
+      icon:    '🍽️',
+      kcal:    parseFloat(m.calories)       || 0,
+      carbs:   parseFloat(m.macros?.carbs)  || 0,
+      protein: parseFloat(m.macros?.protein)|| 0,
+      fat:     parseFloat(m.macros?.fats)   || 0,
+      items:   (m.items || []).map(item => ({
+        group:    item.group    || '',
+        icon:     '•',
+        servings: item.servings || 1,
+        food:     item.food     || '',
+        amount:   item.amount   || '',
+      })),
+    }))
+  }
+
+  // Convert ai-chat menu format → PlanBuilder meals (same logic as generateNutritionPlan)
+  function menuToMeals(menu) {
+    return menu.map(m => {
+      const linkedItems = (m.items || []).map(item => {
+        const dbFood = findFoodInDB(item.food)
+        if (dbFood) return makeDBItem(dbFood, item.servings || 1)
+        return { food: item.food || '', amount: item.amount || '' }
+      })
+      const totals = calcItemTotals(linkedItems)
+      return {
+        name:     m.name || '',
+        time:     m.time || '',
+        calories: totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
+        description: '',
+        macros: {
+          protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
+          carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
+          fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
+        },
+        items: linkedItems,
+      }
+    })
+  }
+
+  async function sendNutritionChat() {
+    const msg = chatInput.trim()
+    if (!msg || chatLoading || meals.length === 0) return
+    setChatInput('')
+    const newMessages = [...chatMessages, { role: 'user', content: msg }]
+    setChatMessages(newMessages)
+    setChatLoading(true)
+    try {
+      const res = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: { target: parseFloat(calories) || 0 },
+          menu: mealsToMenuFormat(meals),
+          messages: newMessages,
+        }),
+      })
+      const { menu: updatedMenu, message } = await res.json()
+      setMeals(menuToMeals(updatedMenu))
+      setChatMessages(prev => [...prev, { role: 'assistant', content: message }])
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ حدث خطأ في الاتصال — لم تتغير الخطة.' }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
   /* Import macros + meals from the calculator (localStorage) */
   function importFromCalculator() {
     try {
@@ -1381,10 +1460,75 @@ export default function PlanBuilder({ client }) {
             ))}
             {meals.length === 0 && (
               <div className="text-center py-8 text-slate-300 border-2 border-dashed border-slate-100 rounded-2xl">
-                <p className="text-sm font-medium">لا توجد وجبات — أضفها يدوياً أو استوردها من الحاسبة</p>
+                <p className="text-sm font-medium">لا توجد وجبات — أضفها يدوياً أو ولّدها بالذكاء الاصطناعي</p>
               </div>
             )}
           </div>
+
+          {/* ── AI Chat Refinement ── */}
+          {meals.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white">
+                <div className="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-extrabold text-slate-800">تعديل الخطة بالذكاء الاصطناعي</p>
+                  <p className="text-[10px] text-slate-400">اكتب تعليمات التعديل — مثال: "أزل السمك من الفطور"</p>
+                </div>
+                {chatMessages.length > 0 && (
+                  <button onClick={() => setChatMessages([])} className="mr-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <X className="w-3 h-3" /> مسح
+                  </button>
+                )}
+              </div>
+
+              {/* Messages */}
+              {chatMessages.length > 0 && (
+                <div className="px-4 py-3 space-y-2.5 max-h-52 overflow-y-auto">
+                  {chatMessages.map((m, i) => (
+                    <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold
+                        ${m.role === 'user' ? 'bg-slate-800 text-white' : 'bg-violet-600 text-white'}`}>
+                        {m.role === 'user' ? 'أ' : 'AI'}
+                      </div>
+                      <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-xs font-medium leading-relaxed
+                        ${m.role === 'user'
+                          ? 'bg-slate-800 text-white rounded-tl-none'
+                          : 'bg-violet-50 border border-violet-100 text-slate-700 rounded-tr-none'}`}>
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex gap-2">
+                      <div className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-[11px] font-extrabold flex-shrink-0">AI</div>
+                      <div className="bg-violet-50 border border-violet-100 px-3 py-2 rounded-2xl rounded-tr-none flex gap-1 items-center">
+                        {[0,1,2].map(i => <div key={i} className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay:`${i*0.15}s` }} />)}
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+
+              {/* Input */}
+              <div className="px-4 py-3 flex gap-2 border-t border-slate-50">
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendNutritionChat()}
+                  placeholder="مثال: أزل السمك من الفطور وضع بدله بيض..."
+                  disabled={chatLoading}
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition disabled:bg-slate-50 text-right"
+                />
+                <button onClick={sendNutritionChat} disabled={chatLoading || !chatInput.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-violet-600 text-white font-bold text-sm hover:bg-violet-700 disabled:from-slate-300 disabled:bg-slate-300 transition flex items-center gap-1.5">
+                  {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
