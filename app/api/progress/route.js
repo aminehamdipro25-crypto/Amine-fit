@@ -3,13 +3,13 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/clientAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
-function getPayload() {
+async function getPayload() {
   const token = cookies().get('client_token')?.value
-  return verifyToken(token)
+  return await verifyToken(token)
 }
 
 export async function GET() {
-  const payload = getPayload()
+  const payload = await getPayload()
   if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
   const client = await getSubmissionById(payload.id)
@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const payload = getPayload()
+    const payload = await getPayload()
     if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
     const { weight, waist, chest, hips, arm, thigh, note } = await req.json()
@@ -42,7 +42,8 @@ export async function POST(req) {
       note:   note?.toString().slice(0, 500) || '',
     }
 
-    const progress = [...(client.progress || []), entry]
+    // Cap at 500 entries to prevent storage exhaustion
+    const progress = [...(client.progress || []), entry].slice(-500)
     await updateSubmission(payload.id, { progress })
     return NextResponse.json(entry)
   } catch (err) {
@@ -53,7 +54,7 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
-    const payload = getPayload()
+    const payload = await getPayload()
     if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
     const { id } = await req.json()

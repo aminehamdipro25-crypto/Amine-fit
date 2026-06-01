@@ -48,6 +48,10 @@ export async function POST(request) {
   }
 }
 
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 async function notifyNewLead(entry) {
   const adminEmail = process.env.NOTIFY_EMAIL || 'amine.hamdi.pro25@gmail.com'
   if (!process.env.RESEND_API_KEY) return
@@ -70,11 +74,11 @@ async function notifyNewLead(entry) {
   </div>
   <div style="padding:20px">
     <table style="width:100%;border-collapse:collapse">
-      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;width:35%;color:#92400e">الاسم</td><td style="padding:10px 12px;border:1px solid #e5e7eb;font-weight:600">${entry.name || '—'}</td></tr>
-      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الهاتف</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${entry.phone || '—'}</td></tr>
-      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الإيميل</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${entry.email || '—'}</td></tr>
-      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الهدف</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${entry.goal || '—'}</td></tr>
-      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الرسالة</td><td style="padding:10px 12px;border:1px solid #e5e7eb;white-space:pre-line">${entry.notes || '—'}</td></tr>
+      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;width:35%;color:#92400e">الاسم</td><td style="padding:10px 12px;border:1px solid #e5e7eb;font-weight:600">${escapeHtml(entry.name) || '—'}</td></tr>
+      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الهاتف</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${escapeHtml(entry.phone) || '—'}</td></tr>
+      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الإيميل</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${escapeHtml(entry.email) || '—'}</td></tr>
+      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الهدف</td><td style="padding:10px 12px;border:1px solid #e5e7eb">${escapeHtml(entry.goal) || '—'}</td></tr>
+      <tr><td style="padding:10px 12px;background:#fef3c7;font-weight:700;border:1px solid #fde68a;color:#92400e">الرسالة</td><td style="padding:10px 12px;border:1px solid #e5e7eb;white-space:pre-line">${escapeHtml(entry.notes) || '—'}</td></tr>
     </table>
     <div style="margin-top:16px;text-align:center">
       <a href="https://wa.me/97430653759?text=${encodeURIComponent('مرحباً ' + (entry.name || '') + '، شكراً على تواصلك مع Amine-Fit!')}"

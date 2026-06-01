@@ -122,15 +122,19 @@ export async function POST(req) {
   "menu": ${menuSchema}
 }`
 
+    const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
+    const safePreferred = String(form.preferred || '').slice(0, 200) || 'لا يوجد'
+    const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
+
     const userPrompt = `═══ بيانات العميل ═══
-الاسم: ${form.name || 'العميل'}
+الاسم: ${safeName}
 العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
 الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
-مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || form.activity}
-الهدف: ${GOAL_LABELS[form.goal] || form.goal}
-الأطعمة المفضلة: ${form.preferred || 'لا يوجد'}
-الأطعمة الممنوعة: ${form.avoided || 'لا يوجد'}
+مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
+الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
+الأطعمة المفضلة: ${safePreferred}
+الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
 أنشئ خطة غذائية ليوم واحد وأعد JSON بالضبط:

@@ -5,9 +5,16 @@ import { deleteClientSession } from '@/lib/clientSession'
 
 export async function POST() {
   const token = cookies().get('client_token')?.value
-  const payload = verifyToken(token)
-  if (payload?.id) {
-    await deleteClientSession(payload.id).catch(() => {})
+  // Use signature-only check here — logout must succeed even if session
+  // was already revoked (e.g. kicked by admin). We still clear the Redis key.
+  if (token) {
+    try {
+      const parts = token.split('.')
+      if (parts.length === 2) {
+        const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString())
+        if (payload?.id) await deleteClientSession(payload.id).catch(() => {})
+      }
+    } catch { /* ignore parse errors */ }
   }
   const res = NextResponse.json({ success: true })
   res.cookies.set('client_token', '', {

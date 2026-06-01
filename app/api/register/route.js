@@ -32,7 +32,7 @@ export async function POST(req) {
     }
 
     const emailLower = sanitizeStr(body.email, 254).toLowerCase()
-    if (!emailLower || !emailLower.includes('@')) {
+    if (!emailLower || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
       return NextResponse.json({ error: 'بريد إلكتروني غير صالح' }, { status: 400 })
     }
 

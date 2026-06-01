@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
 import { createClientSession } from '@/lib/clientSession'
@@ -40,7 +41,11 @@ async function handleActivation(email, activationCode, password, confirmPassword
   if (!client || !client.activationCode) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
-  if (client.activationCode !== code) {
+  const storedBuf    = Buffer.from(client.activationCode)
+  const submittedBuf = Buffer.from(code)
+  const codeMatch = storedBuf.length === submittedBuf.length &&
+    crypto.timingSafeEqual(storedBuf, submittedBuf)
+  if (!codeMatch) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 

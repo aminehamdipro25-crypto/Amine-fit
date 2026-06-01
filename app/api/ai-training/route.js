@@ -155,12 +155,14 @@ export async function POST(req) {
   ]
 }`
 
+  const safeInjuries = injuries ? String(injuries).slice(0, 200) : ''
+
   const userPrompt = `Create a ${n}-day/week training program:
-- Goal: ${goalMap[goal] || goal}
-- Level: ${levelMap[level] || level}
+- Goal: ${goalMap[goal] || 'general fitness'}
+- Level: ${levelMap[level] || 'intermediate (1-3 years)'}
 - Equipment: ${equipMap[equipment] || 'full gym'}
 - Client: ${age ? age + ' years old' : 'age unspecified'}, ${gender === 'male' ? 'Male' : gender === 'female' ? 'Female' : 'unspecified gender'}
-${injuries ? `- Injuries/Limitations: ${injuries}` : ''}
+${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
 
 Return exactly this JSON (${n} days):
 ${schema}`

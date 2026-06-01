@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const token = cookies().get('client_token')?.value
-  const payload = verifyToken(token)
+  const payload = await verifyToken(token)
   if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
   const client = await getSubmissionById(payload.id)

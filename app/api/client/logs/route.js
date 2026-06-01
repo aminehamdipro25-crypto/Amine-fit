@@ -5,14 +5,14 @@ import { getClientLogs, upsertDayLog } from '@/lib/clientLogs'
 
 export const dynamic = 'force-dynamic'
 
-function clientId() {
+async function clientId() {
   const token = cookies().get('client_token')?.value
-  const payload = verifyToken(token)
+  const payload = await verifyToken(token)
   return payload?.id || null
 }
 
 export async function GET() {
-  const id = clientId()
+  const id = await clientId()
   if (!id) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
   const logs = await getClientLogs(id)
   return NextResponse.json(logs)
@@ -21,7 +21,7 @@ export async function GET() {
 const ALLOWED_LOG_FIELDS = new Set(['water', 'waterGoal', 'notes', 'mood', 'weight'])
 
 export async function POST(req) {
-  const id = clientId()
+  const id = await clientId()
   if (!id) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
   const body = await req.json()
