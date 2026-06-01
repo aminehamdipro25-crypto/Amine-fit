@@ -84,6 +84,7 @@ export async function POST(req) {
       commitment:          sanitizeStr(body.commitment),
       heardFrom:           sanitizeStr(body.heardFrom),
       notes:               sanitizeStr(body.notes),
+      interestedPlan:      sanitizeStr(body.interestedPlan, 100),
       status:             'pending',
     }
 

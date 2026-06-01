@@ -1,7 +1,14 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star } from 'lucide-react'
+
+// Map Arabic plan names from pricing page to subscription plan keys
+const PLAN_NAME_MAP = {
+  'برنامج التدريب': { key: 'basic',    label: 'برنامج التدريب',  price: '50 د.ت',  days: 30 },
+  'الباقة الشهرية': { key: 'standard', label: 'الباقة الشهرية',  price: '125 د.ت', days: 30 },
+  'باقة 3 أشهر':   { key: 'premium',  label: 'باقة 3 أشهر',    price: '300 د.ت', days: 90 },
+}
 
 /* ─── helpers ─── */
 function Inp({ label, required, error, children, hint }) {
@@ -91,6 +98,7 @@ const INIT = {
   hasHormonalIssues:'', hormonalIssuesNote:'',
   sleepHours:'', hasPsychStress:'', foodPrep:'',
   motivation:'', previousPrograms:'', commitment:'', heardFrom:'', notes:'',
+  interestedPlan: '',
 }
 
 /* ─── validation per step ─── */
@@ -136,6 +144,12 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState({})
   const [loading, setLoad]  = useState(false)
   const [apiErr, setApiErr] = useState('')
+
+  // Read ?plan= from URL and pre-fill interestedPlan
+  useEffect(() => {
+    const plan = new URLSearchParams(window.location.search).get('plan') || ''
+    if (plan) setForm(f => ({ ...f, interestedPlan: plan }))
+  }, [])
 
   function next() {
     const errs = validate(step, form)
@@ -218,6 +232,25 @@ export default function RegisterPage() {
 
         {/* Form card */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
+
+          {/* Selected plan banner */}
+          {form.interestedPlan && PLAN_NAME_MAP[form.interestedPlan] && (
+            <div className="mb-6 bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 bg-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Star className="w-5 h-5 text-black fill-black" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-extrabold text-amber-700 uppercase tracking-wide">الباقة المختارة</p>
+                <p className="font-extrabold text-slate-900 text-sm">
+                  {PLAN_NAME_MAP[form.interestedPlan].label}
+                  <span className="text-amber-600 font-bold mr-2">— {PLAN_NAME_MAP[form.interestedPlan].price}</span>
+                </p>
+              </div>
+              <button onClick={() => setForm(f => ({ ...f, interestedPlan: '' }))}
+                className="text-amber-400 hover:text-amber-600 text-lg leading-none font-bold">×</button>
+            </div>
+          )}
+
           <div className="mb-6 pb-4 border-b border-slate-100">
             <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
               <span>{STEPS[step].icon}</span> {STEPS[step].title}

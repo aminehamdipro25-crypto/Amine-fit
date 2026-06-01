@@ -2,7 +2,100 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar } from 'lucide-react'
+
+const PLAN_DISPLAY = {
+  basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
+  standard: { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
+  premium:  { label: 'باقة 3 أشهر',   emoji: '🏆', color: 'from-violet-600 to-purple-800' },
+}
+const PLAN_NAME_DISPLAY = {
+  'برنامج التدريب': PLAN_DISPLAY.basic,
+  'الباقة الشهرية': PLAN_DISPLAY.standard,
+  'باقة 3 أشهر':   PLAN_DISPLAY.premium,
+}
+
+function SubscriptionCard({ client }) {
+  const sub = client.subscriptionPlan && client.subscriptionEndDate
+    ? {
+        info:     PLAN_DISPLAY[client.subscriptionPlan],
+        end:      new Date(client.subscriptionEndDate),
+        start:    new Date(client.subscriptionStartDate),
+        msLeft:   new Date(client.subscriptionEndDate).getTime() - Date.now(),
+      }
+    : null
+
+  if (sub) {
+    const expired  = sub.msLeft <= 0
+    const daysLeft = Math.max(0, Math.floor(sub.msLeft / 86400000))
+    const hoursLeft = Math.max(0, Math.floor((sub.msLeft % 86400000) / 3600000))
+    const urgent   = !expired && daysLeft <= 7
+
+    return (
+      <div className={`rounded-2xl overflow-hidden shadow-sm border ${
+        expired ? 'border-red-200' : urgent ? 'border-amber-200' : 'border-slate-100'}`}>
+        <div className={`bg-gradient-to-l ${sub.info?.color || 'from-slate-700 to-slate-900'} px-5 py-4 flex items-center gap-4`}>
+          <div className="text-3xl">{sub.info?.emoji || '⭐'}</div>
+          <div className="flex-1">
+            <p className="text-white/60 text-xs font-bold uppercase tracking-wide">اشتراكك الحالي</p>
+            <p className="text-white font-extrabold text-lg">{sub.info?.label || client.subscriptionPlan}</p>
+          </div>
+          {!expired && (
+            <div className={`text-center px-3 py-2 rounded-xl ${urgent ? 'bg-red-500/20 border border-red-400/30' : 'bg-white/10'}`}>
+              <p className={`text-xl font-extrabold ${urgent ? 'text-red-300' : 'text-white'}`}>{daysLeft}</p>
+              <p className="text-white/50 text-[10px] font-bold uppercase">يوم</p>
+            </div>
+          )}
+        </div>
+        <div className="bg-white px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+          {expired ? (
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-extrabold text-sm">انتهى اشتراكك — تواصل مع المدرب للتجديد</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+                <Calendar className="w-3.5 h-3.5" />
+                ينتهي في: <strong className="text-slate-700">
+                  {sub.end.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Qatar' })}
+                </strong>
+              </div>
+              <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border ${
+                urgent
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+                {urgent ? '⚠️ ' : '✅ '}
+                {daysLeft < 1 ? `${hoursLeft} ساعة` : `${daysLeft} يوم${hoursLeft > 0 ? ` و ${hoursLeft} ساعة` : ''}`} متبقي
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // No active subscription — show interested plan if exists
+  if (client.interestedPlan) {
+    const info = PLAN_NAME_DISPLAY[client.interestedPlan]
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-center gap-4">
+        <div className="text-2xl">{info?.emoji || '⭐'}</div>
+        <div className="flex-1">
+          <p className="font-extrabold text-amber-800 text-sm">الباقة المختارة: {client.interestedPlan}</p>
+          <p className="text-amber-600 text-xs font-medium mt-0.5">في انتظار تأكيد الدفع من المدرب</p>
+        </div>
+        <a href="https://wa.me/97430653759" target="_blank" rel="noreferrer"
+          className="flex-shrink-0 bg-green-500 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-green-600 transition">
+          تواصل
+        </a>
+      </div>
+    )
+  }
+
+  return null
+}
 
 /* ── Water tracker widget ──────────────────────────────────────────────── */
 function WaterWidget() {
@@ -211,6 +304,9 @@ export default function ClientDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Subscription card */}
+      <SubscriptionCard client={client} />
 
       {/* Plan cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

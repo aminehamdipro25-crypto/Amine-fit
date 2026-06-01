@@ -292,9 +292,14 @@ function printClientPDF(client) {
 
 // ── Subscription helpers ──────────────────────────────────────────────────────
 const PLANS_INFO = {
-  basic:    { label: 'الأساسي',   short: 'أساسي',   color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
-  standard: { label: 'المتوسط',   short: 'متوسط',   color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
-  premium:  { label: 'البريميوم', short: 'بريميوم', color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 30 },
+  basic:    { label: 'برنامج التدريب', short: 'تدريب',   color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
+  standard: { label: 'الباقة الشهرية', short: 'شهرية',   color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
+  premium:  { label: 'باقة 3 أشهر',   short: '3 أشهر',  color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 90 },
+}
+const PLAN_NAME_MAP = {
+  'برنامج التدريب': 'basic',
+  'الباقة الشهرية': 'standard',
+  'باقة 3 أشهر':   'premium',
 }
 
 function subStatus(client) {
@@ -334,9 +339,11 @@ function SubBadge({ client }) {
 
 function SubscriptionSection({ client, onUpdate }) {
   const sub = subStatus(client)
-  const [plan, setPlan]           = useState(client.subscriptionPlan || 'basic')
+  const interestedKey = PLAN_NAME_MAP[client.interestedPlan] || null
+  const defaultPlan   = client.subscriptionPlan || interestedKey || 'standard'
+  const [plan, setPlan]           = useState(defaultPlan)
   const [duration, setDuration]   = useState(
-    client.subscriptionDays || PLANS_INFO[client.subscriptionPlan || 'basic']?.days || 30
+    client.subscriptionDays || PLANS_INFO[defaultPlan]?.days || 30
   )
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [saving, setSaving]       = useState(false)
@@ -384,6 +391,17 @@ function SubscriptionSection({ client, onUpdate }) {
     <div>
       <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">الاشتراك</h3>
       <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+
+        {/* Interested plan hint */}
+        {!sub && client.interestedPlan && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <Star className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-extrabold text-amber-800">اختار عند التسجيل</p>
+              <p className="text-sm font-bold text-amber-700">{client.interestedPlan}</p>
+            </div>
+          </div>
+        )}
 
         {/* Current subscription status */}
         {sub ? (
@@ -435,9 +453,9 @@ function SubscriptionSection({ client, onUpdate }) {
                   setDuration(PLANS_INFO[p]?.days || 30)
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-gold-400 appearance-none">
-                <option value="basic">الأساسي — 200 ر.ق</option>
-                <option value="standard">المتوسط — 350 ر.ق</option>
-                <option value="premium">البريميوم — 550 ر.ق</option>
+                <option value="basic">برنامج التدريب — 50 د.ت</option>
+                <option value="standard">الباقة الشهرية — 125 د.ت</option>
+                <option value="premium">باقة 3 أشهر — 300 د.ت</option>
               </select>
             </div>
             <div>
@@ -1068,9 +1086,14 @@ export default function ClientsClient({ error }) {
                   </div>
 
                   {/* Subscription badge */}
-                  {c.subscriptionPlan && (
-                    <div className="mb-3">
+                  {(c.subscriptionPlan || c.interestedPlan) && (
+                    <div className="mb-3 flex items-center gap-2 flex-wrap">
                       <SubBadge client={c} />
+                      {!c.subscriptionPlan && c.interestedPlan && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
+                          ⭐ {c.interestedPlan}
+                        </span>
+                      )}
                     </div>
                   )}
 
