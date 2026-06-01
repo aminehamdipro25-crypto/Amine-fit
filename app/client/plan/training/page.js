@@ -483,10 +483,10 @@ function RestCard({date, isToday}) {
 function StatsBar({plan}) {
   const totalEx = plan.days.reduce((acc,d)=>acc+(d.exercises?.length||0),0)
   const items = [
-    {icon:'💪',label:'Exercises',val:totalEx||null},
-    {icon:'🎯',label:'Level',    val:plan.level||null},
-    {icon:'⏱️',label:'Duration', val:plan.duration?`${plan.duration}m`:null},
-    {icon:'📅',label:'Days/wk',  val:plan.daysPerWeek||plan.days.length||null},
+    {icon:'💪',label:'Exercises', val:totalEx||null},
+    {icon:'🎯',label:'Level',     val:plan.level||null},
+    {icon:'⏱️',label:'Duration',  val:plan.duration?`${plan.duration}m`:null},
+    {icon:'📅',label:'Days/wk',   val:plan.days.length||null},
   ].filter(i=>i.val)
   if (!items.length) return null
   return (
@@ -552,7 +552,7 @@ export default function TrainingPlan() {
   const plan = client.plan?.training
   if (!plan?.days?.length) return <NoPlan/>
 
-  const daysPerWeek = Number(plan.daysPerWeek)||plan.days.length
+  const daysPerWeek = plan.days.length   // always trust actual saved days
   const schedule    = getSchedule(daysPerWeek)
   const isToday     = isSameDay(selectedDate, today)
   const planDayIdx  = getPlanDayIndex(selectedDate, schedule)

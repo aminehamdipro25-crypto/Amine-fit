@@ -1253,7 +1253,8 @@ export default function PlanBuilder({ client }) {
         meals,
       },
       training: {
-        daysPerWeek, duration, level,
+        daysPerWeek: String(days.length),   // always sync with actual day count
+        duration, level,
         note: trainingNote,
         tips: trainingTips.split('\n').map(t => t.trim()).filter(Boolean),
         days,
@@ -1686,8 +1687,11 @@ export default function PlanBuilder({ client }) {
               {Object.entries(TEMPLATES).map(([key, tpl]) => (
                 <button key={key} type="button"
                   onClick={() => {
-                    if (confirm(`تحميل قالب "${tpl.label}"؟ سيُستبدل الأيام الحالية.`))
-                      setDays(tpl.days.map(d => ({ ...d, exercises: d.exercises.map(e => ({ ...e })) })))
+                    if (confirm(`تحميل قالب "${tpl.label}"؟ سيُستبدل الأيام الحالية.`)) {
+                      const loaded = tpl.days.map(d => ({ ...d, exercises: d.exercises.map(e => ({ ...e })) }))
+                      setDays(loaded)
+                      setDPW(String(loaded.length))
+                    }
                   }}
                   className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-slate-200 hover:border-gold-400 hover:bg-gold-50 transition text-center group">
                   <span className="text-3xl group-hover:scale-110 transition-transform">{tpl.emoji}</span>
