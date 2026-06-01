@@ -17,7 +17,6 @@ function CoachPreviewBar() {
   const router = useRouter()
 
   useEffect(() => {
-    // Read non-httpOnly coach_preview cookie
     const match = document.cookie.match(/(?:^|;\s*)coach_preview=([^;]+)/)
     if (match) {
       try { setPreviewData(JSON.parse(decodeURIComponent(match[1]))) } catch {}
@@ -25,9 +24,7 @@ function CoachPreviewBar() {
   }, [])
 
   async function exitPreview() {
-    // Clear preview cookie
     document.cookie = 'coach_preview=; Max-Age=0; path=/'
-    // Clear client token too
     await fetch('/api/client/logout', { method: 'POST' })
     router.push('/dashboard/clients')
   }
@@ -57,7 +54,8 @@ function CoachPreviewBar() {
 export default function ClientLayout({ children }) {
   const router   = useRouter()
   const pathname = usePathname()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]           = useState(false)       // mobile drawer
+  const [collapsed, setCollapsed] = useState(false)       // desktop collapse
   const [isPreview, setIsPreview] = useState(false)
   const [clientInitial, setClientInitial] = useState('؟')
 
@@ -89,49 +87,56 @@ export default function ClientLayout({ children }) {
 
       {/* Sidebar */}
       <>
-        {open && <div className="fixed inset-0 bg-black/70 z-20 lg:hidden backdrop-blur-sm" onClick={() => setOpen(false)} />}
+        {open && (
+          <div className="fixed inset-0 bg-black/70 z-20 lg:hidden backdrop-blur-sm" onClick={() => setOpen(false)} />
+        )}
         <aside className={`
           fixed top-0 right-0 h-full z-30 w-60
-          bg-[#0a0a0a] flex flex-col border-l border-white/5
-          lg:static transition-transform duration-300
+          lg:static overflow-hidden flex-shrink-0
+          bg-[#0a0a0a] border-l border-white/5
+          transition-all duration-300 ease-in-out
           ${open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-          ${isPreview ? 'pt-[44px] lg:pt-0' : ''}
+          ${collapsed ? 'lg:w-0 lg:border-l-0' : ''}
         `}>
-          <div className="flex items-center justify-between px-5 py-6 border-b border-white/5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 bg-gold-400 rounded-xl flex items-center justify-center">
-                <Zap className="w-4 h-4 text-black" fill="black" />
+          <div className={`w-60 h-full flex flex-col ${isPreview ? 'pt-[44px] lg:pt-0' : ''}`}>
+
+            <div className="flex items-center justify-between px-5 py-6 border-b border-white/5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-gold-400 rounded-xl flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-black" fill="black" />
+                </div>
+                <span className="text-white font-extrabold text-sm tracking-wider uppercase">
+                  Amine<span className="text-gold-400">Fit</span>
+                </span>
               </div>
-              <span className="text-white font-extrabold text-sm tracking-wider uppercase">
-                Amine<span className="text-gold-400">Fit</span>
-              </span>
+              <button onClick={() => setOpen(false)} className="lg:hidden text-white/30 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <button onClick={() => setOpen(false)} className="lg:hidden text-white/30 hover:text-white p-1">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
 
-          <nav className="flex-1 px-3 py-5 space-y-0.5">
-            <p className="text-white/20 text-[10px] uppercase tracking-widest px-3 mb-4 font-bold">بوابتك الشخصية</p>
-            {navItems.map(({ href, icon: Icon, label }) => {
-              const active = pathname === href
-              return (
-                <Link key={href} href={href} onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all
-                    ${active ? 'bg-gold-400 text-black' : 'text-white/40 hover:bg-white/5 hover:text-white'}`}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-black' : 'text-white/25'}`} />
-                  <span className={`font-bold text-sm ${active ? 'text-black' : ''}`}>{label}</span>
-                </Link>
-              )
-            })}
-          </nav>
+            <nav className="flex-1 px-3 py-5 space-y-0.5">
+              <p className="text-white/20 text-[10px] uppercase tracking-widest px-3 mb-4 font-bold">بوابتك الشخصية</p>
+              {navItems.map(({ href, icon: Icon, label }) => {
+                const active = pathname === href
+                return (
+                  <Link key={href} href={href} onClick={() => setOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all
+                      ${active ? 'bg-gold-400 text-black' : 'text-white/40 hover:bg-white/5 hover:text-white'}`}>
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-black' : 'text-white/25'}`} />
+                    <span className={`font-bold text-sm ${active ? 'text-black' : ''}`}>{label}</span>
+                  </Link>
+                )
+              })}
+            </nav>
 
-          <div className="px-3 pb-4 pt-2 border-t border-white/5">
-            <button onClick={logout}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/25 hover:text-red-400 hover:bg-red-500/5 transition text-sm font-medium">
-              <LogOut className="w-4 h-4" />
-              تسجيل الخروج
-            </button>
+            <div className="px-3 pb-4 pt-2 border-t border-white/5">
+              <button onClick={logout}
+                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-white/25 hover:text-red-400 hover:bg-red-500/5 transition text-sm font-medium">
+                <LogOut className="w-4 h-4" />
+                تسجيل الخروج
+              </button>
+            </div>
+
           </div>
         </aside>
       </>
@@ -139,8 +144,10 @@ export default function ClientLayout({ children }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white border-b border-slate-100 px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button onClick={() => setOpen(true)}
-            className="lg:hidden w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+          {/* Mobile: open drawer | Desktop: toggle collapse */}
+          <button
+            onClick={() => { if (window.innerWidth >= 1024) setCollapsed(c => !c); else setOpen(true) }}
+            className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition">
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
