@@ -1,13 +1,30 @@
 import { NextResponse } from 'next/server'
 import { saveSubmission } from '@/lib/submissions'
+import { isRateLimited } from '@/lib/rateLimit'
 
 export async function POST(request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (await isRateLimited(`contact_ip:${ip}`, 5, 3600)) {
+      return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد ساعة' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { name, phone, email, goal, pkg, message } = body
 
     if (!name?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: 'الاسم ورقم الهاتف مطلوبان' }, { status: 400 })
+    }
+
+    // Field length limits
+    if (name.trim().length > 100 || phone.trim().length > 30) {
+      return NextResponse.json({ error: 'بيانات طويلة جداً' }, { status: 400 })
+    }
+    if (email && email.length > 254) {
+      return NextResponse.json({ error: 'بريد إلكتروني طويل جداً' }, { status: 400 })
+    }
+    if (message && message.length > 2000) {
+      return NextResponse.json({ error: 'الرسالة طويلة جداً (2000 حرف كحد أقصى)' }, { status: 400 })
     }
 
     // Save to Redis so it appears in the dashboard

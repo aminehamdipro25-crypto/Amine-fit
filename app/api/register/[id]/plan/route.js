@@ -29,8 +29,8 @@ export async function PATCH(req, { params }) {
   if (deny) return deny
   try {
     const { clientPassword } = await req.json()
-    if (!clientPassword || clientPassword.length < 4) {
-      return NextResponse.json({ error: 'كلمة المرور قصيرة جداً (4 أحرف على الأقل)' }, { status: 400 })
+    if (!clientPassword || clientPassword.length < 8) {
+      return NextResponse.json({ error: 'كلمة المرور قصيرة جداً (8 أحرف على الأقل)' }, { status: 400 })
     }
     const hashed = hashPassword(clientPassword.trim())
     const updated = await updateSubmission(params.id, { clientPassword: hashed })

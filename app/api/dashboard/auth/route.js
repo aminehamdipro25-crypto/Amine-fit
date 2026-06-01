@@ -18,10 +18,15 @@ export async function POST(req) {
       return NextResponse.json({ error: 'خطأ في إعداد الخادم' }, { status: 500 })
     }
 
-    // Timing-safe comparison
+    // Timing-safe comparison — pad to equal length to avoid length oracle
     let match = false
     try {
-      match = crypto.timingSafeEqual(Buffer.from(password || ''), Buffer.from(correct))
+      const pw  = Buffer.from(password || '')
+      const ref = Buffer.from(correct)
+      const len = Math.max(pw.length, ref.length)
+      const a   = Buffer.concat([pw,  Buffer.alloc(len - pw.length)])
+      const b   = Buffer.concat([ref, Buffer.alloc(len - ref.length)])
+      match = crypto.timingSafeEqual(a, b) && pw.length === ref.length
     } catch { match = false }
 
     if (!match) {

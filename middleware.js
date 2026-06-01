@@ -25,7 +25,8 @@ async function verifyClientToken(token) {
   if (parts.length !== 2) return null
   const [data, sig] = parts
   try {
-    const secret = process.env.AUTH_SECRET || 'amine-fit-client-secret-2025'
+    const secret = process.env.AUTH_SECRET
+    if (!secret) return null  // fail closed — never use a fallback
     const key = await crypto.subtle.importKey(
       'raw', new TextEncoder().encode(secret),
       { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']

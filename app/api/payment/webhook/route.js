@@ -25,7 +25,7 @@ export async function POST(req) {
     const plan    = session.metadata?.plan
 
     // Validate plan against known values to prevent metadata injection
-    const VALID_PLANS = ['basic', 'premium', 'pro', 'monthly', 'quarterly', 'yearly']
+    const VALID_PLANS = ['basic', 'standard', 'premium', 'pro', 'monthly', 'quarterly', 'yearly']
     const safePlan = VALID_PLANS.includes(plan) ? plan : 'unknown'
 
     if (email) {

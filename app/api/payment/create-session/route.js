@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isRateLimited } from '@/lib/rateLimit'
 
 const PLANS = {
   basic:    { name: 'الأساسي',   price: 20000, desc: 'خطة تغذية شهرية' },      // 200 QAR
@@ -7,7 +8,16 @@ const PLANS = {
 }
 
 export async function POST(req) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (await isRateLimited(`stripe_session:${ip}`, 10, 3600)) {
+    return NextResponse.json({ error: 'محاولات كثيرة — حاول لاحقاً' }, { status: 429 })
+  }
+
   const { plan, email, name } = await req.json()
+
+  if (!email || typeof email !== 'string' || email.length > 254 || !email.includes('@')) {
+    return NextResponse.json({ error: 'بريد إلكتروني غير صالح' }, { status: 400 })
+  }
 
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })

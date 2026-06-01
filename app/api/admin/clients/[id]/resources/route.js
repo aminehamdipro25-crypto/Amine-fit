@@ -32,9 +32,26 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: 'الرابط أو الملف مطلوب' }, { status: 400 })
   }
 
-  // Validate size for data URIs (base64 uploads)
-  if (url.startsWith('data:') && url.length > MAX_DATA_URI_SIZE) {
-    return NextResponse.json({ error: 'حجم الملف كبير جداً — الحد الأقصى 2 ميغابايت' }, { status: 400 })
+  // Field size limits
+  if (title.trim().length > 200) return NextResponse.json({ error: 'العنوان طويل جداً' }, { status: 400 })
+  if (description?.trim().length > 1000) return NextResponse.json({ error: 'الوصف طويل جداً' }, { status: 400 })
+
+  if (url.startsWith('data:')) {
+    // Validate size for data URIs (base64 uploads)
+    if (url.length > MAX_DATA_URI_SIZE) {
+      return NextResponse.json({ error: 'حجم الملف كبير جداً — الحد الأقصى 2 ميغابايت' }, { status: 400 })
+    }
+  } else {
+    // Validate URL scheme — only http/https allowed
+    if (url.trim().length > 2048) return NextResponse.json({ error: 'الرابط طويل جداً' }, { status: 400 })
+    try {
+      const parsed = new URL(url.trim())
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return NextResponse.json({ error: 'رابط غير صالح — يجب أن يبدأ بـ http أو https' }, { status: 400 })
+      }
+    } catch {
+      return NextResponse.json({ error: 'رابط غير صالح' }, { status: 400 })
+    }
   }
 
   const resource = {

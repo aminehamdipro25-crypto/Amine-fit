@@ -1,8 +1,22 @@
 import { NextResponse } from 'next/server'
 import { saveSubmission, getSubmissionByEmail } from '@/lib/submissions'
+import { isRateLimited } from '@/lib/rateLimit'
+
+const STR_MAX = 500  // max length for text fields
+
+function sanitizeStr(v, max = STR_MAX) {
+  if (v === undefined || v === null) return ''
+  return String(v).trim().slice(0, max)
+}
 
 export async function POST(req) {
   try {
+    // Rate-limit: 5 registrations per hour per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (await isRateLimited(`register_ip:${ip}`, 5, 3600)) {
+      return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد ساعة' }, { status: 429 })
+    }
+
     const body = await req.json()
 
     const required = ['email', 'name', 'gender', 'age', 'height', 'weight',
@@ -17,14 +31,58 @@ export async function POST(req) {
       )
     }
 
-    const emailLower = body.email.toLowerCase().trim()
+    const emailLower = sanitizeStr(body.email, 254).toLowerCase()
+    if (!emailLower || !emailLower.includes('@')) {
+      return NextResponse.json({ error: 'بريد إلكتروني غير صالح' }, { status: 400 })
+    }
+
     const existing = await getSubmissionByEmail(emailLower)
     if (existing) {
       return NextResponse.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً' }, { status: 409 })
     }
 
-    console.log('[register] saving:', body.name, body.email)
-    const entry = await saveSubmission({ ...body, status: 'pending' })
+    // Explicit allowlist — never spread raw body into storage
+    const safeEntry = {
+      email:              emailLower,
+      name:               sanitizeStr(body.name, 100),
+      gender:             ['male','female'].includes(body.gender) ? body.gender : '',
+      age:                sanitizeStr(body.age, 10),
+      height:             sanitizeStr(body.height, 10),
+      weight:             sanitizeStr(body.weight, 10),
+      workActivity:       sanitizeStr(body.workActivity),
+      goal:               sanitizeStr(body.goal),
+      targetWeight:       sanitizeStr(body.targetWeight, 10),
+      dailyMeals:         sanitizeStr(body.dailyMeals, 10),
+      waterIntake:        sanitizeStr(body.waterIntake, 10),
+      activityLevel:      sanitizeStr(body.activityLevel),
+      sleepHours:         sanitizeStr(body.sleepHours, 10),
+      phone:              sanitizeStr(body.phone, 30),
+      sportType:          sanitizeStr(body.sportType),
+      hasScale:           ['yes','no'].includes(body.hasScale) ? body.hasScale : '',
+      hasInBody:          ['yes','no'].includes(body.hasInBody) ? body.hasInBody : '',
+      inBodyNote:         sanitizeStr(body.inBodyNote),
+      hasNFS:             ['yes','no'].includes(body.hasNFS) ? body.hasNFS : '',
+      nfsNote:            sanitizeStr(body.nfsNote),
+      foodAllergy:        sanitizeStr(body.foodAllergy),
+      dislikedFoods:      sanitizeStr(body.dislikedFoods),
+      preferredFoods:     sanitizeStr(body.preferredFoods),
+      appetite:           sanitizeStr(body.appetite),
+      currentDiet:        sanitizeStr(body.currentDiet),
+      hasChronicDisease:  ['yes','no'].includes(body.hasChronicDisease) ? body.hasChronicDisease : '',
+      chronicDiseaseNote: sanitizeStr(body.chronicDiseaseNote),
+      medications:        sanitizeStr(body.medications),
+      hasPsychStress:     ['yes','no','sometimes'].includes(body.hasPsychStress) ? body.hasPsychStress : '',
+      foodPrep:           sanitizeStr(body.foodPrep),
+      motivation:         sanitizeStr(body.motivation),
+      previousPrograms:   sanitizeStr(body.previousPrograms),
+      commitment:         sanitizeStr(body.commitment),
+      heardFrom:          sanitizeStr(body.heardFrom),
+      notes:              sanitizeStr(body.notes),
+      status:             'pending',
+    }
+
+    console.log('[register] saving:', safeEntry.name, safeEntry.email)
+    const entry = await saveSubmission(safeEntry)
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
     return NextResponse.json({ success: true, id: entry.id })

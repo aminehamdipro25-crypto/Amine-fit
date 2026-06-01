@@ -16,6 +16,10 @@ export async function POST(req) {
   if (deny) return deny
   const { plan, menu, messages } = await req.json()
 
+  if (!Array.isArray(messages) || messages.length > 20) {
+    return NextResponse.json({ menu, message: 'حد الرسائل تجاوز الحد المسموح (20 رسالة كحد أقصى).' })
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ menu, message: 'لا يوجد اتصال بـ Claude — لم تتغير الخطة.' })
   }

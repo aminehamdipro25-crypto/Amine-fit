@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const deny = await requireAdmin()
-  if (deny) return NextResponse.json({ notifications: [] })
+  if (deny) return deny
 
   const clients = await getSubmissions()
   const notifications = []
