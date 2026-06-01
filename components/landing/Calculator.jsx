@@ -50,7 +50,7 @@ export default function CalculatorSection() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div className="text-center mb-12">
-          <p className="text-gold-400 font-bold text-xs uppercase tracking-widest mb-3">أداة مجانية</p>
+          <p className="text-gold-400 font-bold text-xs uppercase tracking-widest mb-3">أداة حساب</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 tracking-tight">
             احسب <span className="text-gold-400">احتياجاتك الغذائية</span>
           </h2>

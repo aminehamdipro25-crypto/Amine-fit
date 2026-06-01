@@ -124,7 +124,7 @@ export default function BlogPost({ params }) {
           <p className="text-white/40 text-sm mb-4">احصل على برنامج تغذية وتدريب مصمم خصيصاً لك</p>
           <Link href="/register"
             className="inline-block px-6 py-3 bg-[#fbbf24] text-black font-extrabold rounded-xl hover:bg-[#f59e0b] transition text-sm">
-            ابدأ الآن مجاناً
+            ابدأ الآن
           </Link>
         </div>
       </div>
