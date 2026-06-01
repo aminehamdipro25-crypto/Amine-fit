@@ -8,7 +8,7 @@ const navItems = [
   { href: '/dashboard/clients',           icon: ClipboardList,   label: 'الاستبيانات', badge: true },
   { href: '/dashboard/subscribers',       icon: Users,           label: 'المشتركون' },
   { href: '/dashboard/calculator',        icon: Calculator,      label: 'حاسبة التبادل' },
-  { href: '/dashboard/training-planner',  icon: Dumbbell,        label: 'باني البرامج' },
+  { href: '/dashboard/training-planner',  icon: Dumbbell,        label: 'معد البرامج' },
   { href: '/dashboard/analytics',         icon: BarChart2,       label: 'الإحصائيات' },
 ]
 

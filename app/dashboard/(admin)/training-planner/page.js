@@ -113,9 +113,9 @@ export default function TrainingPlannerPage() {
   useEffect(() => {
     if (!result) return
     setClientsLoading(true)
-    fetch('/api/dashboard/clients')
+    fetch('/api/clients')
       .then(r => r.json())
-      .then(data => setClients(data.submissions || []))
+      .then(data => setClients(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setClientsLoading(false))
   }, [result])
@@ -165,7 +165,7 @@ export default function TrainingPlannerPage() {
             <Brain className="w-6 h-6 text-[#fbbf24]" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-white">باني البرامج التدريبية</h1>
+            <h1 className="text-2xl font-extrabold text-white">معد البرامج التدريبية</h1>
             <p className="text-sm text-white/40 mt-0.5">أنشئ برنامجاً تدريبياً مخصصاً بالذكاء الاصطناعي</p>
           </div>
           <span className="mr-auto text-[11px] font-extrabold bg-[#fbbf24]/10 text-[#fbbf24] border border-[#fbbf24]/20 px-3 py-1 rounded-full">AI ✦</span>

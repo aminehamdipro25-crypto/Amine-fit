@@ -9,7 +9,7 @@ const titles = {
   '/dashboard/clients':           'إدارة العملاء',
   '/dashboard/subscribers':       'المشتركون',
   '/dashboard/calculator':        'حاسبة التبادل',
-  '/dashboard/training-planner':  'باني البرامج التدريبية',
+  '/dashboard/training-planner':  'معد البرامج التدريبية',
   '/dashboard/analytics':         'الإحصائيات',
 }
 
