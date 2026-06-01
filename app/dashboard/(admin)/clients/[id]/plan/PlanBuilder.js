@@ -1,11 +1,45 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Plus, Trash2, Save, ArrowRight,
   ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap,
-  Sparkles, LogIn, Download, Info, X, Brain, Wand2, Paperclip,
+  Sparkles, LogIn, Download, Info, X, Brain, Wand2, Paperclip, Search,
 } from 'lucide-react'
+import { FOODS, EX } from '@/lib/nutritionEngine'
+
+// Flat searchable list from all groups
+const ALL_FOODS = Object.entries(FOODS).flatMap(([group, list]) =>
+  list.map(f => ({ ...f, group }))
+)
+
+// Create a structured food item from a DB food entry
+function makeDBItem(food, servings = 1) {
+  const ex = EX[food.group] || {}
+  return {
+    food:     food.nameAr,
+    amount:   `${food.grams * servings} ${food.suffix}`,
+    group:    food.group,
+    servings,
+    kcal:     Math.round((ex.kcal    || 0) * servings),
+    protein:  Math.round((ex.protein || 0) * servings),
+    carbs:    Math.round((ex.carbs   || 0) * servings),
+    fat:      Math.round((ex.fat     || 0) * servings),
+    fromDB:   true,
+  }
+}
+
+// Sum macros from DB-linked items only
+function calcItemTotals(items) {
+  const db = (items || []).filter(i => i.fromDB)
+  if (!db.length) return null
+  return db.reduce((acc, i) => ({
+    kcal:    acc.kcal    + (i.kcal    || 0),
+    protein: acc.protein + (i.protein || 0),
+    carbs:   acc.carbs   + (i.carbs   || 0),
+    fat:     acc.fat     + (i.fat     || 0),
+  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+}
 
 const emptyMeal     = () => ({ name:'', time:'', calories:'', description:'', items:[], macros:{ protein:'', carbs:'', fats:'' } })
 const emptyItem     = () => ({ food:'', amount:'' })
@@ -182,27 +216,142 @@ function ExerciseRow({ ex, idx, onChange, onRemove }) {
   )
 }
 
+/* ── FoodSearchInput ─────────────────────────────────────────────────────── */
+function FoodSearchInput({ onAdd }) {
+  const [q, setQ]       = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const results = q.trim().length >= 1
+    ? ALL_FOODS.filter(f => {
+        const lq = q.toLowerCase()
+        return f.nameAr.includes(q) || f.keywords.some(k => k.includes(lq) || lq.includes(k))
+      }).slice(0, 9)
+    : []
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-gold-400 bg-gold-50/30 focus-within:border-gold-500 transition">
+        <Search className="w-3.5 h-3.5 text-gold-500 flex-shrink-0" />
+        <input
+          value={q}
+          onChange={e => { setQ(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder="ابحث عن طعام... (موز، دجاج، أرز)"
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 font-medium"
+        />
+        {q && <button type="button" onClick={() => { setQ(''); setOpen(false) }} className="text-slate-300 hover:text-slate-500"><X className="w-3.5 h-3.5" /></button>}
+      </div>
+
+      {open && results.length > 0 && (
+        <div className="absolute top-full mt-1 left-0 right-0 z-30 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
+          {results.map((food, i) => {
+            const ex = EX[food.group] || {}
+            return (
+              <button key={i} type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => { onAdd(makeDBItem(food, 1)); setQ(''); setOpen(false) }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gold-50 transition text-right border-b border-slate-50 last:border-0">
+                <span className="text-lg flex-shrink-0">{ex.icon || '🍽️'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-800">{food.nameAr}</p>
+                  <p className="text-[10px] text-slate-400">{food.grams} {food.suffix} · {ex.nameAr}</p>
+                </div>
+                <div className="text-[10px] font-bold flex-shrink-0 text-left ltr space-x-1">
+                  <span className="text-amber-600">{ex.kcal} kcal</span>
+                  {ex.protein > 0 && <span className="text-blue-500 mr-1">P:{ex.protein}غ</span>}
+                  {ex.carbs   > 0 && <span className="text-emerald-500 mr-1">C:{ex.carbs}غ</span>}
+                  {ex.fat     > 0 && <span className="text-rose-400 mr-1">F:{ex.fat}غ</span>}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {open && q.trim().length >= 1 && results.length === 0 && (
+        <div className="absolute top-full mt-1 left-0 right-0 z-30 bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3 text-sm text-slate-400 text-center">
+          لا توجد نتائج — يمكنك إضافة الطعام يدوياً بالزر أدناه
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── MealCard ─────────────────────────────────────────────────────────────── */
 function MealCard({ meal, idx, onChange, onRemove }) {
-  const [open, setOpen] = useState(true)
-  const update = (field, val) => onChange({ ...meal, [field]: val })
+  const [open, setOpen]           = useState(true)
+  const [suggestion, setSuggestion] = useState(null)
+
+  const update      = (field, val) => onChange({ ...meal, [field]: val })
   const updateMacro = (field, val) => onChange({ ...meal, macros: { ...meal.macros, [field]: val } })
-  const addItem = () => onChange({ ...meal, items: [...(meal.items || []), emptyItem()] })
-  const updateItem = (i, f, v) => {
+
+  // Called whenever items array changes — recalculates meal macros from DB items
+  const applyItems = (newItems) => {
+    const totals = calcItemTotals(newItems)
+    if (totals) {
+      onChange({
+        ...meal,
+        items:    newItems,
+        calories: String(Math.round(totals.kcal)),
+        macros: {
+          protein: String(Math.round(totals.protein)),
+          carbs:   String(Math.round(totals.carbs)),
+          fats:    String(Math.round(totals.fat)),
+        },
+      })
+    } else {
+      onChange({ ...meal, items: newItems })
+    }
+  }
+
+  const addDBItem = (dbFood) => {
+    setSuggestion(null)
+    applyItems([...(meal.items || []), dbFood])
+  }
+
+  const addTextItem = () => onChange({ ...meal, items: [...(meal.items || []), emptyItem()] })
+
+  const removeItem = (i) => {
+    const item = meal.items[i]
+    // Suggest an alternative from the same food group
+    if (item?.fromDB && item?.group) {
+      const alts = (FOODS[item.group] || []).filter(f => f.nameAr !== item.food)
+      if (alts.length) {
+        const alt = alts[Math.floor(Math.random() * Math.min(4, alts.length))]
+        setSuggestion({ group: item.group, food: alt, original: item.food })
+      }
+    }
+    applyItems(meal.items.filter((_, j) => j !== i))
+  }
+
+  const updateTextItem = (i, f, v) => {
     const items = [...(meal.items || [])]
     items[i] = { ...items[i], [f]: v }
     onChange({ ...meal, items })
   }
-  const removeItem = (i) => onChange({ ...meal, items: meal.items.filter((_, j) => j !== i) })
+
+  // Computed macros from DB items (for the badge)
+  const dbTotals = calcItemTotals(meal.items || [])
 
   return (
     <div className="border border-slate-200 rounded-2xl overflow-hidden">
+      {/* Header */}
       <div className="flex items-center gap-3 p-4 bg-slate-50 cursor-pointer" onClick={() => setOpen(o => !o)}>
         <div className="w-8 h-8 bg-[#0a0a0a] rounded-lg flex items-center justify-center flex-shrink-0">
           <span className="text-gold-400 font-extrabold text-xs">{idx + 1}</span>
         </div>
         <span className="font-bold text-slate-800 flex-1 text-sm">{meal.name || `وجبة ${idx + 1}`}</span>
-        {meal.calories && <span className="text-xs font-bold text-slate-400">{meal.calories} kcal</span>}
+        {meal.calories && (
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${dbTotals ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400'}`}>
+            {meal.calories} kcal {dbTotals ? '✓' : ''}
+          </span>
+        )}
         <button type="button" onClick={e => { e.stopPropagation(); onRemove() }} className="p-1 text-red-400 hover:text-red-600 transition">
           <Trash2 className="w-4 h-4" />
         </button>
@@ -211,6 +360,7 @@ function MealCard({ meal, idx, onChange, onRemove }) {
 
       {open && (
         <div className="p-4 space-y-3">
+          {/* Name + Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">اسم الوجبة</label>
@@ -224,51 +374,120 @@ function MealCard({ meal, idx, onChange, onRemove }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { f: 'calories', label: 'سعرات', placeholder: '500' },
-              { f: 'protein',  label: 'بروتين غ', placeholder: '40', macro: true },
-              { f: 'carbs',    label: 'كارب غ',   placeholder: '60', macro: true },
-              { f: 'fats',     label: 'دهون غ',   placeholder: '15', macro: true },
-            ].map(({ f, label, placeholder, macro }) => (
-              <div key={f}>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>
-                <input type="number" value={macro ? meal.macros?.[f] : meal[f]}
-                  onChange={e => macro ? updateMacro(f, e.target.value) : update(f, e.target.value)}
-                  placeholder={placeholder}
-                  className="w-full px-2 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
-              </div>
-            ))}
+          {/* Macros — auto-filled when DB items present, manual otherwise */}
+          <div>
+            {dbTotals && (
+              <p className="text-[10px] text-emerald-600 font-bold mb-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> تُحسب تلقائياً من الأطعمة المختارة
+              </p>
+            )}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { f: 'calories', label: 'سعرات',    ph: '500' },
+                { f: 'protein',  label: 'بروتين غ', ph: '40',  macro: true },
+                { f: 'carbs',    label: 'كارب غ',   ph: '60',  macro: true },
+                { f: 'fats',     label: 'دهون غ',   ph: '15',  macro: true },
+              ].map(({ f, label, ph, macro }) => (
+                <div key={f}>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>
+                  <input type="number"
+                    value={macro ? (meal.macros?.[f] ?? '') : (meal[f] ?? '')}
+                    onChange={e => macro ? updateMacro(f, e.target.value) : update(f, e.target.value)}
+                    placeholder={ph}
+                    readOnly={!!dbTotals}
+                    className={`w-full px-2 py-2 rounded-xl border text-sm outline-none transition font-medium
+                      ${dbTotals ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default' : 'border-slate-200 focus:border-gold-400'}`}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
+          {/* Description */}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">وصف اختياري</label>
             <textarea value={meal.description} onChange={e => update('description', e.target.value)} rows={2} placeholder="وصف مختصر..."
               className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium resize-none" />
           </div>
 
+          {/* Food items section */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">الأطعمة</label>
-                <p className="text-[9px] text-amber-500 font-bold mt-0.5">⚠ بعد الحذف أو الإضافة — حدّث السعرات والماكرو أعلاه</p>
-              </div>
-              <button type="button" onClick={addItem}
-                className="flex items-center gap-1 text-xs font-bold text-gold-600 hover:text-gold-700 transition">
-                <Plus className="w-3.5 h-3.5" /> إضافة
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">الأطعمة</p>
+              <button type="button" onClick={addTextItem}
+                className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-slate-600 transition">
+                <Plus className="w-3 h-3" /> إضافة نصي
               </button>
             </div>
-            {(meal.items || []).map((item, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input value={item.food} onChange={e => updateItem(i, 'food', e.target.value)} placeholder="الطعام"
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
-                <input value={item.amount} onChange={e => updateItem(i, 'amount', e.target.value)} placeholder="الكمية"
-                  className="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
-                <button type="button" onClick={() => removeItem(i)} className="p-2 text-red-300 hover:text-red-500 transition">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+
+            {/* Food search */}
+            <div className="mb-3">
+              <FoodSearchInput onAdd={addDBItem} />
+            </div>
+
+            {/* Suggestion banner */}
+            {suggestion && (
+              <div className="flex items-center gap-3 mb-2 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                <span className="text-lg flex-shrink-0">{EX[suggestion.group]?.icon || '💡'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-blue-600 font-bold">بديل مقترح — نفس المجموعة الغذائية</p>
+                  <p className="text-sm font-extrabold text-slate-800">{suggestion.food.nameAr}</p>
+                  <p className="text-[10px] text-slate-400">
+                    {suggestion.food.grams} {suggestion.food.suffix} · {EX[suggestion.group]?.kcal} kcal
+                  </p>
+                </div>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button type="button"
+                    onClick={() => addDBItem(makeDBItem({ ...suggestion.food, group: suggestion.group }))}
+                    className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition">
+                    إضافة
+                  </button>
+                  <button type="button" onClick={() => setSuggestion(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 transition">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* Items list */}
+            <div className="space-y-1.5">
+              {(meal.items || []).map((item, i) =>
+                item.fromDB ? (
+                  /* DB-linked item */
+                  <div key={i} className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                    <span className="text-base flex-shrink-0">{EX[item.group]?.icon || '🍽️'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{item.food}</p>
+                      <p className="text-[10px] text-slate-400">{item.amount}</p>
+                    </div>
+                    <div className="text-[10px] font-bold flex gap-1 flex-shrink-0">
+                      <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">{item.kcal}</span>
+                      {item.protein > 0 && <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">P{item.protein}</span>}
+                      {item.carbs   > 0 && <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">C{item.carbs}</span>}
+                      {item.fat     > 0 && <span className="bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded">F{item.fat}</span>}
+                    </div>
+                    <button type="button" onClick={() => removeItem(i)} className="p-1.5 text-red-300 hover:text-red-500 transition flex-shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  /* Legacy text item */
+                  <div key={i} className="flex gap-2">
+                    <input value={item.food || ''} onChange={e => updateTextItem(i, 'food', e.target.value)} placeholder="الطعام"
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
+                    <input value={item.amount || ''} onChange={e => updateTextItem(i, 'amount', e.target.value)} placeholder="الكمية"
+                      className="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium" />
+                    <button type="button" onClick={() => removeItem(i)} className="p-2 text-red-300 hover:text-red-500 transition">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              )}
+              {(meal.items || []).length === 0 && (
+                <p className="text-[11px] text-slate-300 text-center py-2 font-medium">ابحث عن طعام بالأعلى لإضافته</p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -632,23 +851,31 @@ export default function PlanBuilder({ client }) {
         setFats(String(Math.round(ex.macros.fat       || 0)))
       }
 
-      // Meals
+      // Meals — link items to food DB when possible
       if (Array.isArray(menu) && menu.length > 0) {
-        setMeals(menu.map(m => ({
-          name:        m.name        || '',
-          time:        m.time        || '',
-          calories:    String(Math.round(m.kcal    || 0)),
-          description: '',
-          macros: {
-            protein: String(Math.round(m.protein || 0)),
-            carbs:   String(Math.round(m.carbs   || 0)),
-            fats:    String(Math.round(m.fat     || 0)),
-          },
-          items: (m.items || []).map(item => ({
-            food:   item.food   || '',
-            amount: item.amount || '',
-          })),
-        })))
+        setMeals(menu.map(m => {
+          const linkedItems = (m.items || []).map(item => {
+            const dbFood = ALL_FOODS.find(f => f.nameAr === item.food)
+            if (dbFood) {
+              const servings = item.servings || 1
+              return makeDBItem(dbFood, servings)
+            }
+            return { food: item.food || '', amount: item.amount || '' }
+          })
+          const totals = calcItemTotals(linkedItems)
+          return {
+            name:        m.name || '',
+            time:        m.time || '',
+            calories:    totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
+            description: '',
+            macros: {
+              protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
+              carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
+              fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
+            },
+            items: linkedItems,
+          }
+        }))
       }
 
       setImportStatus('ok')
@@ -756,9 +983,9 @@ export default function PlanBuilder({ client }) {
                 <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
                   <Flame className="w-4 h-4 text-gold-500" /> الماكرو اليومي
                 </h2>
-                {meals.some(m => parseFloat(m.calories) > 0 || parseFloat(m.macros?.protein) > 0) && (
+                {meals.some(m => parseFloat(m.calories) > 0) && (
                   <p className="text-[10px] text-emerald-600 font-bold mt-0.5 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> يُحسب تلقائياً من مجموع الوجبات
+                    <CheckCircle2 className="w-3 h-3" /> مجموع الوجبات — يتحدث تلقائياً
                   </p>
                 )}
               </div>
