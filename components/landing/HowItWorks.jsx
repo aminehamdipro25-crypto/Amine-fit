@@ -51,7 +51,7 @@ export default function HowItWorks() {
         <div className="flex justify-center mt-12">
           <a href="/register"
             className="flex items-center gap-2 px-8 py-4 bg-gold-400 text-black font-extrabold rounded-2xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
-            ابدأ الآن مجاناً ⚡
+            ابدأ الآن ⚡
           </a>
         </div>
       </div>
