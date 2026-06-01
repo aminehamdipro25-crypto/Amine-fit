@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { Menu, Bell, User, Clock, ChevronLeft, X } from 'lucide-react'
 
 const titles = {
-  '/dashboard':             'لوحة التحكم',
-  '/dashboard/clients':     'إدارة العملاء',
-  '/dashboard/subscribers': 'المشتركون',
-  '/dashboard/calculator':  'حاسبة التبادل',
-  '/dashboard/analytics':   'الإحصائيات',
+  '/dashboard':                   'لوحة التحكم',
+  '/dashboard/clients':           'إدارة العملاء',
+  '/dashboard/subscribers':       'المشتركون',
+  '/dashboard/calculator':        'حاسبة التبادل',
+  '/dashboard/training-planner':  'باني البرامج التدريبية',
+  '/dashboard/analytics':         'الإحصائيات',
 }
 
 export default function Header({ onMenuClick }) {
