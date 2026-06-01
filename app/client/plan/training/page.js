@@ -217,7 +217,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
         onClick={() => setExpanded(e=>!e)}>
 
         {/* Square image — always visible, left-most */}
-        <div className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
+        <div className="relative flex-shrink-0 w-[90px] h-[90px] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
           {imgSrc
             ? <img src={imgSrc} alt={name} className="w-full h-full object-cover" loading="lazy"
                 onError={() => setImgSrc(null)} />
@@ -275,7 +275,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
           )}
           <div className="rounded-xl overflow-hidden border border-slate-100">
             {/* Table header */}
-            <div className="grid grid-cols-[28px_1fr_1fr_32px] gap-2 items-center px-3 py-2 bg-slate-50 border-b border-slate-100">
+            <div className="grid grid-cols-[22px_1fr_1fr_28px] gap-1.5 items-center px-2.5 py-1.5 bg-slate-50 border-b border-slate-100">
               <p className="text-[9px] font-extrabold text-slate-400 uppercase">#</p>
               <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
               <p className="text-[9px] font-extrabold text-slate-400 uppercase text-center">kg</p>
@@ -283,28 +283,28 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
             </div>
             {/* Set rows */}
             {sets.map((s,i) => (
-              <div key={i} className={`grid grid-cols-[28px_1fr_1fr_32px] gap-2 items-center px-3 py-2.5 transition-colors
+              <div key={i} className={`grid grid-cols-[22px_1fr_1fr_28px] gap-1.5 items-center px-2.5 py-1.5 transition-colors
                 ${i < sets.length-1 ? 'border-b border-slate-50' : ''}
                 ${s.done ? 'bg-emerald-50/60' : 'bg-white'}`}>
-                <p className={`text-xs font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
+                <p className={`text-[11px] font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
                 <input
                   type="number" inputMode="numeric"
                   placeholder={targetReps || '—'}
                   value={s.reps}
                   onChange={e => updateSet(i,'reps',e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
                 />
                 <input
                   type="number" inputMode="decimal"
                   placeholder="—"
                   value={s.weight}
                   onChange={e => updateSet(i,'weight',e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-xs font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
                 />
                 <button onClick={()=>toggleSet(i)}
-                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
                     ${s.done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24]'}`}>
-                  {s.done && <CheckCircle2 className="w-[14px] h-[14px] text-black"/>}
+                  {s.done && <CheckCircle2 className="w-3 h-3 text-black"/>}
                 </button>
               </div>
             ))}
