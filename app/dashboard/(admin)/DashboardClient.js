@@ -92,7 +92,7 @@ export default function DashboardClient({ submissions }) {
             <p className="text-white/30 text-xs font-semibold uppercase tracking-widest mb-2">{today}</p>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight tracking-tight">
               مرحباً،{' '}
-              <span className="text-gold-400">أمين حمدي</span>
+              <span className="text-gold-400">استاذ أمين</span>
             </h1>
             <p className="text-white/30 text-sm mt-2 font-medium">
               {newCount > 0

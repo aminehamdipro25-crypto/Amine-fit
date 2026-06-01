@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Zap, Menu, X } from 'lucide-react'
+import { Zap, Menu, X, LogOut } from 'lucide-react'
 
 const links = [
   { href: '#about',      label: 'من هو أمين' },
@@ -16,12 +16,23 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  useEffect(() => {
+    fetch('/api/dashboard/auth').then(r => { if (r.ok) setIsAdmin(true) }).catch(() => {})
+  }, [])
+
+  async function logout() {
+    await fetch('/api/dashboard/auth', { method: 'DELETE' })
+    setIsAdmin(false)
+    window.location.href = '/dashboard/login'
+  }
 
   return (
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300
@@ -59,6 +70,12 @@ export default function Navbar() {
               className="px-5 py-2 bg-gold-400 text-black text-sm font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
               لوحة التحكم
             </Link>
+            {isAdmin && (
+              <button onClick={logout} title="تسجيل خروج المدرب"
+                className="p-2 rounded-xl border border-white/10 text-white/40 hover:text-red-400 hover:border-red-400/30 hover:bg-red-500/5 transition-all">
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -86,6 +103,13 @@ export default function Navbar() {
             className="block mt-2 text-center px-4 py-3 bg-gold-400 text-black font-extrabold rounded-xl">
             لوحة التحكم
           </Link>
+          {isAdmin && (
+            <button onClick={logout}
+              className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-3 border border-white/10 text-white/50 hover:text-red-400 font-medium rounded-xl transition">
+              <LogOut className="w-4 h-4" />
+              تسجيل خروج المدرب
+            </button>
+          )}
         </div>
       )}
     </header>
