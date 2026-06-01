@@ -267,7 +267,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
           {/* Exercise illustration */}
           {imgSrc && !ytThumb && (
             <div className="mb-3 rounded-xl overflow-hidden h-40 bg-slate-100">
-              <img src={imgSrc} alt={name} className="w-full h-full object-cover object-top"
+              <img src={imgSrc} alt={name} className="w-full h-full object-cover object-center"
                 onError={() => setImgSrc(null)} />
             </div>
           )}
