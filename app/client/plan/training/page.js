@@ -447,14 +447,14 @@ function NoPlan() {
           <div className="w-20 h-20 rounded-3xl bg-[#fbbf24]/10 border border-[#fbbf24]/20 flex items-center justify-center mb-5">
             <Dumbbell className="w-10 h-10 text-[#fbbf24]"/>
           </div>
-          <h1 className="text-2xl font-extrabold text-white mb-2">Training Plan Coming Soon</h1>
+          <h1 className="text-2xl font-extrabold text-white mb-2">خطة التدريب قادمة قريباً</h1>
           <p className="text-white/40 text-sm max-w-xs leading-relaxed font-medium">
-            Coach Amine is designing a personalized training program for you based on your goals and current level.
+            المدرب أمين يصمم لك برنامجاً تدريبياً مخصصاً بناءً على أهدافك ومستواك الحالي.
           </p>
         </div>
       </div>
       <p className="text-center text-slate-400 text-xs pb-2">
-        Questions? <a href="tel:+97430653759" className="text-[#c9973b] font-bold">Contact Coach Amine</a>
+        أسئلة؟ <a href="tel:+97430653759" className="text-[#c9973b] font-bold">تواصل مع المدرب أمين</a>
       </p>
     </div>
   )
@@ -496,7 +496,7 @@ export default function TrainingPlan() {
 
       {/* Header */}
       <div>
-        <p className="text-[11px] font-extrabold text-slate-300 uppercase tracking-[0.15em]">MY PLAN</p>
+        <p className="text-[11px] font-extrabold text-slate-300 uppercase tracking-[0.15em]">خطتي</p>
         <h1 className="text-xl font-extrabold text-slate-900 mt-0.5">{fmtDate(selectedDate)}</h1>
       </div>
 
@@ -517,7 +517,7 @@ export default function TrainingPlan() {
         <div className="rounded-2xl overflow-hidden">
           <div className="px-5 py-4 flex items-center gap-2 bg-[#0a0a0a]">
             <Star className="w-4 h-4 text-[#fbbf24]"/>
-            <h2 className="text-sm font-extrabold text-white uppercase tracking-widest">Coach Tips</h2>
+            <h2 className="text-sm font-extrabold text-white uppercase tracking-widest">نصائح المدرب</h2>
           </div>
           <div className="bg-[#111] px-5 py-4 space-y-3">
             {plan.tips.map((tip,i)=>(
@@ -531,7 +531,7 @@ export default function TrainingPlan() {
       )}
 
       <p className="text-center text-slate-400 text-xs pb-2">
-        Questions? <a href="tel:+97430653759" className="text-[#c9973b] font-bold hover:underline">Contact Coach Amine</a>
+        أسئلة؟ <a href="tel:+97430653759" className="text-[#c9973b] font-bold hover:underline">تواصل مع المدرب أمين</a>
       </p>
     </div>
   )

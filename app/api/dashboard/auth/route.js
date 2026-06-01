@@ -61,6 +61,9 @@ export async function GET(req) {
 }
 
 export async function DELETE(req) {
+  const { requireAdmin } = await import('@/lib/adminAuth')
+  const deny = await requireAdmin()
+  if (deny) return deny
   const token = req.cookies?.get?.('admin_token')?.value
   if (token) await deleteAdminSession(token)
   const res = NextResponse.json({ success: true })
