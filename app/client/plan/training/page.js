@@ -19,14 +19,16 @@ const MONTHS_MAGHREBI = [
   'جويلية','أوت','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
 ]
 
-// ─── Arabic transliteration → English exercise names ─────────────────────────
+// ─── Arabic → English exercise name map ──────────────────────────────────────
 const TRANS_MAP = {
+  // Transliterated names
   'سكوات':'Squats','بلانك':'Plank','كاف ريز':'Calf Raise','كاف ريزيز':'Calf Raises',
   'بنش بريس':'Bench Press','ديدليفت':'Deadlift','ديدلفت':'Deadlift',
   'ليغ بريس':'Leg Press','ليج بريس':'Leg Press','ليغ كيرل':'Leg Curl','ليج كيرل':'Leg Curl',
   'هامر كيرل':'Hammer Curl','هامر كيرل دمبل':'Dumbbell Hammer Curl',
   'بايسبس كيرل':'Bicep Curl','بايسبس كيبل':'Cable Bicep Curl',
-  'ترايبسس كيبل':'Tricep Pushdown','ترايسبس بوش داون':'Tricep Pushdown',
+  'ترايبسس كيبل':'Tricep Pushdown','ترايسبس كيبل':'Tricep Pushdown',
+  'ترايسبس بوش داون':'Tricep Pushdown','ترايبسس':'Tricep Pushdown','ترايسبس':'Tricep Extension',
   'بوش أب':'Push Up','بوشاب':'Push Up','بول أب':'Pull Up','بولاب':'Pull Up',
   'رو بار':'Barbell Row','لات بول داون':'Lat Pulldown','لات بولداون':'Lat Pulldown',
   'شولدر بريس':'Shoulder Press','أوفر هيد بريس':'Overhead Press',
@@ -36,21 +38,69 @@ const TRANS_MAP = {
   'ليغ اكستينشن':'Leg Extension','ليج اكستنشن':'Leg Extension',
   'رومانيان ديدليفت':'Romanian Deadlift','رومانيان ديدلفت':'Romanian Deadlift',
   'إنكلاين بريس':'Incline Press','انكلاين بنش':'Incline Bench Press',
-  'ديكلاين بريس':'Decline Press','فلاي':'Chest Fly','كيبل فلاي':'Cable Fly',
+  'ديكلاين بريس':'Decline Press','كيبل فلاي':'Cable Fly',
   'كرنش':'Crunches','كرانشيز':'Crunches','ليغ ريز':'Leg Raise',
   'ماونتن كلايمبر':'Mountain Climbers','بيرباي':'Burpee','بربي':'Burpee',
   'هاي نيز':'High Knees','جامب سكوات':'Jump Squat','باكس جامب':'Box Jump',
   'سكوات جامب':'Jump Squat','وول سيت':'Wall Sit',
   'بلانك بسط':'Plank Hold','سايد بلانك':'Side Plank',
-  'ابغ بريس':'Leg Press','ارف كيرل':'Leg Curl',
+  'ديب':'Dips','ديبس':'Dips','شست فلاي':'Chest Fly','فلاي':'Chest Fly',
+  // Descriptive Arabic names (AI-generated)
+  'ضغط الصدر بالبار':'Bench Press','ضغط الصدر':'Bench Press',
+  'ضغط الصدر بالدمبل':'Dumbbell Bench Press',
+  'ضغط الصدر المائل':'Incline Bench Press','الضغط المائل':'Incline Bench Press',
+  'الضغط المائل بالدمبل':'Incline Dumbbell Press','الدمبيل الإمالة':'Incline Dumbbell Press',
+  'ضغط مائل بالدمبل':'Incline Dumbbell Press','دمبل انكلاين':'Incline Dumbbell Press',
+  'الضغط الأفقي':'Decline Press','ضغط الصدر النازل':'Decline Press',
+  'تمرين الفراشة':'Chest Fly','فراشة الصدر':'Chest Fly',
+  'رفع الأثقال من الأرض':'Deadlift','الرفع الميت':'Deadlift',
+  'رفع ميت رومانيا':'Romanian Deadlift','الرفع الميت الروماني':'Romanian Deadlift',
+  'تجعيل الذراعين':'Bicep Curl','ثني الذراع':'Bicep Curl','تجعيل الذراع':'Bicep Curl',
+  'تجعيل البايسبس':'Bicep Curl','ثني الذراع بالدمبل':'Dumbbell Bicep Curl',
+  'تجعيل هامر':'Hammer Curl','هامر':'Hammer Curl',
+  'مد الذراع الخلفي':'Tricep Extension','تمرين الترايسبس':'Tricep Pushdown',
+  'مد الذراع بالكيبل':'Tricep Pushdown','دفع الكيبل للأسفل':'Tricep Pushdown',
+  'تمديد الترايسبس':'Tricep Extension',
+  'شد الظهر العلوي':'Lat Pulldown','الشد العلوي':'Lat Pulldown','الشد الأمامي':'Lat Pulldown',
+  'الشد بالبار':'Lat Pulldown','لات برولداون':'Lat Pulldown',
+  'تجديف بالبار':'Barbell Row','التجديف بالبار':'Barbell Row','تجديف الظهر':'Barbell Row',
+  'صف بالكيبل':'Cable Row','التجديف بالكيبل':'Cable Row','تجديف جالس':'Seated Row',
+  'عقلة':'Pull Up','عقلة واسعة':'Wide Grip Pull Up',
+  'ضغط الكتف بالبار':'Barbell Shoulder Press','ضغط الكتف':'Shoulder Press',
+  'ضغط الأكتاف':'Shoulder Press','ضغط عسكري':'Military Press',
+  'الضغط العسكري':'Military Press','الضغط العلوي':'Overhead Press',
+  'رفع جانبي':'Lateral Raise','رفع جانبي دمبل':'Lateral Raise',
+  'الرفع الجانبي':'Lateral Raise','رفع الكتفين':'Lateral Raise',
+  'رفع أمامي':'Front Raise','رفع أمامي دمبل':'Dumbbell Front Raise',
+  'القرفصاء':'Squats','الجلوس':'Squats','قرفصاء بالبار':'Barbell Squat',
+  'لانج':'Lunges','خطوة للأمام':'Lunges','خطوات':'Lunges',
+  'جسر الأرداف':'Hip Thrust','رفع الأرداف':'Hip Thrust','رفع الحوض':'Hip Thrust',
+  'ضغط الأرجل':'Leg Press','مد الساق':'Leg Extension',
+  'تجعيل الساق':'Leg Curl','ثني الركبة':'Leg Curl',
+  'رفع الكعبين':'Calf Raise','رفع الأصابع':'Calf Raise',
+  'البلانك':'Plank','تمرين البلانك':'Plank',
+  'الكرنش':'Crunches','تمارين البطن':'Crunches',
+  'رفع الساقين':'Leg Raise','رفع الرجلين':'Leg Raise',
+  'تسلق الجبل':'Mountain Climbers','تمرين التسلق':'Mountain Climbers',
+  'قفزة المربع':'Box Jump','القفز العمودي':'Box Jump',
 }
+
 function normalizeName(name) {
   if (!name) return name
   if (/^[a-zA-Z0-9\s\-\/()]+$/.test(name)) return name  // already English
-  const exact = TRANS_MAP[name.trim()]
-  if (exact) return exact
-  for (const [ar, en] of Object.entries(TRANS_MAP)) {
-    if (name.includes(ar)) return en
+  const trimmed = name.trim()
+  // Exact match
+  if (TRANS_MAP[trimmed]) return TRANS_MAP[trimmed]
+  // Strip common Arabic prefixes: "تمرين", "تمرين ال", "ال"
+  const stripped = trimmed.replace(/^تمرين\s+(ال)?/,'').replace(/^ال/,'').trim()
+  if (TRANS_MAP[stripped]) return TRANS_MAP[stripped]
+  // Sort longest keys first to avoid partial-match collisions
+  const keys = Object.keys(TRANS_MAP).sort((a, b) => b.length - a.length)
+  for (const ar of keys) {
+    if (name.includes(ar)) return TRANS_MAP[ar]
+  }
+  for (const ar of keys) {
+    if (stripped.includes(ar)) return TRANS_MAP[ar]
   }
   return name
 }
@@ -122,25 +172,34 @@ function SectionBanner({type}) {
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
 function ExerciseRow({ex, isLast, number, onComplete}) {
   const name      = normalizeName(ex.name)
-  const thumb     = getThumb(ex.videoUrl)
+  const ytThumb   = getThumb(ex.videoUrl)
   const numSets   = Math.max(1, Number(ex.sets) || 3)
   const targetReps = String(ex.reps || '')
 
-  // Detect if reps are time-based (e.g. "60s", "30 sec", "AMRAP")
   const isTimeBased = /\d+\s*s(ec)?$|amrap|hold/i.test(targetReps)
-  // Show rest only for time-based exercises
   const showRest  = isTimeBased && !!ex.rest
 
   const [expanded, setExpanded] = useState(false)
   const [sets, setSets] = useState(() =>
     Array.from({length: numSets}, () => ({done:false, reps:'', weight:''}))
   )
+  const [imgSrc, setImgSrc] = useState(ytThumb)
 
   const doneSets = sets.filter(s=>s.done).length
   const allDone  = doneSets === numSets
 
-  // Notify parent when completion state changes
   useEffect(() => { onComplete?.(allDone) }, [allDone]) // eslint-disable-line
+
+  // Fetch exercise illustration from wger.de if no YouTube thumbnail
+  useEffect(() => {
+    if (ytThumb) { setImgSrc(ytThumb); return }
+    const en = normalizeName(ex.name)
+    if (!en || !/^[a-zA-Z]/.test(en)) return
+    fetch(`/api/exercise-image?name=${encodeURIComponent(en)}`)
+      .then(r => r.json())
+      .then(d => { if (d.url) setImgSrc(d.url) })
+      .catch(() => {})
+  }, [ex.name]) // eslint-disable-line
 
   function updateSet(i, field, val) {
     setSets(prev => prev.map((s,j) => j===i ? {...s,[field]:val} : s))
@@ -166,11 +225,12 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
         </div>
 
         {/* Thumbnail */}
-        <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#111]">
-          {thumb
-            ? <img src={thumb} alt={name} className="w-full h-full object-cover" loading="lazy"/>
+        <div className="relative flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100">
+          {imgSrc
+            ? <img src={imgSrc} alt={name} className="w-full h-full object-cover" loading="lazy"
+                onError={() => setImgSrc(null)} />
             : <div className="w-full h-full flex items-center justify-center">
-                <Dumbbell className="w-4 h-4 text-[#fbbf24]/40"/>
+                <Dumbbell className="w-5 h-5 text-slate-300"/>
               </div>}
           {ex.videoUrl && (
             <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
@@ -204,6 +264,13 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
       {/* ── Expanded set tracker ── */}
       {expanded && (
         <div className="pb-4 px-1">
+          {/* Exercise illustration */}
+          {imgSrc && !ytThumb && (
+            <div className="mb-3 rounded-xl overflow-hidden h-40 bg-slate-100">
+              <img src={imgSrc} alt={name} className="w-full h-full object-cover object-top"
+                onError={() => setImgSrc(null)} />
+            </div>
+          )}
           {ex.note && (
             <p className="text-[10px] text-slate-400 mb-2 px-2 leading-relaxed">💡 {ex.note}</p>
           )}
