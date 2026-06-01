@@ -148,6 +148,11 @@ ${schemaStr}`
     const raw = response.content[0].text.trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
+    // Enforce gender-aware calorie floor (AI may ignore it despite the system prompt)
+    if (plan.target) {
+      const floor = form.gender === 'male' ? 1500 : 1200
+      plan.target = Math.max(floor, plan.target)
+    }
     return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || duration })
 
   } catch (err) {

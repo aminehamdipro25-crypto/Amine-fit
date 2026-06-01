@@ -35,12 +35,18 @@ async function verifyClientToken(token) {
     const sigBuf  = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
     const dataBuf = new TextEncoder().encode(data)
     if (!await crypto.subtle.verify('HMAC', key, sigBuf, dataBuf)) return null
-    const payload = JSON.parse(atob(data.replace(/-/g, '+').replace(/_/g, '/')))
+    const rawData   = data.replace(/-/g, '+').replace(/_/g, '/')
+    const paddedData = rawData.padEnd(rawData.length + (4 - rawData.length % 4) % 4, '=')
+    const payload = JSON.parse(atob(paddedData))
     if (payload.exp <= Date.now()) return null
     // Enforce single session — compare sessionId against Redis
     if (!payload.sessionId) return null  // old token format → force re-login
     const storedSession = await redisGet(`client_sess:${payload.id}`)
-    if (storedSession !== payload.sessionId) return null  // another device logged in → invalidate
+    if (storedSession !== payload.sessionId) {
+      // Allow admin preview tokens (stored under a separate key, never overwrite real session)
+      const previewSession = await redisGet(`client_preview:${payload.id}`)
+      if (previewSession !== payload.sessionId) return null
+    }
     return payload
   } catch { return null }
 }

@@ -54,7 +54,7 @@ export async function POST(req) {
       targetWeight:       sanitizeStr(body.targetWeight, 10),
       dailyMeals:         sanitizeStr(body.dailyMeals, 10),
       waterIntake:        sanitizeStr(body.waterIntake, 10),
-      activityLevel:       ['sedentary','light','moderate','active','veryActive'].includes(body.activityLevel) ? body.activityLevel : sanitizeStr(body.activityLevel),
+      activityLevel:       ['sedentary','light','moderate','active','veryActive'].includes(body.activityLevel) ? body.activityLevel : '',
       sleepHours:          sanitizeStr(body.sleepHours, 10),
       phone:               sanitizeStr(body.phone, 30),
       sportType:           sanitizeStr(body.sportType),

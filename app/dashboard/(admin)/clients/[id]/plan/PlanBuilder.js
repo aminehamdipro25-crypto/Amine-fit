@@ -67,7 +67,10 @@ function linkMealsToDB(meals) {
       // Estimate servings from the amount string ("40 غ مطبوخ..." → 40 / grams_per_serving)
       const gramsMatch = (item.amount || '').match(/^(\d+(?:\.\d+)?)/)
       const totalGrams = gramsMatch ? parseFloat(gramsMatch[1]) : dbFood.grams
-      const servings   = Math.max(1, Math.round(totalGrams / dbFood.grams))
+      const ratio      = totalGrams > 0 ? totalGrams / dbFood.grams : 1
+      // Only convert if ratio is plausible (0.5–8×); otherwise keep as text to avoid wrong macros
+      if (ratio < 0.5 || ratio > 8) return item
+      const servings = Math.max(1, Math.round(ratio))
       return makeDBItem(dbFood, servings)
     })
     const totals = calcItemTotals(linkedItems)
@@ -468,9 +471,9 @@ function MealCard({ meal, idx, onChange, onRemove }) {
       }
     }
 
-    // If remaining items all have DB data → recalculate from scratch
+    // If all remaining items have DB data → recalculate from scratch (includes empty list case)
     const remaining = newItems.filter(x => x.fromDB)
-    const allDB     = remaining.length === newItems.length && newItems.length > 0
+    const allDB     = remaining.length === newItems.length
 
     if (allDB) {
       applyItems(newItems)
@@ -1072,12 +1075,15 @@ export default function PlanBuilder({ client }) {
       },
     }
     try {
-      await fetch(`/api/register/${client.id}/plan`, {
+      const res = await fetch(`/api/register/${client.id}/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setToast('تم حفظ الخطة بنجاح ✓')
+    } catch {
+      setToast('❌ فشل الحفظ — تحقق من الاتصال وأعد المحاولة')
     } finally {
       setSaving(false)
     }
