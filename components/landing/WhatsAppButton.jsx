@@ -11,7 +11,7 @@ export default function WhatsAppButton() {
   return (
     <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-2">
       {tooltip && (
-        <div className="flex items-center gap-2 bg-white text-gray-800 text-sm font-bold px-4 py-2.5 rounded-2xl shadow-xl shadow-black/20 animate-bounce-slow whitespace-nowrap">
+        <div className="hidden sm:flex items-center gap-2 bg-white text-gray-800 text-sm font-bold px-4 py-2.5 rounded-2xl shadow-xl shadow-black/20 animate-bounce-slow whitespace-nowrap">
           <span>💬 تواصل معي مباشرة</span>
           <button
             onClick={() => setTooltip(false)}

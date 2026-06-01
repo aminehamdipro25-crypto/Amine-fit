@@ -13,8 +13,8 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[#0a0a0a]">
 
-      {/* ── Coach photo — desktop only ───────────────────────────── */}
-      <div className="absolute inset-0 hidden lg:block overflow-hidden pointer-events-none">
+      {/* ── Coach photo — all sizes, stronger overlay on mobile ─────── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <Image
           src="/coach-hero.jpg"
           alt=""
@@ -23,11 +23,14 @@ export default function Hero() {
           className="object-cover object-center"
           style={{ objectPosition: '35% center' }}
         />
-        {/* Gradient: right side dark (text) → left side shows coach */}
-        <div className="absolute inset-0" style={{
+        {/* Mobile: heavy dark overlay so text stays readable */}
+        <div className="absolute inset-0 lg:hidden"
+          style={{ background: 'linear-gradient(to bottom, rgba(10,10,10,0.75) 0%, rgba(10,10,10,0.65) 50%, rgba(10,10,10,0.85) 100%)' }} />
+        {/* Desktop: gradient keeps right side dark for text */}
+        <div className="absolute inset-0 hidden lg:block" style={{
           background: 'linear-gradient(to right, rgba(10,10,10,0.08) 0%, rgba(10,10,10,0.55) 38%, rgba(10,10,10,0.92) 58%, #0a0a0a 78%)',
         }} />
-        {/* Top & bottom fade for cleaner edges */}
+        {/* Top & bottom fade */}
         <div className="absolute inset-x-0 top-0 h-40"
           style={{ background: 'linear-gradient(to bottom, #0a0a0a 0%, transparent 100%)' }} />
         <div className="absolute inset-x-0 bottom-0 h-40"
@@ -45,7 +48,7 @@ export default function Hero() {
       <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-gold-400/6 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gold-400/4 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 w-full">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 w-full">
         <div className="max-w-3xl">
 
           {/* Trust badge */}
@@ -62,7 +65,7 @@ export default function Hero() {
           </div>
 
           {/* Main heading — powerful & unique */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] mb-6 tracking-tight">
             من القوات<br />
             الخاصة البحرية<br />
             <span className="text-gold-400">إلى قوّتك الشخصية</span>
