@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info } from 'lucide-react'
+import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2 } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
@@ -45,6 +45,68 @@ function StepCard({ num, title, children }) {
 
 const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', duration:'day', meals:5 }
 
+// Map registration goal values → calculator goal keys
+const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
+
+function ClientPicker({ onSelect }) {
+  const [clients, setClients]   = useState([])
+  const [search,  setSearch]    = useState('')
+  const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/clients')
+      .then(r => r.json())
+      .then(d => setClients(d.clients || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? clients.filter(c => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+    : clients
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <input
+          autoFocus
+          placeholder="ابحث بالاسم أو البريد..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pr-9 pl-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition"
+        />
+      </div>
+      {loading ? (
+        <div className="text-center py-6 text-slate-400 text-sm">جاري التحميل...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-6 text-slate-400 text-sm">لا يوجد عملاء مطابقون</div>
+      ) : (
+        <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+          {filtered.map(c => (
+            <button key={c.id} onClick={() => onSelect(c)}
+              className="w-full text-right flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-100 hover:border-primary-300 hover:bg-primary-50 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-violet-600 text-white font-extrabold text-sm flex items-center justify-center flex-shrink-0">
+                {c.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-800 text-sm truncate group-hover:text-primary-700">{c.name}</p>
+                <p className="text-xs text-slate-400 truncate">{c.email}</p>
+              </div>
+              <div className="flex gap-3 text-xs text-slate-500 flex-shrink-0">
+                {c.age   && <span>{c.age}س</span>}
+                {c.weight && <span>{c.weight}كغ</span>}
+                {c.height && <span>{c.height}سم</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const DURATION_OPTIONS = [
   { key: 'day',   label: 'يوم واحد',   icon: '📅' },
   { key: 'week',  label: 'أسبوع كامل', icon: '📆' },
@@ -63,9 +125,32 @@ export default function CalculatorPage() {
   const [chatLoading, setChatLoading] = useState(false)
   const [selectedDay, setSelectedDay] = useState(0)
   const [selectedWeek, setSelectedWeek] = useState(0)
+  const [showPicker, setShowPicker]   = useState(false)
+  const [pickedClient, setPickedClient] = useState(null)
   const chatEndRef = useRef(null)
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
+
+  function fillFromClient(c) {
+    const avoided = [c.dislikedFoods, c.foodAllergy].filter(Boolean).join('، ')
+    setForm({
+      name:         c.name         || '',
+      age:          c.age          || '',
+      gender:       c.gender       || 'male',
+      weight:       c.weight       || '',
+      height:       c.height       || '',
+      targetWeight: c.targetWeight || '',
+      activity:     c.activityLevel || 'moderate',
+      goal:         GOAL_MAP[c.goal] || 'maintain',
+      preferred:    c.preferredFoods || '',
+      avoided,
+      duration:     'day',
+      meals:        5,
+    })
+    setPickedClient(c)
+    setShowPicker(false)
+    setRes(null)
+  }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
 
@@ -166,6 +251,39 @@ export default function CalculatorPage() {
         </div>
 
         <div className="p-5 space-y-4">
+
+          {/* ── Client Picker ── */}
+          <div className="rounded-xl border border-dashed border-primary-300 bg-primary-50/50 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary-600" />
+                <span className="text-sm font-bold text-primary-700">تعبئة من العملاء</span>
+                {pickedClient && (
+                  <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" /> {pickedClient.name}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {pickedClient && (
+                  <button onClick={() => { setPickedClient(null); setForm(INIT); setRes(null) }}
+                    className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <X className="w-3 h-3" /> مسح
+                  </button>
+                )}
+                <button onClick={() => setShowPicker(p => !p)}
+                  className="text-xs font-bold text-primary-600 hover:text-primary-800 bg-white border border-primary-200 hover:border-primary-400 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  {showPicker ? 'إغلاق' : (pickedClient ? 'تغيير العميل' : 'اختر عميل')}
+                </button>
+              </div>
+            </div>
+            {showPicker && <ClientPicker onSelect={fillFromClient} />}
+            {!showPicker && !pickedClient && (
+              <p className="text-xs text-slate-500">اختر عميلاً لتعبئة البيانات تلقائياً من استبيانه</p>
+            )}
+          </div>
+
           {/* Row 1: Name, Age, Gender */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
@@ -279,7 +397,7 @@ export default function CalculatorPage() {
               </>
             )}
           </button>
-          <button onClick={() => { setForm(INIT); setRes(null) }} title="إعادة تعيين"
+          <button onClick={() => { setForm(INIT); setRes(null); setPickedClient(null) }} title="إعادة تعيين"
             className="px-4 py-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition">
             <RefreshCw className="w-5 h-5" />
           </button>

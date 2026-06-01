@@ -890,6 +890,75 @@ export default function PlanBuilder({ client }) {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiForm, setAiForm]       = useState({ goal: client.goal || 'gain', level: client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate', daysPerWeek: '3', equipment: 'gym', injuries: '' })
 
+  // One-click AI nutrition generation from client survey data
+  const [autoAiLoading, setAutoAiLoading] = useState(false)
+
+  const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
+
+  async function generateNutritionFromSurvey() {
+    setAutoAiLoading(true)
+    setImportStatus('')
+    try {
+      const avoided = [client.dislikedFoods, client.foodAllergy].filter(Boolean).join('، ')
+      const form = {
+        name:         client.name         || '',
+        age:          client.age          || '',
+        gender:       client.gender       || 'male',
+        weight:       client.weight       || '',
+        height:       client.height       || '',
+        targetWeight: client.targetWeight || '',
+        activity:     client.activityLevel || 'moderate',
+        goal:         GOAL_MAP[client.goal] || 'maintain',
+        preferred:    client.preferredFoods || '',
+        avoided,
+        meals:        5,
+        duration:     'day',
+      }
+      const res  = await fetch('/api/ai-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const plan = await res.json()
+      const { target, ex, menu } = plan
+
+      if (target) setCalories(String(Math.round(target)))
+      if (ex?.macros) {
+        setProtein(String(Math.round(ex.macros.protein || 0)))
+        setCarbs(String(Math.round(ex.macros.carbs    || 0)))
+        setFats(String(Math.round(ex.macros.fat       || 0)))
+      }
+      if (Array.isArray(menu) && menu.length > 0) {
+        setMeals(menu.map(m => {
+          const linkedItems = (m.items || []).map(item => {
+            const dbFood = findFoodInDB(item.food)
+            if (dbFood) return makeDBItem(dbFood, item.servings || 1)
+            return { food: item.food || '', amount: item.amount || '' }
+          })
+          const totals = calcItemTotals(linkedItems)
+          return {
+            name:     m.name || '',
+            time:     m.time || '',
+            calories: totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
+            description: '',
+            macros: {
+              protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
+              carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
+              fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
+            },
+            items: linkedItems,
+          }
+        }))
+      }
+      setImportStatus('ok')
+      setTimeout(() => setImportStatus(''), 4000)
+    } catch {
+      setImportStatus('حدث خطأ أثناء التوليد — تحقق من الاتصال.')
+    } finally {
+      setAutoAiLoading(false)
+    }
+  }
+
   // Resources tab state
   const [resList, setResList]   = useState([])
   const [resLoading, setResLoading] = useState(false)
@@ -1165,15 +1234,28 @@ export default function PlanBuilder({ client }) {
                   </p>
                 )}
               </div>
-              {/* Import from Calculator */}
-              <button
-                type="button"
-                onClick={importFromCalculator}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-gold-400 text-gold-600 text-xs font-bold hover:bg-gold-50 transition"
-              >
-                <Download className="w-3.5 h-3.5" />
-                استيراد من الحاسبة
-              </button>
+              {/* One-click AI generation from survey data */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={generateNutritionFromSurvey}
+                  disabled={autoAiLoading || !client.age || !client.weight || !client.height}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-violet-300 bg-violet-50 text-violet-700 text-xs font-bold hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {autoAiLoading
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري التوليد...</>
+                    : <><Sparkles className="w-3.5 h-3.5" /> توليد AI مباشر</>
+                  }
+                </button>
+                <button
+                  type="button"
+                  onClick={importFromCalculator}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-gold-400 text-gold-600 text-xs font-bold hover:bg-gold-50 transition"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  من الحاسبة
+                </button>
+              </div>
             </div>
 
             {/* Import status message */}
