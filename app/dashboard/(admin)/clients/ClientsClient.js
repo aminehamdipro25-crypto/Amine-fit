@@ -5,8 +5,41 @@ import { useRouter } from 'next/navigation'
 import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
-  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell
+  Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon
 } from 'lucide-react'
+
+// ── Online status helpers ─────────────────────────────────────────────────────
+function getOnlineStatus(info) {
+  if (!info?.lastSeen) return 'offline'
+  const diffMin = (Date.now() - new Date(info.lastSeen).getTime()) / 60000
+  if (diffMin < 2)  return 'online'
+  if (diffMin < 10) return 'away'
+  return 'offline'
+}
+
+function formatAgo(iso) {
+  if (!iso) return null
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (diffMin < 1)  return 'الآن'
+  if (diffMin < 60) return `منذ ${diffMin} دقيقة`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24)   return `منذ ${diffH} ساعة`
+  return new Date(iso).toLocaleDateString('ar', { month:'short', day:'numeric' })
+}
+
+function formatTime(iso) {
+  if (!iso) return null
+  return new Date(iso).toLocaleTimeString('ar', { hour:'2-digit', minute:'2-digit', hour12: true, timeZone: 'Asia/Qatar' })
+}
+
+function OnlineDot({ status }) {
+  const cfg = {
+    online:  'bg-emerald-500 shadow-emerald-400/60 animate-pulse',
+    away:    'bg-amber-400',
+    offline: 'bg-slate-300',
+  }
+  return <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg[status] || cfg.offline} shadow-sm`} />
+}
 
 function AddClientModal({ onClose, onAdded }) {
   const [name, setName]       = useState('')
@@ -297,11 +330,25 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   )
 }
 
-function ClientModal({ client, onClose, onStatusChange, onDelete }) {
+function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, onKick }) {
   const goal = goalMap[client.goal]
-  const [pw, setPw]           = useState('')
+  const [pw, setPw]             = useState('')
   const [pwSaving, setPwSaving] = useState(false)
   const [pwSaved, setPwSaved]   = useState(false)
+  const [kicking, setKicking]   = useState(false)
+  const [kicked, setKicked]     = useState(false)
+
+  const onlineStatus = getOnlineStatus(onlineInfo)
+
+  async function kickClient() {
+    if (!confirm(`إخراج "${client.name}" من المنصة الآن؟`)) return
+    setKicking(true)
+    await fetch(`/api/admin/clients/${client.id}/kick`, { method: 'DELETE' }).catch(() => {})
+    setKicking(false)
+    setKicked(true)
+    setTimeout(() => setKicked(false), 4000)
+    onKick(client.id)
+  }
 
   async function savePassword() {
     if (!pw.trim()) return
@@ -335,14 +382,32 @@ function ClientModal({ client, onClose, onStatusChange, onDelete }) {
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">{client.name}</h2>
               <p className="text-slate-500 text-sm">{client.email}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge status={client.status} />
                 {goal && (
                   <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${goal.color}`}>
                     {goal.icon} {goal.label}
                   </span>
                 )}
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border
+                  ${onlineStatus === 'online'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    onlineStatus === 'away'    ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                  <OnlineDot status={onlineStatus} />
+                  {onlineStatus === 'online' ? 'داخل المنصة الآن' :
+                   onlineStatus === 'away'   ? `غائب · ${formatAgo(onlineInfo?.lastSeen)}` :
+                   onlineInfo?.lastSeen      ? `آخر ظهور ${formatAgo(onlineInfo?.lastSeen)}` : 'غير متصل'}
+                </span>
               </div>
+              {/* Session info */}
+              {onlineInfo?.loginTime && (
+                <p className="text-xs text-slate-400 mt-1.5">
+                  دخل في: <strong className="text-slate-600">{formatTime(onlineInfo.loginTime)}</strong>
+                  {onlineInfo.lastSeen && (
+                    <> · آخر نشاط: <strong className="text-slate-600">{formatTime(onlineInfo.lastSeen)}</strong></>
+                  )}
+                </p>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition">
@@ -488,6 +553,14 @@ function ClientModal({ client, onClose, onStatusChange, onDelete }) {
               <Download className="w-3.5 h-3.5" />
               تنزيل PDF
             </button>
+            {/* Force logout — only meaningful if client has a session */}
+            <button onClick={kickClient} disabled={kicking || kicked}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition
+                ${kicked ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                  'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
+              <KickIcon className="w-3.5 h-3.5" />
+              {kicked ? 'تم الإخراج' : kicking ? 'جاري...' : 'إخراج قسري'}
+            </button>
             <button onClick={() => onDelete(client.id)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition">
               <X className="w-3.5 h-3.5" />
@@ -513,7 +586,8 @@ export default function ClientsClient({ error }) {
   const [selected, setSelected]   = useState(null)
   const [deleting, setDeleting]   = useState(null)
   const [addOpen, setAddOpen]     = useState(false)
-  const [approvalCode, setApprovalCode] = useState(null) // { email, code }
+  const [approvalCode, setApprovalCode] = useState(null)
+  const [onlineData, setOnlineData]   = useState({}) // { [clientId]: { lastSeen, loginTime } }
 
   async function loadClients() {
     setLoading(true)
@@ -525,7 +599,21 @@ export default function ClientsClient({ error }) {
     finally { setLoading(false) }
   }
 
+  async function loadOnlineStatus() {
+    try {
+      const res = await fetch('/api/admin/online', { cache: 'no-store' })
+      const data = await res.json()
+      setOnlineData(data.online || {})
+    } catch {}
+  }
+
   useEffect(() => { loadClients() }, [])
+  // Refresh online status every 30 seconds
+  useEffect(() => {
+    loadOnlineStatus()
+    const iv = setInterval(loadOnlineStatus, 30_000)
+    return () => clearInterval(iv)
+  }, [])
 
   const filtered = clients.filter(c => {
     const q = query.toLowerCase()
@@ -576,7 +664,14 @@ export default function ClientsClient({ error }) {
   return (
     <>
       {selected && (
-        <ClientModal client={selected} onClose={() => setSelected(null)} onStatusChange={changeStatus} onDelete={deleteClient} />
+        <ClientModal
+          client={selected}
+          onClose={() => setSelected(null)}
+          onStatusChange={changeStatus}
+          onDelete={deleteClient}
+          onlineInfo={onlineData[selected.id]}
+          onKick={id => setOnlineData(prev => ({ ...prev, [id]: { lastSeen: null, loginTime: null } }))}
+        />
       )}
       {addOpen && (
         <AddClientModal
@@ -725,8 +820,14 @@ export default function ClientsClient({ error }) {
                   {/* Card header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-xl flex-shrink-0">
-                        {c.name?.[0] ?? '?'}
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-xl">
+                          {c.name?.[0] ?? '?'}
+                        </div>
+                        <span className={`absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-white flex-shrink-0
+                          ${getOnlineStatus(onlineData[c.id]) === 'online'  ? 'bg-emerald-500' :
+                            getOnlineStatus(onlineData[c.id]) === 'away'    ? 'bg-amber-400' :
+                            'bg-slate-300'}`} />
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
@@ -735,7 +836,13 @@ export default function ClientsClient({ error }) {
                             <span className="text-[9px] font-extrabold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-200 uppercase">تواصل</span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 truncate max-w-[140px] mt-0.5">{c.email || c.phone}</p>
+                        <p className="text-xs text-slate-400 truncate max-w-[140px] mt-0.5">
+                          {getOnlineStatus(onlineData[c.id]) === 'online' ? (
+                            <span className="text-emerald-600 font-bold">● داخل المنصة الآن</span>
+                          ) : onlineData[c.id]?.lastSeen ? (
+                            <span className="text-slate-400">{formatAgo(onlineData[c.id]?.lastSeen)}</span>
+                          ) : (c.email || c.phone)}
+                        </p>
                       </div>
                     </div>
                     <Badge status={c.status} />

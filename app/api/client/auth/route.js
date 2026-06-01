@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
+import { createClientSession } from '@/lib/clientSession'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
 
-function setClientCookie(res, clientId) {
-  res.cookies.set('client_token', createToken(clientId), {
+async function setClientCookie(res, clientId) {
+  const sessionId = await createClientSession(clientId)
+  res.cookies.set('client_token', createToken(clientId, sessionId), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -49,7 +51,7 @@ async function handleActivation(email, activationCode, password, confirmPassword
   })
 
   const res = NextResponse.json({ success: true, name: client.name })
-  setClientCookie(res, client.id)
+  await setClientCookie(res, client.id)
   return res
 }
 
@@ -74,7 +76,7 @@ async function handleLogin(email, password) {
   }
 
   const res = NextResponse.json({ success: true, name: client.name })
-  setClientCookie(res, client.id)
+  await setClientCookie(res, client.id)
   return res
 }
 

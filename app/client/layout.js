@@ -74,6 +74,15 @@ export default function ClientLayout({ children }) {
     }).catch(() => {})
   }, [isLogin])
 
+  // Heartbeat — keeps online status alive every 60 seconds
+  useEffect(() => {
+    if (isLogin) return
+    const ping = () => fetch('/api/client/ping', { method: 'POST' }).catch(() => {})
+    ping()
+    const iv = setInterval(ping, 60_000)
+    return () => clearInterval(iv)
+  }, [isLogin])
+
   async function logout() {
     document.cookie = 'coach_preview=; Max-Age=0; path=/'
     await fetch('/api/client/logout', { method: 'POST' })

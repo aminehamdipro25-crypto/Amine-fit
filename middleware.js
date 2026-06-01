@@ -37,6 +37,10 @@ async function verifyClientToken(token) {
     if (!await crypto.subtle.verify('HMAC', key, sigBuf, dataBuf)) return null
     const payload = JSON.parse(atob(data.replace(/-/g, '+').replace(/_/g, '/')))
     if (payload.exp <= Date.now()) return null
+    // Enforce single session — compare sessionId against Redis
+    if (!payload.sessionId) return null  // old token format → force re-login
+    const storedSession = await redisGet(`client_sess:${payload.id}`)
+    if (storedSession !== payload.sessionId) return null  // another device logged in → invalidate
     return payload
   } catch { return null }
 }
