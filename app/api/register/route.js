@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { saveSubmission, getSubmissionByEmail } from '@/lib/submissions'
+import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
 
 const STR_MAX = 500  // max length for text fields
@@ -38,7 +38,18 @@ export async function POST(req) {
 
     const existing = await getSubmissionByEmail(emailLower)
     if (existing) {
-      return NextResponse.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً' }, { status: 409 })
+      const interestedPlan = sanitizeStr(body.interestedPlan, 100)
+      // Existing client with no active subscription selecting a plan → save their choice
+      if (interestedPlan && !existing.subscriptionPlan) {
+        await updateSubmission(existing.id, { interestedPlan })
+        return NextResponse.json({ success: true, alreadyRegistered: true })
+      }
+      return NextResponse.json({
+        error: existing.subscriptionPlan
+          ? 'أنت مشترك بالفعل — سجّل الدخول لبوابتك الشخصية'
+          : 'هذا البريد الإلكتروني مسجل مسبقاً — تواصل مع المدرب عبر واتساب لتحديد باقتك',
+        loginUrl: '/client/login',
+      }, { status: 409 })
     }
 
     // Explicit allowlist — never spread raw body into storage

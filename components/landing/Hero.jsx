@@ -95,7 +95,7 @@ export default function Hero() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <a href="/register"
+            <a href="#pricing"
               className="flex items-center justify-center gap-2 px-8 py-4 bg-gold-400 text-black font-extrabold text-lg rounded-2xl shadow-xl shadow-gold-400/20 hover:bg-gold-300 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
               <Zap className="w-5 h-5" fill="black" />
               ابدأ رحلتك الآن

@@ -177,7 +177,7 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'خطأ')
-      router.push('/register/success')
+      router.push(data.alreadyRegistered ? '/register/success?existing=1' : '/register/success')
     } catch (e) {
       setApiErr(e.message)
     } finally {
