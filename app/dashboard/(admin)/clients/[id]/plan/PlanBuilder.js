@@ -249,7 +249,10 @@ function MealCard({ meal, idx, onChange, onRemove }) {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">الأطعمة</label>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">الأطعمة</label>
+                <p className="text-[9px] text-amber-500 font-bold mt-0.5">⚠ بعد الحذف أو الإضافة — حدّث السعرات والماكرو أعلاه</p>
+              </div>
               <button type="button" onClick={addItem}
                 className="flex items-center gap-1 text-xs font-bold text-gold-600 hover:text-gold-700 transition">
                 <Plus className="w-3.5 h-3.5" /> إضافة
@@ -558,6 +561,28 @@ export default function PlanBuilder({ client }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
+  // Auto-sum meal macros into top-level daily totals
+  useEffect(() => {
+    const hasData = meals.some(m =>
+      parseFloat(m.calories) > 0 ||
+      parseFloat(m.macros?.protein) > 0 ||
+      parseFloat(m.macros?.carbs) > 0 ||
+      parseFloat(m.macros?.fats) > 0
+    )
+    if (!hasData) return
+    const sum = meals.reduce((acc, m) => ({
+      kcal:    acc.kcal    + (parseFloat(m.calories)        || 0),
+      protein: acc.protein + (parseFloat(m.macros?.protein) || 0),
+      carbs:   acc.carbs   + (parseFloat(m.macros?.carbs)   || 0),
+      fats:    acc.fats    + (parseFloat(m.macros?.fats)    || 0),
+    }), { kcal: 0, protein: 0, carbs: 0, fats: 0 })
+    setCalories(sum.kcal    ? String(Math.round(sum.kcal))    : '')
+    setProtein (sum.protein ? String(Math.round(sum.protein)) : '')
+    setCarbs   (sum.carbs   ? String(Math.round(sum.carbs))   : '')
+    setFats    (sum.fats    ? String(Math.round(sum.fats))    : '')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meals])
+
   async function generateWithAI() {
     setAiLoading(true)
     try {
@@ -727,9 +752,16 @@ export default function PlanBuilder({ client }) {
         <div className="space-y-5">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-gold-500" /> الماكرو اليومي
-              </h2>
+              <div>
+                <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-gold-500" /> الماكرو اليومي
+                </h2>
+                {meals.some(m => parseFloat(m.calories) > 0 || parseFloat(m.macros?.protein) > 0) && (
+                  <p className="text-[10px] text-emerald-600 font-bold mt-0.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> يُحسب تلقائياً من مجموع الوجبات
+                  </p>
+                )}
+              </div>
               {/* Import from Calculator */}
               <button
                 type="button"
