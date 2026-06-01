@@ -1,5 +1,4 @@
 import Navbar          from '@/components/landing/Navbar'
-import PromoBanner     from '@/components/landing/PromoBanner'
 import Hero            from '@/components/landing/Hero'
 import Stats           from '@/components/landing/Stats'
 import About           from '@/components/landing/About'
@@ -14,7 +13,6 @@ import Footer          from '@/components/landing/Footer'
 export default function Home() {
   return (
     <>
-      <PromoBanner />
       <Navbar />
       <main>
         <Hero />

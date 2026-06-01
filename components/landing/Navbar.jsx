@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Zap, Menu, X, LogOut } from 'lucide-react'
+import { Zap, Menu, X, LogOut, Flame } from 'lucide-react'
 
 const links = [
   { href: '#about',      label: 'من هو أمين' },
@@ -17,6 +17,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [banner, setBanner] = useState(true)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -35,8 +36,26 @@ export default function Navbar() {
   }
 
   return (
-    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300
-      ${scrolled ? 'bg-[#0a0a0a]/95 backdrop-blur shadow-lg shadow-black/20' : 'bg-[#0a0a0a]'}`}>
+    <header className="fixed top-0 inset-x-0 z-50">
+      {/* Promo Banner */}
+      {banner && (
+        <div className="relative bg-gradient-to-r from-red-700 via-red-600 to-red-700 text-white text-center py-2.5 px-10">
+          <div className="flex items-center justify-center gap-2 text-sm font-bold">
+            <Flame className="w-4 h-4 animate-pulse flex-shrink-0" />
+            <span>🎉 عرض الإطلاق — خصم <strong>50%</strong> على جميع الباقات لفترة محدودة</span>
+            <a href="#pricing"
+              className="mr-2 border border-white/40 text-white text-xs font-extrabold px-3 py-0.5 rounded-full hover:bg-white/10 transition flex-shrink-0">
+              احجز الآن
+            </a>
+          </div>
+          <button onClick={() => setBanner(false)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      <div className={`transition-all duration-300
+        ${scrolled ? 'bg-[#0a0a0a]/95 backdrop-blur shadow-lg shadow-black/20' : 'bg-[#0a0a0a]'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
@@ -112,6 +131,7 @@ export default function Navbar() {
           )}
         </div>
       )}
+      </div>
     </header>
   )
 }
