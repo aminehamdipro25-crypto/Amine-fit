@@ -313,7 +313,7 @@ export default function CalculatorPage() {
         <StepCard num="1" title="حسابات الطاقة — BMR & TDEE">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             {[
-              { label: 'معدل الأيض الأساسي (BMR)',   val: result.bmr.toLocaleString() + ' سعرة',   sub: 'Harris-Benedict',          hi: false },
+              { label: 'معدل الأيض الأساسي (BMR)',   val: result.bmr.toLocaleString() + ' سعرة',   sub: 'Mifflin-St Jeor',          hi: false },
               { label: 'إجمالي الطاقة اليومية (TDEE)', val: result.tdee.toLocaleString() + ' سعرة', sub: getActivity(form.activity).label, hi: false },
               { label: 'السعرات المستهدفة',           val: result.target.toLocaleString() + ' سعرة', sub: getGoal(form.goal).label,   hi: true  },
             ].map(b => (
@@ -324,6 +324,68 @@ export default function CalculatorPage() {
               </div>
             ))}
           </div>
+
+          {/* ── Extra Metrics Strip ── */}
+          {(() => {
+            const w = +form.weight, h = +form.height, age = +form.age
+            const bmi = h > 0 ? +(w / ((h / 100) ** 2)).toFixed(1) : null
+            const bmiCat = !bmi ? null
+              : bmi < 18.5 ? { label: 'نقص وزن', color: 'text-blue-700 bg-blue-50 border-blue-200' }
+              : bmi < 25   ? { label: 'طبيعي ✓',  color: 'text-emerald-700 bg-emerald-50 border-emerald-200' }
+              : bmi < 30   ? { label: 'زيادة وزن', color: 'text-amber-700 bg-amber-50 border-amber-200' }
+              :               { label: 'سمنة',      color: 'text-red-700 bg-red-50 border-red-200' }
+            const proteinG = result.ex.macros.protein
+            const proteinPerKg = w > 0 ? (proteinG / w).toFixed(2) : null
+            const waterL = w > 0 ? (w * 0.035).toFixed(1) : null
+            const fiberTarget = form.gender === 'male' ? 38 : 25
+            const goalAdj = getGoal(form.goal).adj
+            const weeklyChange = Math.abs(goalAdj) > 0 ? (Math.abs(goalAdj) * 7 / 7700).toFixed(2) : null
+            const weightDiff = form.targetWeight ? Math.abs(+form.weight - +form.targetWeight) : null
+            const weeksToGoal = weeklyChange && weightDiff > 0 ? Math.round(weightDiff / weeklyChange) : null
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {bmi && bmiCat && (
+                  <div className={`rounded-xl p-3 text-center border ${bmiCat.color}`}>
+                    <p className="text-xl font-extrabold">{bmi}</p>
+                    <p className="text-xs font-bold mt-0.5">BMI</p>
+                    <p className="text-[10px] mt-0.5 font-semibold">{bmiCat.label}</p>
+                  </div>
+                )}
+                {proteinPerKg && (
+                  <div className="rounded-xl p-3 text-center border bg-red-50 border-red-100 text-red-800">
+                    <p className="text-xl font-extrabold">{proteinPerKg}</p>
+                    <p className="text-xs font-bold mt-0.5">غ بروتين / كغ</p>
+                    <p className="text-[10px] mt-0.5 text-red-500">الموصى: 1.6–2.4</p>
+                  </div>
+                )}
+                {waterL && (
+                  <div className="rounded-xl p-3 text-center border bg-cyan-50 border-cyan-100 text-cyan-800">
+                    <p className="text-xl font-extrabold">{waterL} L</p>
+                    <p className="text-xs font-bold mt-0.5">ماء موصى به</p>
+                    <p className="text-[10px] mt-0.5 text-cyan-500">35 مل × الوزن</p>
+                  </div>
+                )}
+                <div className="rounded-xl p-3 text-center border bg-green-50 border-green-100 text-green-800">
+                  <p className="text-xl font-extrabold">{fiberTarget} غ</p>
+                  <p className="text-xs font-bold mt-0.5">هدف الألياف / يوم</p>
+                  <p className="text-[10px] mt-0.5 text-green-500">ADA/AND 2024</p>
+                </div>
+                {weeksToGoal && goalAdj !== 0 && (
+                  <div className="rounded-xl p-3 text-center border bg-violet-50 border-violet-100 text-violet-800 col-span-2 sm:col-span-4">
+                    <p className="text-lg font-extrabold">
+                      {weeksToGoal} أسبوع تقريباً ({Math.round(weeksToGoal / 4.3)} شهر)
+                    </p>
+                    <p className="text-xs font-bold mt-0.5">
+                      الوقت المتوقع للوصول من {form.weight} كغ إلى {form.targetWeight} كغ
+                    </p>
+                    <p className="text-[10px] mt-0.5 text-violet-400">
+                      بمعدل {weeklyChange} كغ/أسبوع · بناءً على عجز/فائض {Math.abs(goalAdj)} سعرة يومياً
+                    </p>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
           <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-500 space-y-1">
             <p><strong className="text-slate-700">معادلة Mifflin-St Jeor (1990) — الأدق وفق ADA/AND:</strong></p>
             {form.gender === 'male'
