@@ -41,6 +41,50 @@ function calcItemTotals(items) {
   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
 }
 
+// Find a food in DB using exact → partial → keyword matching
+function findFoodInDB(name) {
+  if (!name) return null
+  const n = name.trim()
+  // 1. Exact
+  let f = ALL_FOODS.find(x => x.nameAr === n)
+  if (f) return f
+  // 2. One contains the other
+  f = ALL_FOODS.find(x => x.nameAr.includes(n) || n.includes(x.nameAr))
+  if (f) return f
+  // 3. Keyword match
+  const lq = n.toLowerCase()
+  f = ALL_FOODS.find(x => x.keywords.some(k => k.includes(lq) || lq.includes(k)))
+  return f || null
+}
+
+// Retroactively link saved text items to DB (for existing plans from Redis)
+function linkMealsToDB(meals) {
+  return (meals || []).map(m => {
+    const linkedItems = (m.items || []).map(item => {
+      if (item.fromDB) return item
+      const dbFood = findFoodInDB(item.food)
+      if (!dbFood) return item
+      // Estimate servings from the amount string ("40 غ مطبوخ..." → 40 / grams_per_serving)
+      const gramsMatch = (item.amount || '').match(/^(\d+(?:\.\d+)?)/)
+      const totalGrams = gramsMatch ? parseFloat(gramsMatch[1]) : dbFood.grams
+      const servings   = Math.max(1, Math.round(totalGrams / dbFood.grams))
+      return makeDBItem(dbFood, servings)
+    })
+    const totals = calcItemTotals(linkedItems)
+    if (!totals) return { ...m, items: linkedItems }
+    return {
+      ...m,
+      items:    linkedItems,
+      calories: String(Math.round(totals.kcal)),
+      macros: {
+        protein: String(Math.round(totals.protein)),
+        carbs:   String(Math.round(totals.carbs)),
+        fats:    String(Math.round(totals.fat)),
+      },
+    }
+  })
+}
+
 const emptyMeal     = () => ({ name:'', time:'', calories:'', description:'', items:[], macros:{ protein:'', carbs:'', fats:'' } })
 const emptyItem     = () => ({ food:'', amount:'' })
 const emptyExercise = () => ({ name:'', sets:'', reps:'', rest:'', note:'', videoUrl:'' })
@@ -318,16 +362,63 @@ function MealCard({ meal, idx, onChange, onRemove }) {
   const addTextItem = () => onChange({ ...meal, items: [...(meal.items || []), emptyItem()] })
 
   const removeItem = (i) => {
-    const item = meal.items[i]
-    // Suggest an alternative from the same food group
-    if (item?.fromDB && item?.group) {
-      const alts = (FOODS[item.group] || []).filter(f => f.nameAr !== item.food)
-      if (alts.length) {
-        const alt = alts[Math.floor(Math.random() * Math.min(4, alts.length))]
-        setSuggestion({ group: item.group, food: alt, original: item.food })
+    const item      = meal.items[i]
+    const newItems  = meal.items.filter((_, j) => j !== i)
+
+    // Resolve nutritional data for the removed item
+    let removedMacros = null
+    let group = item?.group || null
+
+    if (item?.fromDB) {
+      removedMacros = { kcal: item.kcal || 0, protein: item.protein || 0, carbs: item.carbs || 0, fat: item.fat || 0 }
+    } else if (item?.food) {
+      // Text item — try to find in DB and estimate macros
+      const dbFood = findFoodInDB(item.food)
+      if (dbFood) {
+        group = dbFood.group
+        const gramsMatch = (item.amount || '').match(/^(\d+(?:\.\d+)?)/)
+        const totalGrams = gramsMatch ? parseFloat(gramsMatch[1]) : dbFood.grams
+        const servings   = Math.max(1, Math.round(totalGrams / dbFood.grams))
+        const ex         = EX[dbFood.group] || {}
+        removedMacros = {
+          kcal:    Math.round((ex.kcal    || 0) * servings),
+          protein: Math.round((ex.protein || 0) * servings),
+          carbs:   Math.round((ex.carbs   || 0) * servings),
+          fat:     Math.round((ex.fat     || 0) * servings),
+        }
       }
     }
-    applyItems(meal.items.filter((_, j) => j !== i))
+
+    // If remaining items all have DB data → recalculate from scratch
+    const remaining = newItems.filter(x => x.fromDB)
+    const allDB     = remaining.length === newItems.length && newItems.length > 0
+
+    if (allDB) {
+      applyItems(newItems)
+    } else if (removedMacros) {
+      // Subtract the removed item's macros from the meal totals
+      onChange({
+        ...meal,
+        items:    newItems,
+        calories: String(Math.max(0, Math.round((parseFloat(meal.calories) || 0) - removedMacros.kcal))),
+        macros: {
+          protein: String(Math.max(0, Math.round((parseFloat(meal.macros?.protein) || 0) - removedMacros.protein))),
+          carbs:   String(Math.max(0, Math.round((parseFloat(meal.macros?.carbs)   || 0) - removedMacros.carbs))),
+          fats:    String(Math.max(0, Math.round((parseFloat(meal.macros?.fats)    || 0) - removedMacros.fat))),
+        },
+      })
+    } else {
+      onChange({ ...meal, items: newItems })
+    }
+
+    // Suggest alternative from the same food group
+    if (group) {
+      const alts = (FOODS[group] || []).filter(f => f.nameAr !== item.food)
+      if (alts.length) {
+        const alt = alts[Math.floor(Math.random() * Math.min(4, alts.length))]
+        setSuggestion({ group, food: alt, original: item.food })
+      }
+    }
   }
 
   const updateTextItem = (i, f, v) => {
@@ -701,7 +792,7 @@ export default function PlanBuilder({ client }) {
   const [fats, setFats]         = useState(existing.nutrition?.fats     || '')
   const [nutritionNote, setNNote] = useState(existing.nutrition?.note   || '')
   const [nutritionTips, setNTips] = useState(existing.nutrition?.tips?.join('\n') || '')
-  const [meals, setMeals]       = useState(existing.nutrition?.meals    || [])
+  const [meals, setMeals]       = useState(() => linkMealsToDB(existing.nutrition?.meals || []))
   const [importStatus, setImportStatus] = useState('')
 
   // Training state
@@ -851,11 +942,11 @@ export default function PlanBuilder({ client }) {
         setFats(String(Math.round(ex.macros.fat       || 0)))
       }
 
-      // Meals — link items to food DB when possible
+      // Meals — link items to food DB using fuzzy matching
       if (Array.isArray(menu) && menu.length > 0) {
         setMeals(menu.map(m => {
           const linkedItems = (m.items || []).map(item => {
-            const dbFood = ALL_FOODS.find(f => f.nameAr === item.food)
+            const dbFood = findFoodInDB(item.food)
             if (dbFood) {
               const servings = item.servings || 1
               return makeDBItem(dbFood, servings)
