@@ -85,15 +85,17 @@ export default function Navbar() {
               className="px-4 py-2 border border-white/10 text-white/60 text-sm font-bold rounded-xl hover:bg-white/5 hover:text-white transition-all">
               دخول العميل
             </Link>
-            <Link href="/dashboard"
-              className="px-5 py-2 bg-gold-400 text-black text-sm font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
-              لوحة التحكم
-            </Link>
             {isAdmin && (
-              <button onClick={logout} title="تسجيل خروج المدرب"
-                className="p-2 rounded-xl border border-white/10 text-white/40 hover:text-red-400 hover:border-red-400/30 hover:bg-red-500/5 transition-all">
-                <LogOut className="w-4 h-4" />
-              </button>
+              <>
+                <Link href="/dashboard"
+                  className="px-5 py-2 bg-gold-400 text-black text-sm font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
+                  لوحة التحكم
+                </Link>
+                <button onClick={logout} title="تسجيل خروج المدرب"
+                  className="p-2 rounded-xl border border-white/10 text-white/40 hover:text-red-400 hover:border-red-400/30 hover:bg-red-500/5 transition-all">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
             )}
           </div>
 
@@ -118,16 +120,18 @@ export default function Navbar() {
             className="block mt-2 text-center px-4 py-3 border border-white/10 text-white/70 font-bold rounded-xl">
             دخول العميل
           </Link>
-          <Link href="/dashboard" onClick={() => setMobileOpen(false)}
-            className="block mt-2 text-center px-4 py-3 bg-gold-400 text-black font-extrabold rounded-xl">
-            لوحة التحكم
-          </Link>
           {isAdmin && (
-            <button onClick={logout}
-              className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-3 border border-white/10 text-white/50 hover:text-red-400 font-medium rounded-xl transition">
-              <LogOut className="w-4 h-4" />
-              تسجيل خروج المدرب
-            </button>
+            <>
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)}
+                className="block mt-2 text-center px-4 py-3 bg-gold-400 text-black font-extrabold rounded-xl">
+                لوحة التحكم
+              </Link>
+              <button onClick={logout}
+                className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-3 border border-white/10 text-white/50 hover:text-red-400 font-medium rounded-xl transition">
+                <LogOut className="w-4 h-4" />
+                تسجيل خروج المدرب
+              </button>
+            </>
           )}
         </div>
       )}
