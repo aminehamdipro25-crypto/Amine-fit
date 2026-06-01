@@ -160,7 +160,7 @@ export default function CalculatorPage() {
           </div>
           <div>
             <h2 className="font-bold text-slate-800">بيانات المشترك</h2>
-            <p className="text-xs text-slate-500">يُولَّد البرنامج بالذكاء الاصطناعي — نظام التبادل الغذائي ADA</p>
+            <p className="text-xs text-slate-500">Mifflin-St Jeor + نظام التبادل الغذائي ADA 2019</p>
           </div>
           <span className="mr-auto text-[10px] font-extrabold bg-violet-100 text-violet-700 px-2.5 py-1 rounded-full">AI ✦</span>
         </div>
@@ -325,13 +325,15 @@ export default function CalculatorPage() {
             ))}
           </div>
           <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-500 space-y-1">
-            <p><strong className="text-slate-700">معادلة Harris-Benedict:</strong></p>
+            <p><strong className="text-slate-700">معادلة Mifflin-St Jeor (1990) — الأدق وفق ADA/AND:</strong></p>
             {form.gender === 'male'
-              ? <p>BMR = 66.47 + (13.75 × {form.weight}) + (5.003 × {form.height}) − (6.755 × {form.age}) = <strong className="text-primary-600">{result.bmr}</strong> سعرة</p>
-              : <p>BMR = 655.1 + (9.563 × {form.weight}) + (1.850 × {form.height}) − (4.676 × {form.age}) = <strong className="text-primary-600">{result.bmr}</strong> سعرة</p>
+              ? <p>BMR = (10 × {form.weight}) + (6.25 × {form.height}) − (5 × {form.age}) + 5 = <strong className="text-primary-600">{result.bmr}</strong> سعرة</p>
+              : <p>BMR = (10 × {form.weight}) + (6.25 × {form.height}) − (5 × {form.age}) − 161 = <strong className="text-primary-600">{result.bmr}</strong> سعرة</p>
             }
             <p>TDEE = BMR × {getActivity(form.activity).pa} = <strong className="text-primary-600">{result.tdee}</strong> سعرة</p>
-            <p>السعرات المستهدفة = {result.tdee} {getGoal(form.goal).adj >= 0 ? '+' : '−'} {Math.abs(getGoal(form.goal).adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة</p>
+            <p>السعرات المستهدفة = {result.tdee} {getGoal(form.goal).adj >= 0 ? '+' : '−'} {Math.abs(getGoal(form.goal).adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة
+              {' '}<span className="text-slate-400">(الحد الأدنى: {form.gender === 'male' ? '1500' : '1200'} سعرة)</span>
+            </p>
           </div>
         </StepCard>
 

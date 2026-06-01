@@ -168,12 +168,12 @@ export default function PlanReport() {
         {!(form.preferred || form.avoided) && <div style={{ marginBottom: 28 }} />}
 
         {/* ── BMR / TDEE ─────────────────────────────────────────────────── */}
-        <SectionTitle num="2" title="حسابات الطاقة — معادلة هاريس بنيديكت" />
+        <SectionTitle num="2" title="حسابات الطاقة — معادلة Mifflin-St Jeor" />
         <div style={{ background: '#fffbf0', border: '1px solid #e8d5a0', borderRadius: 12, padding: '20px 24px', marginBottom: 28 }} className="avoid-break">
           <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#666', marginBottom: 12, background: '#f5f5f5', padding: '10px 14px', borderRadius: 8, lineHeight: 1.8 }}>
             {form.gender === 'male'
-              ? `BMR = 66.47 + (13.75 × ${form.weight}) + (5.003 × ${form.height}) − (6.755 × ${form.age})`
-              : `BMR = 655.1 + (9.563 × ${form.weight}) + (1.850 × ${form.height}) − (4.676 × ${form.age})`
+              ? `BMR = (10 × ${form.weight}) + (6.25 × ${form.height}) − (5 × ${form.age}) + 5`
+              : `BMR = (10 × ${form.weight}) + (6.25 × ${form.height}) − (5 × ${form.age}) − 161`
             }
             <br />
             {`BMR = ${Math.round(bmr)} سعرة حرارية/يوم`}
