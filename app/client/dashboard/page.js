@@ -315,7 +315,7 @@ function WeeklyCheckin() {
                 { label: 'الطاقة',   val: `${last.energy}/5`,                           color: 'text-amber-600' },
                 { label: 'النوم',    val: `${last.sleep} ساعة`,                          color: 'text-blue-600' },
                 { label: 'الوزن',    val: last.weight ? `${last.weight} كغ` : '—',       color: 'text-slate-600' },
-                { label: 'التوتر',   val: `${last.stress || 3}/5`,                       color: 'text-purple-600' },
+                { label: 'التوتر',   val: last.stress ? `${last.stress}/5` : '—',         color: 'text-purple-600' },
                 { label: 'التدريب',  val: `${last.trainingDone} أيام`,                   color: 'text-emerald-600' },
                 { label: 'التغذية',  val: `${last.nutritionDays}/7`,                     color: 'text-rose-600' },
               ].map(s => (

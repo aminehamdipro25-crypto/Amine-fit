@@ -14,16 +14,16 @@ export async function POST(req, { params }) {
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-  const checkins = (client.checkins || []).map(c =>
-    c.id === checkinId
-      ? { ...c, coachReply: reply.trim().slice(0, 500), repliedAt: new Date().toISOString() }
-      : c
-  )
+  const existing = (client.checkins || []).find(c => c.id === checkinId)
+  if (!existing) return NextResponse.json({ error: 'check-in not found' }, { status: 404 })
+
+  const updatedEntry = { ...existing, coachReply: reply.trim().slice(0, 500), repliedAt: new Date().toISOString() }
+  const checkins = (client.checkins || []).map(c => c.id === checkinId ? updatedEntry : c)
   await updateSubmission(params.id, { checkins })
 
   // Notify client by email
   if (process.env.RESEND_API_KEY && client.email) {
-    sendReplyEmail(client, checkins.find(c => c.id === checkinId)).catch(e =>
+    sendReplyEmail(client, updatedEntry).catch(e =>
       console.error('[checkin-reply email]', e.message)
     )
   }

@@ -30,9 +30,10 @@ export async function POST(req) {
     const body = await req.json()
     const { dataUrl, type, note } = body
 
-    // Validate dataUrl format
-    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-      return NextResponse.json({ error: 'صيغة الصورة غير صحيحة' }, { status: 400 })
+    // Validate dataUrl — allowlist safe raster formats only (no SVG/XSS vectors)
+    const ALLOWED = ['data:image/jpeg;base64,', 'data:image/png;base64,', 'data:image/webp;base64,']
+    if (!dataUrl || typeof dataUrl !== 'string' || !ALLOWED.some(p => dataUrl.startsWith(p))) {
+      return NextResponse.json({ error: 'صيغة الصورة غير مدعومة — يُقبل JPEG أو PNG أو WebP فقط' }, { status: 400 })
     }
 
     // Validate type
@@ -51,7 +52,7 @@ export async function POST(req) {
     if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
 
     const entry = {
-      id:     Date.now().toString(),
+      id:     Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       date:   new Date().toISOString(),
       type:   type,
       dataUrl: dataUrl,

@@ -761,17 +761,21 @@ function ClientProgressPanel({ clientId }) {
     if (!reply.trim() || !lastCheckin) return
     setSending(true)
     try {
-      await fetch(`/api/admin/clients/${clientId}/checkin-reply`, {
+      const res = await fetch(`/api/admin/clients/${clientId}/checkin-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ checkinId: lastCheckin.id, reply }),
       })
+      if (!res.ok) throw new Error(`server ${res.status}`)
       setCheckins(prev => prev.map(c =>
         c.id === lastCheckin.id ? { ...c, coachReply: reply, repliedAt: new Date().toISOString() } : c
       ))
       setReply('')
       setSent(true)
       setTimeout(() => setSent(false), 3000)
+    } catch (e) {
+      console.error('[sendReply]', e.message)
+      alert('فشل إرسال الرد — حاول مرة أخرى')
     } finally { setSending(false) }
   }
 
@@ -832,7 +836,7 @@ function ClientProgressPanel({ clientId }) {
             {[
               { label:'الطاقة', val:`${lastCheckin.energy}/5`,               emoji:'⚡' },
               { label:'النوم',  val:`${lastCheckin.sleep}ساعة`,               emoji:'🌙' },
-              { label:'التوتر', val:`${lastCheckin.stress || 3}/5`,           emoji:'😤' },
+              { label:'التوتر', val: lastCheckin.stress ? `${lastCheckin.stress}/5` : '—', emoji:'😤' },
               { label:'تدريب',  val:`${lastCheckin.trainingDone}أيام`,        emoji:'🏋️' },
               { label:'تغذية',  val:`${lastCheckin.nutritionDays}/7`,         emoji:'🥗' },
               { label:'الوزن',  val: lastCheckin.weight ? `${lastCheckin.weight}كغ` : '—', emoji:'⚖️' },

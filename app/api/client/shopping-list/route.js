@@ -120,10 +120,8 @@ function buildShoppingList(meals) {
 
       if (map.has(key)) {
         const existing = map.get(key)
-        // Accumulate quantity only when units match; otherwise keep first unit
+        // Accumulate quantity only when units match; otherwise keep first entry unchanged
         if (existing.unit === unit) {
-          existing.qty += qty
-        } else {
           existing.qty += qty
         }
       } else {

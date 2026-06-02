@@ -34,6 +34,7 @@ function compressImage(file) {
       canvas.width  = w
       canvas.height = h
       const ctx = canvas.getContext('2d')
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('تعذّر تهيئة الرسم على الصورة')); return }
       ctx.drawImage(img, 0, 0, w, h)
       const compressed = canvas.toDataURL('image/jpeg', 0.7)
       resolve(compressed)
