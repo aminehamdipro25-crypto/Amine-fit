@@ -5,13 +5,14 @@ import { deleteClientSession } from '@/lib/clientSession'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req) {
-  // Vercel cron calls this with Authorization: Bearer <CRON_SECRET>
   const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[cron] CRON_SECRET not set — endpoint disabled')
+    return NextResponse.json({ error: 'not configured' }, { status: 503 })
+  }
+  const auth = req.headers.get('authorization')
+  if (auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   const clients = await getSubmissions()

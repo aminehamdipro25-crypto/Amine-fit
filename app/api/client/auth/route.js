@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
-import { createClientSession } from '@/lib/clientSession'
+import { createClientSession, deleteClientSession } from '@/lib/clientSession'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
 
 async function setClientCookie(res, clientId) {
+  await deleteClientSession(clientId)
   const sessionId = await createClientSession(clientId)
   res.cookies.set('client_token', createToken(clientId, sessionId), {
     httpOnly: true,
@@ -42,22 +43,15 @@ async function handleActivation(email, activationCode, password, confirmPassword
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 
-  // Support both hashed (SHA-256 hex, 64 chars) and legacy plain-text codes
-  let codeMatch = false
-  if (client.activationCode.length === 64) {
-    // Hashed activation code — compare submitted code's hash
-    const submittedHash = crypto.createHash('sha256').update(code).digest('hex')
-    const storedBuf     = Buffer.from(client.activationCode, 'hex')
-    const submittedBuf  = Buffer.from(submittedHash, 'hex')
-    codeMatch = storedBuf.length === submittedBuf.length &&
-      crypto.timingSafeEqual(storedBuf, submittedBuf)
-  } else {
-    // Legacy plain-text code
-    const storedBuf    = Buffer.from(client.activationCode)
-    const submittedBuf = Buffer.from(code)
-    codeMatch = storedBuf.length === submittedBuf.length &&
-      crypto.timingSafeEqual(storedBuf, submittedBuf)
+  // Activation codes are stored as SHA-256 hex (64 chars)
+  if (client.activationCode.length !== 64) {
+    return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
+  const submittedHash = crypto.createHash('sha256').update(code).digest('hex')
+  const storedBuf     = Buffer.from(client.activationCode, 'hex')
+  const submittedBuf  = Buffer.from(submittedHash, 'hex')
+  const codeMatch = storedBuf.length === submittedBuf.length &&
+    crypto.timingSafeEqual(storedBuf, submittedBuf)
 
   if (!codeMatch) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })

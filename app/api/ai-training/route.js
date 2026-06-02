@@ -126,15 +126,26 @@ export async function POST(req) {
 
   const body = await req.json()
   const { goal, level, daysPerWeek, equipment, injuries, age, gender } = body
-  const n = parseInt(daysPerWeek) || 3
 
-  const goalMap = { loss: 'fat loss and metabolic conditioning', gain: 'muscle hypertrophy and strength', maintain: 'general fitness and maintenance' }
+  const VALID_GOALS  = new Set(['loss', 'gain', 'maintain', 'performance'])
+  const VALID_LEVELS = new Set(['beginner', 'intermediate', 'advanced'])
+  const VALID_EQUIP  = new Set(['gym', 'home', 'bodyweight'])
+  const VALID_GENDER = new Set(['male', 'female'])
+
+  const safeGoal  = VALID_GOALS.has(goal)   ? goal      : 'maintain'
+  const safeLevel = VALID_LEVELS.has(level) ? level     : 'intermediate'
+  const safeEquip = VALID_EQUIP.has(equipment) ? equipment : 'gym'
+  const safeGender = VALID_GENDER.has(gender) ? gender   : null
+  const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
+  const safeAge = age && /^\d{1,3}$/.test(String(age)) ? parseInt(age) : null
+
+  const goalMap = { loss: 'fat loss and metabolic conditioning', gain: 'muscle hypertrophy and strength', maintain: 'general fitness and maintenance', performance: 'athletic performance' }
   const levelMap = { beginner: 'beginner (0-1 year)', intermediate: 'intermediate (1-3 years)', advanced: 'advanced (3+ years)' }
   const equipMap = { gym: 'full commercial gym', home: 'home gym (dumbbells, bands, pull-up bar)', bodyweight: 'bodyweight only' }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     const fb = FALLBACKS[n] || FALLBACKS[3]
-    return NextResponse.json({ ...fb, daysPerWeek: n, ai: false })
+    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, ai: false })
   }
 
   const schema = `{
@@ -158,10 +169,10 @@ export async function POST(req) {
   const safeInjuries = injuries ? String(injuries).slice(0, 200) : ''
 
   const userPrompt = `Create a ${n}-day/week training program:
-- Goal: ${goalMap[goal] || 'general fitness'}
-- Level: ${levelMap[level] || 'intermediate (1-3 years)'}
-- Equipment: ${equipMap[equipment] || 'full gym'}
-- Client: ${age ? age + ' years old' : 'age unspecified'}, ${gender === 'male' ? 'Male' : gender === 'female' ? 'Female' : 'unspecified gender'}
+- Goal: ${goalMap[safeGoal]}
+- Level: ${levelMap[safeLevel]}
+- Equipment: ${equipMap[safeEquip]}
+- Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}, ${safeGender === 'male' ? 'Male' : safeGender === 'female' ? 'Female' : 'unspecified gender'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
 
 Return exactly this JSON (${n} days):

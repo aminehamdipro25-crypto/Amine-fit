@@ -40,10 +40,10 @@ export async function POST(req) {
       if (typeof val === 'string') fields[key] = val.slice(0, 500)
     } else if (key === 'water' || key === 'waterGoal') {
       const n = Number(val)
-      if (Number.isFinite(n) && n >= 0 && n <= 30) fields[key] = n
+      if (Number.isFinite(n) && n >= 0 && n <= 20) fields[key] = n
     } else if (key === 'weight') {
       const n = Number(val)
-      if (Number.isFinite(n) && n >= 0 && n <= 500) fields[key] = n
+      if (Number.isFinite(n) && n >= 20 && n <= 300) fields[key] = n
     }
   }
 

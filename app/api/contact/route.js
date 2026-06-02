@@ -53,8 +53,8 @@ function escapeHtml(str) {
 }
 
 async function notifyNewLead(entry) {
-  const adminEmail = process.env.NOTIFY_EMAIL || 'amine.hamdi.pro25@gmail.com'
-  if (!process.env.RESEND_API_KEY) return
+  if (!process.env.RESEND_API_KEY || !process.env.NOTIFY_EMAIL) return
+  const adminEmail = process.env.NOTIFY_EMAIL
   const date = new Date(entry.createdAt || Date.now()).toLocaleString('ar', { timeZone: 'Asia/Qatar' })
   await fetch('https://api.resend.com/emails', {
     method: 'POST',

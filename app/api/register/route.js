@@ -32,7 +32,7 @@ export async function POST(req) {
     }
 
     const emailLower = sanitizeStr(body.email, 254).toLowerCase()
-    if (!emailLower || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+    if (!emailLower || !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(emailLower)) {
       return NextResponse.json({ error: 'بريد إلكتروني غير صالح' }, { status: 400 })
     }
 
@@ -99,7 +99,6 @@ export async function POST(req) {
       status:             'pending',
     }
 
-    console.log('[register] saving:', safeEntry.name, safeEntry.email)
     const entry = await saveSubmission(safeEntry)
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
@@ -111,11 +110,8 @@ export async function POST(req) {
 }
 
 async function sendEmailNotification(entry) {
-  const adminEmail = process.env.NOTIFY_EMAIL || 'amine.hamdi.pro25@gmail.com'
-  if (!process.env.RESEND_API_KEY) {
-    console.log('[email] no RESEND_API_KEY, skipping')
-    return
-  }
+  if (!process.env.RESEND_API_KEY || !process.env.NOTIFY_EMAIL) return
+  const adminEmail = process.env.NOTIFY_EMAIL
   const printUrl = `https://amine-fit.vercel.app/api/print/${entry.id}`
 
   const res = await fetch('https://api.resend.com/emails', {

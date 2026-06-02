@@ -223,7 +223,9 @@ export async function POST(req) {
   if (deny) return deny
 
   const { clientId } = await req.json()
-  if (!clientId) return NextResponse.json({ error: 'clientId مطلوب' }, { status: 400 })
+  if (!clientId || !/^AF-\d+$/.test(clientId)) {
+    return NextResponse.json({ error: 'clientId غير صالح' }, { status: 400 })
+  }
 
   const client = await getSubmissionById(clientId)
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
