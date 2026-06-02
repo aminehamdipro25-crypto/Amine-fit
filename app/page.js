@@ -11,6 +11,7 @@ import Testimonials    from '@/components/landing/Testimonials'
 import FAQ             from '@/components/landing/FAQ'
 import ContactSection  from '@/components/landing/ContactSection'
 import Footer          from '@/components/landing/Footer'
+import WhatsAppButton  from '@/components/landing/WhatsAppButton'
 
 export default function Home() {
   return (
@@ -30,6 +31,7 @@ export default function Home() {
         <ContactSection />
       </main>
       <Footer />
+      <WhatsAppButton />
     </>
   )
 }

@@ -828,12 +828,14 @@ function ClientProgressPanel({ clientId }) {
               {new Date(lastCheckin.date).toLocaleDateString('ar', { month:'short', day:'numeric' })}
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
-              { label:'الطاقة', val:`${lastCheckin.energy}/5`, emoji:'⚡' },
-              { label:'النوم',  val:`${lastCheckin.sleep}ساعة`, emoji:'🌙' },
-              { label:'تدريب', val:`${lastCheckin.trainingDone}أيام`, emoji:'🏋️' },
-              { label:'تغذية', val:`${lastCheckin.nutritionDays}/7`, emoji:'🥗' },
+              { label:'الطاقة', val:`${lastCheckin.energy}/5`,               emoji:'⚡' },
+              { label:'النوم',  val:`${lastCheckin.sleep}ساعة`,               emoji:'🌙' },
+              { label:'التوتر', val:`${lastCheckin.stress || 3}/5`,           emoji:'😤' },
+              { label:'تدريب',  val:`${lastCheckin.trainingDone}أيام`,        emoji:'🏋️' },
+              { label:'تغذية',  val:`${lastCheckin.nutritionDays}/7`,         emoji:'🥗' },
+              { label:'الوزن',  val: lastCheckin.weight ? `${lastCheckin.weight}كغ` : '—', emoji:'⚖️' },
             ].map(s => (
               <div key={s.label} className="bg-white rounded-xl p-2 text-center border border-slate-100">
                 <p className="text-base">{s.emoji}</p>
@@ -842,6 +844,12 @@ function ClientProgressPanel({ clientId }) {
               </div>
             ))}
           </div>
+          {lastCheckin.pain && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+              <p className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wide mb-1">⚠️ ألم / إصابة مُبلَّغ عنها</p>
+              <p className="text-xs text-slate-700">{lastCheckin.pain}</p>
+            </div>
+          )}
           {lastCheckin.note && (
             <p className="text-xs text-slate-500 bg-white rounded-xl px-3 py-2 border border-slate-100 italic">
               "{lastCheckin.note}"
