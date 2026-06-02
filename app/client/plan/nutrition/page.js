@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer } from 'lucide-react'
 
 export default function NutritionPlan() {
   const router = useRouter()
@@ -123,10 +123,18 @@ export default function NutritionPlan() {
                 <p className="text-emerald-200/80 text-sm font-medium mt-3 max-w-xs leading-relaxed">{plan.note}</p>
               )}
             </div>
-            <div className="text-7xl opacity-80 select-none flex-shrink-0">🥗</div>
+            <div className="flex flex-col items-end gap-3">
+              <div className="text-7xl opacity-80 select-none">🥗</div>
+              <button onClick={() => window.print()}
+                className="print:hidden flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-xs font-bold rounded-xl transition border border-white/10">
+                <Printer className="w-3.5 h-3.5" />
+                طباعة / PDF
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      <style>{`@media print { .print\\:hidden { display:none !important } aside, header { display:none !important } body { background:white } }`}</style>
 
       {/* Macros */}
       {macros.length > 0 && (

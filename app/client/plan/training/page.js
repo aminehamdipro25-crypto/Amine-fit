@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle2, Dumbbell, Star, Flame, Wind, Play,
-  ChevronLeft, ChevronRight, ChevronDown,
+  ChevronLeft, ChevronRight, ChevronDown, Printer,
 } from 'lucide-react'
 
 // ─── Schedule Patterns ────────────────────────────────────────────────────────
@@ -417,11 +417,16 @@ function WorkoutCard({day, date, isToday}) {
             {day.name && <p className="text-[#fbbf24] font-extrabold text-sm mt-2">{day.name}</p>}
             <p className="text-white/30 text-xs mt-1 font-medium">{fmtDate(date)}</p>
           </div>
-          <div className="text-right flex-shrink-0 pb-1">
+          <div className="text-right flex-shrink-0 pb-1 flex flex-col items-end gap-2">
             <p className="text-4xl font-black text-[#fbbf24] leading-none">{total}</p>
-            <p className="text-white/30 text-[10px] font-bold mt-1 uppercase tracking-wide">Exercises</p>
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-wide">Exercises</p>
+            <button onClick={() => window.print()}
+              className="print:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/70 text-[11px] font-bold rounded-xl transition">
+              <Printer className="w-3 h-3" /> Print
+            </button>
           </div>
         </div>
+        <style>{`@media print { .print\\:hidden { display:none !important } aside, header { display:none !important } }`}</style>
         {doneCount > 0 && (
           <div className="mt-5">
             <div className="flex justify-between mb-1.5">

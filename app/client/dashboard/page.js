@@ -186,6 +186,56 @@ function WaterWidget() {
   )
 }
 
+/* ── Streak widget ──────────────────────────────────────────────────────── */
+function StreakWidget() {
+  const [streak, setStreak] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/client/logs')
+      .then(r => r.ok ? r.json() : [])
+      .then(logs => {
+        if (!Array.isArray(logs) || !logs.length) { setStreak(0); return }
+        // Build set of logged dates
+        const logged = new Set(logs.map(l => l.date?.slice(0, 10)))
+        // Count consecutive days backward from today
+        let count = 0
+        const now = new Date()
+        for (let i = 0; i < 365; i++) {
+          const d = new Date(now.getTime() - i * 86400000)
+          const ds = d.toISOString().slice(0, 10)
+          if (logged.has(ds)) count++
+          else if (i > 0) break // gap — stop
+        }
+        setStreak(count)
+      })
+      .catch(() => setStreak(0))
+  }, [])
+
+  if (streak === null) return null
+  if (streak === 0) return null
+
+  const level = streak >= 30 ? '🏆' : streak >= 14 ? '⚡' : streak >= 7 ? '🔥' : '✨'
+  const msg   = streak >= 30 ? 'أسطوري!' : streak >= 14 ? 'رائع جداً!' : streak >= 7 ? 'أسبوع كامل!' : 'استمر!'
+
+  return (
+    <div className="bg-gradient-to-l from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-4">
+      <div className="text-4xl flex-shrink-0">{level}</div>
+      <div className="flex-1">
+        <p className="font-extrabold text-slate-900 text-base">
+          {streak} {streak === 1 ? 'يوم' : 'يوم'} متتالي! {msg}
+        </p>
+        <p className="text-xs text-slate-500 font-medium mt-0.5">
+          سجّلت يومياتك {streak} {streak === 1 ? 'يوم' : 'يوم'} متواصل — حافظ على الاستمرار
+        </p>
+      </div>
+      <Link href="/client/journal"
+        className="flex-shrink-0 text-xs font-bold text-amber-600 hover:text-amber-700 transition">
+        السجل ←
+      </Link>
+    </div>
+  )
+}
+
 /* ── Weekly check-in widget ─────────────────────────────────────────────── */
 const ENERGY_LABELS = ['', '😩 سيء', '😔 ضعيف', '😐 متوسط', '😊 جيد', '😁 ممتاز']
 
@@ -255,19 +305,28 @@ function WeeklyCheckin() {
           </button>
         </div>
         {alreadyThisWeek && (
-          <div className="mt-4 grid grid-cols-4 gap-2">
-            {[
-              { label: 'الطاقة', val: `${last.energy}/5`, color: 'text-amber-600' },
-              { label: 'النوم', val: `${last.sleep}ساعة`, color: 'text-blue-600' },
-              { label: 'التدريب', val: `${last.trainingDone} أيام`, color: 'text-emerald-600' },
-              { label: 'التغذية', val: `${last.nutritionDays}/7`, color: 'text-rose-600' },
-            ].map(s => (
-              <div key={s.label} className="bg-slate-50 rounded-xl p-2.5 text-center">
-                <p className={`font-extrabold text-sm ${s.color}`}>{s.val}</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{s.label}</p>
+          <>
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {[
+                { label: 'الطاقة', val: `${last.energy}/5`, color: 'text-amber-600' },
+                { label: 'النوم', val: `${last.sleep}ساعة`, color: 'text-blue-600' },
+                { label: 'التدريب', val: `${last.trainingDone} أيام`, color: 'text-emerald-600' },
+                { label: 'التغذية', val: `${last.nutritionDays}/7`, color: 'text-rose-600' },
+              ].map(s => (
+                <div key={s.label} className="bg-slate-50 rounded-xl p-2.5 text-center">
+                  <p className={`font-extrabold text-sm ${s.color}`}>{s.val}</p>
+                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {/* Coach reply */}
+            {last.coachReply && (
+              <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                <p className="text-[10px] font-extrabold text-amber-600 uppercase tracking-wide mb-1.5">💬 رد المدرب أمين</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{last.coachReply}</p>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -604,6 +663,9 @@ export default function ClientDashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Streak */}
+      <StreakWidget />
 
       {/* Water tracker */}
       <WaterWidget />

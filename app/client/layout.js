@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera } from 'lucide-react'
 
 const navItems = [
   { href: '/client/dashboard',        icon: LayoutDashboard, label: 'الرئيسية' },
@@ -11,6 +11,8 @@ const navItems = [
   { href: '/client/lab',             icon: FlaskConical,    label: 'المختبر 🔬' },
   { href: '/client/progress',         icon: TrendingUp,      label: 'متابعة التقدم' },
   { href: '/client/journal',          icon: BookOpen,        label: 'يوميتي 💧' },
+  { href: '/client/shopping',         icon: ShoppingCart,    label: 'قائمة التسوق 🛒' },
+  { href: '/client/photos',           icon: Camera,          label: 'صوري 📸' },
   { href: '/client/resources',        icon: Paperclip,       label: 'ملفاتي 📎' },
 ]
 
