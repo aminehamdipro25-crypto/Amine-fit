@@ -171,10 +171,10 @@ function CTACard() {
         سجّل استبيانك وسيراجع المدرب أمين بياناتك ويعدّ لك خطة غذائية وتدريبية مخصصة
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Link href="/register"
+        <Link href="/#pricing"
           className="flex items-center justify-center gap-2 px-8 py-4 bg-gold-400 hover:bg-gold-300 text-black font-extrabold rounded-2xl transition-all shadow-lg shadow-gold-400/20 text-base">
           <Zap className="w-5 h-5" fill="black" />
-          سجّل الآن مجاناً
+          اختر خطتك الآن
         </Link>
         <a href="https://wa.me/97430653759"
           className="flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold rounded-2xl transition-all text-base">
@@ -640,10 +640,10 @@ function Sidebar({ activeTab, setTab, open, onClose }) {
 
         {/* Register CTA */}
         <div className="px-4 pb-5 pt-3 border-t border-white/5">
-          <Link href="/register"
+          <Link href="/#pricing"
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gold-400 text-black font-extrabold text-sm hover:bg-gold-300 transition shadow-lg shadow-gold-400/20">
             <Zap className="w-4 h-4" fill="black" />
-            سجّل الآن
+            اختر خطتك
           </Link>
         </div>
       </aside>
@@ -672,9 +672,9 @@ export default function DemoPage() {
         <span className="text-sm font-bold flex-1 truncate">
           وضع العرض التجريبي — هذه نسخة تجريبية من منصة Amine-Fit
         </span>
-        <Link href="/register"
+        <Link href="/#pricing"
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black text-white text-xs font-extrabold hover:bg-black/80 transition whitespace-nowrap flex-shrink-0">
-          سجّل الآن ←
+          اختر خطتك ←
         </Link>
       </div>
 
