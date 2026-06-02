@@ -248,19 +248,18 @@ function DashboardTab() {
           <div>
             <p className="text-gold-400/70 text-xs font-bold uppercase tracking-widest mb-3">منصة Amine-Fit الشخصية</p>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
-              أهلاً وسهلاً،{' '}
-              <span className="text-gold-400">{DEMO.name.split(' ')[0]}</span>
+              أهلاً بك، عميلنا الكريم
             </h1>
             <p className="text-white/50 text-sm mt-2 font-medium leading-relaxed max-w-xs">
-              عميلنا العزيز، خطتك المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك
+              خطتك الغذائية والتدريبية المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك
             </p>
             <div className="flex items-center gap-2 mt-4">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-xs font-bold">حسابك نشط</span>
             </div>
           </div>
-          <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center text-black font-extrabold text-2xl flex-shrink-0 shadow-lg shadow-gold-400/20 select-none">
-            م
+          <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-gold-400/20">
+            <Zap className="w-7 h-7 text-black" fill="black" />
           </div>
         </div>
       </div>
