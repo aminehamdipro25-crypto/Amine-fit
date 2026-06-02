@@ -1,9 +1,10 @@
 'use client'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Dumbbell, Clock, MessageCircle, Star } from 'lucide-react'
 
-export default function SuccessPage() {
+function SuccessContent() {
   const params = useSearchParams()
   const existing = params.get('existing') === '1'
 
@@ -87,5 +88,13 @@ export default function SuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <SuccessContent />
+    </Suspense>
   )
 }

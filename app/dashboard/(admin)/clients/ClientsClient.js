@@ -6,7 +6,7 @@ import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
   Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon,
-  Calendar, CreditCard, RefreshCw
+  Calendar, CreditCard, RefreshCw, Star
 } from 'lucide-react'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -347,8 +347,9 @@ function SubscriptionSection({ client, onUpdate }) {
   )
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
   const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-  const [clearing, setClearing]   = useState(false)
+  const [saved, setSaved]             = useState(false)
+  const [savedMsg, setSavedMsg]       = useState('')
+  const [clearing, setClearing]       = useState(false)
 
   async function saveSubscription() {
     setSaving(true)
@@ -367,8 +368,9 @@ function SubscriptionSection({ client, onUpdate }) {
           subscriptionDays:      data.subscription.days,
           status:                'active',
         })
+        setSavedMsg(data.activationSent ? '✅ تم الحفظ وإرسال رمز التفعيل للعميل' : '✅ تم حفظ الاشتراك')
         setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        setTimeout(() => { setSaved(false); setSavedMsg('') }, 4000)
       }
     } finally { setSaving(false) }
   }
@@ -484,8 +486,8 @@ function SubscriptionSection({ client, onUpdate }) {
             <button
               onClick={saveSubscription} disabled={saving}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#0a0a0a] text-white font-bold text-sm hover:bg-black transition disabled:opacity-50">
-              {saving    ? <Loader2 className="w-4 h-4 animate-spin" /> :
-               saved     ? '✓ تم الحفظ' :
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> :
+               saved  ? savedMsg :
                <><RefreshCw className="w-3.5 h-3.5" /> {sub ? 'تجديد الاشتراك' : 'حفظ الاشتراك'}</>}
             </button>
             {sub && (
@@ -497,6 +499,77 @@ function SubscriptionSection({ client, onUpdate }) {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function ClientAccessSection({ client, onUpdate }) {
+  const [sending, setSending]   = useState(false)
+  const [sentMsg, setSentMsg]   = useState('')
+  const isActive = !!client.clientPassword
+
+  async function sendActivation() {
+    if (!confirm(`إرسال رمز التفعيل إلى ${client.email}؟`)) return
+    setSending(true)
+    setSentMsg('')
+    try {
+      const res  = await fetch(`/api/dashboard/approve/${client.id}`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        onUpdate(client.id, { status: 'active' })
+        setSentMsg(`✅ تم الإرسال — الكود: ${data.activationCode}`)
+      } else {
+        setSentMsg('❌ فشل الإرسال — حاول مرة أخرى')
+      }
+    } catch {
+      setSentMsg('❌ خطأ في الاتصال')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">وصول العميل</h3>
+      <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+
+        {/* Status */}
+        <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 ${
+          isActive ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs font-bold ${isActive ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {isActive ? 'الحساب مفعّل — العميل يمكنه تسجيل الدخول' : 'الحساب بانتظار التفعيل'}
+            </p>
+            {!isActive && (
+              <p className="text-xs text-amber-600 mt-0.5">
+                أرسل رمز التفعيل وسيضبط العميل كلمة مروره بنفسه
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Send activation button */}
+        {client.email && (
+          <div className="space-y-2">
+            <button
+              onClick={sendActivation} disabled={sending}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#0a0a0a] text-white font-bold text-sm hover:bg-black transition disabled:opacity-50">
+              {sending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <><Mail className="w-4 h-4" /> {isActive ? 'إعادة إرسال رمز التفعيل' : 'إرسال رمز التفعيل للعميل'}</>}
+            </button>
+            {sentMsg && (
+              <p className="text-xs font-bold text-center text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                {sentMsg}
+              </p>
+            )}
+            <p className="text-xs text-slate-400 text-center">
+              سيصل الرمز إلى: <span className="text-slate-600 font-bold" dir="ltr">{client.email}</span>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -545,11 +618,8 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
 
 function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, onKick, onUpdate }) {
   const goal = goalMap[client.goal]
-  const [pw, setPw]             = useState('')
-  const [pwSaving, setPwSaving] = useState(false)
-  const [pwSaved, setPwSaved]   = useState(false)
-  const [kicking, setKicking]   = useState(false)
-  const [kicked, setKicked]     = useState(false)
+  const [kicking, setKicking] = useState(false)
+  const [kicked, setKicked]   = useState(false)
 
   const onlineStatus = getOnlineStatus(onlineInfo)
 
@@ -561,20 +631,6 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
     setKicked(true)
     setTimeout(() => setKicked(false), 4000)
     onKick(client.id)
-  }
-
-  async function savePassword() {
-    if (!pw.trim()) return
-    setPwSaving(true)
-    await fetch(`/api/register/${client.id}/plan`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientPassword: pw.trim() }),
-    })
-    setPwSaving(false)
-    setPwSaved(true)
-    setTimeout(() => setPwSaved(false), 3000)
-    setPw('')
   }
 
   const hasPlan = !!client.plan
@@ -702,32 +758,8 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
           {/* Subscription */}
           <SubscriptionSection client={client} onUpdate={onUpdate} />
 
-          {/* Client password */}
-          <div>
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">كلمة مرور العميل</h3>
-            <div className="bg-slate-50 rounded-2xl p-4">
-              <p className="text-xs text-slate-400 font-medium mb-3">
-                {client.clientPassword ? 'تم ضبط كلمة المرور — يمكن للعميل تسجيل الدخول' : 'لم يُضبط بعد — اضبط كلمة مرور لتمكين الوصول'}
-              </p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input value={pw} onChange={e => setPw(e.target.value)}
-                    type="text" placeholder="كلمة مرور جديدة..."
-                    className="w-full pr-9 pl-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium bg-white" />
-                </div>
-                <button onClick={savePassword} disabled={pwSaving || !pw.trim()}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0a0a0a] text-white font-bold text-xs hover:bg-black transition disabled:opacity-40">
-                  {pwSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : pwSaved ? '✓ تم' : 'حفظ'}
-                </button>
-              </div>
-              {client.email && (
-                <p className="text-xs text-slate-400 font-medium mt-2">
-                  البريد: <span className="text-slate-600 font-bold" dir="ltr">{client.email}</span>
-                </p>
-              )}
-            </div>
-          </div>
+          {/* Client access activation */}
+          <ClientAccessSection client={client} onUpdate={onUpdate} />
 
           {(client.hasInBody === 'yes' || client.hasNFS === 'yes') && (
             <div>
