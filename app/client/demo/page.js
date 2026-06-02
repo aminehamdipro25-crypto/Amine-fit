@@ -244,15 +244,22 @@ function DashboardTab() {
             top: '55%', left: '-50%', transform: 'rotate(-5deg)',
           }} />
         </div>
-        <div className="relative z-10 px-6 py-7 flex items-center justify-between gap-4">
+        <div className="relative z-10 px-6 py-8 flex items-center justify-between gap-4">
           <div>
-            <p className="text-white/30 text-xs font-extrabold uppercase tracking-widest mb-2">بوابتك الشخصية</p>
-            <h1 className="text-2xl font-extrabold text-white">
-              مرحباً، <span className="text-gold-400">{DEMO.name.split(' ')[0]}</span> ⚡
+            <p className="text-gold-400/70 text-xs font-bold uppercase tracking-widest mb-3">منصة Amine-Fit الشخصية</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+              أهلاً وسهلاً،{' '}
+              <span className="text-gold-400">{DEMO.name.split(' ')[0]}</span>
             </h1>
-            <p className="text-white/30 text-sm mt-2 font-medium">برنامجك جاهز — ابدأ رحلتك اليوم 🚀</p>
+            <p className="text-white/50 text-sm mt-2 font-medium leading-relaxed max-w-xs">
+              عميلنا العزيز، خطتك المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك
+            </p>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 text-xs font-bold">حسابك نشط</span>
+            </div>
           </div>
-          <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center text-black font-extrabold text-2xl flex-shrink-0 shadow-lg shadow-gold-400/20">
+          <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center text-black font-extrabold text-2xl flex-shrink-0 shadow-lg shadow-gold-400/20 select-none">
             م
           </div>
         </div>
@@ -689,11 +696,11 @@ export default function DemoPage() {
               className="lg:hidden w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="font-extrabold text-slate-900 text-base flex-1">{TAB_TITLES[activeTab]}</h1>
-            <span className="text-xs font-bold text-amber-500 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
-              نسخة تجريبية
+            <div className="flex-1" />
+            <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full hidden sm:block">
+              🔬 جولة تجريبية
             </span>
-            <div className="w-8 h-8 rounded-full bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-sm">
+            <div className="w-9 h-9 rounded-full bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-base">
               م
             </div>
           </header>

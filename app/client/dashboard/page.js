@@ -273,15 +273,22 @@ export default function ClientDashboard() {
           }} />
         </div>
 
-        <div className="relative z-10 px-6 py-7 flex items-center justify-between gap-4">
+        <div className="relative z-10 px-6 py-8 flex items-center justify-between gap-4">
           <div>
-            <p className="text-white/30 text-xs font-extrabold uppercase tracking-widest mb-2">بوابتك الشخصية</p>
-            <h1 className="text-2xl font-extrabold text-white">
-              مرحباً، <span className="text-gold-400">{client.name?.split(' ')[0]}</span> ⚡
+            <p className="text-gold-400/70 text-xs font-bold uppercase tracking-widest mb-3">منصة Amine-Fit الشخصية</p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-snug">
+              أهلاً وسهلاً،{' '}
+              <span className="text-gold-400">{client.name?.split(' ')[0]}</span>
             </h1>
-            <p className="text-white/30 text-sm mt-2 font-medium">
-              {hasPlan ? 'برنامجك جاهز — ابدأ رحلتك اليوم 🚀' : 'برنامجك قيد الإعداد — سيُرسَل لك قريباً'}
+            <p className="text-white/50 text-sm mt-2 font-medium leading-relaxed max-w-xs">
+              {hasPlan
+                ? 'عميلنا العزيز، خطتك المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك'
+                : 'عميلنا العزيز، يعمل المدرب أمين على تحضير خطتك المخصصة — ستصلك قريباً'}
             </p>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 text-xs font-bold">حسابك نشط</span>
+            </div>
           </div>
           <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center text-black font-extrabold text-2xl flex-shrink-0 shadow-lg shadow-gold-400/20">
             {client.name?.[0] ?? '؟'}
