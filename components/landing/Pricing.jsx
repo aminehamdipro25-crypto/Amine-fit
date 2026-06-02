@@ -33,7 +33,6 @@ const plans = [
     salePrice: '50',
     origPrice: '100',
     currency: 'د.ت',
-    qar: '≈ 60 ر.ق',
     period: '/ شهر',
     emoji: '🏋️',
     badge: null,
@@ -60,7 +59,6 @@ const plans = [
     salePrice: '125',
     origPrice: '250',
     currency: 'د.ت',
-    qar: '≈ 150 ر.ق',
     period: '/ شهر',
     emoji: '⚡',
     badge: '⭐ الأكثر طلباً',
@@ -89,7 +87,6 @@ const plans = [
     salePrice: '300',
     origPrice: '600',
     currency: 'د.ت',
-    qar: '≈ 365 ر.ق',
     period: '/ 3 أشهر',
     emoji: '🏆',
     badge: '💎 الأوفر',
@@ -163,7 +160,6 @@ function PlanModal({ plan, onClose }) {
             <div className="mb-1">
               <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{plan.origPrice} {plan.currency}</span>
               <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>{plan.currency} {plan.period}</span>
-              <span className={`text-[10px] font-bold ${isGold ? 'text-black/30' : 'text-white/20'}`}>{plan.qar}</span>
             </div>
             <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">-50%</span>
           </div>
@@ -302,7 +298,7 @@ export default function Pricing() {
           اختر الباقة المناسبة لك
         </h2>
         <p className="text-white/30 text-center max-w-xl mx-auto font-medium text-sm mb-10">
-          الأسعار بالدينار التونسي (د.ت) — المعادل بالريال القطري (ر.ق) موضّح أسفل كل باقة · اضغط للتفاصيل الكاملة
+          باقات بالدينار التونسي — اضغط على أي باقة لتعرف كل التفاصيل
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -346,7 +342,6 @@ export default function Pricing() {
                     <span className={`text-xs font-medium ${isGold ? 'text-black/50' : 'text-white/30'}`}>{p.currency} {p.period}</span>
                   </div>
                 </div>
-                <div className={`text-[11px] font-bold mb-1.5 ${isGold ? 'text-black/40' : 'text-white/25'}`}>{p.qar}</div>
                 <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full mb-5
                   ${isGold ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                   💰 توفير {Number(p.origPrice) - Number(p.salePrice)} {p.currency}
