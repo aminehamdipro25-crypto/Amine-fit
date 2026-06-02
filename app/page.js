@@ -8,6 +8,7 @@ import PlatformTour    from '@/components/landing/PlatformTour'
 import Pricing         from '@/components/landing/Pricing'
 import Calculator      from '@/components/landing/Calculator'
 import Testimonials    from '@/components/landing/Testimonials'
+import Results         from '@/components/landing/Results'
 import FAQ             from '@/components/landing/FAQ'
 import ContactSection  from '@/components/landing/ContactSection'
 import Footer          from '@/components/landing/Footer'
@@ -27,6 +28,7 @@ export default function Home() {
         <Pricing />
         <Calculator />
         <Testimonials />
+        <Results />
         <FAQ />
         <ContactSection />
       </main>

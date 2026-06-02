@@ -1,7 +1,6 @@
 import { Cairo } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
-import WhatsAppButton from '@/components/landing/WhatsAppButton'
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -16,15 +15,16 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID
 export const metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'Amine-Fit | مدرب شخصي ومستشار تغذية — تونس',
+    default: 'Amine-Fit | مدرب شخصي ومستشار تغذية — قطر والعالم العربي',
     template: '%s | Amine-Fit',
   },
-  description: 'أمين حمدي — مدرب لياقة بدنية ومستشار تغذية معتمد بخلفية عسكرية نخبوية. برامج تدريب وتغذية مخصصة أونلاين لجميع أنحاء تونس. أكثر من 10 سنوات خبرة مع القوات الخاصة والغواصين البحريين.',
+  description: 'أمين حمدي — مدرب لياقة بدنية ومستشار تغذية معتمد بخلفية عسكرية نخبوية. الدوحة، قطر. برامج تدريب وتغذية مخصصة أونلاين للعالم العربي. أكثر من 10 سنوات خبرة مع القوات الخاصة والغواصين البحريين.',
   keywords: [
+    'مدرب شخصي قطر', 'كوتش لياقة قطر', 'مستشار تغذية قطر', 'مدرب شخصي الدوحة',
     'مدرب شخصي تونس', 'كوتش لياقة تونس', 'مستشار تغذية تونس',
-    'برنامج تغذية اونلاين تونس', 'تخسيس وزن تونس', 'بناء عضلات',
-    'coach sportif tunisie', 'coach nutrition tunisie', 'programme fitness tunisie',
-    'perte de poids tunisie', 'coach en ligne tunisie',
+    'برنامج تغذية اونلاين', 'تخسيس وزن', 'بناء عضلات', 'كوتش اونلاين عربي',
+    'personal trainer qatar', 'coach sportif doha', 'coach nutrition qatar',
+    'coach sportif tunisie', 'coach nutrition tunisie', 'programme fitness',
     'أمين حمدي', 'amine hamdi fitness', 'aminefit',
   ],
   authors: [{ name: 'أمين حمدي', url: BASE_URL }],
@@ -57,11 +57,38 @@ export const metadata = {
   },
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'Amine-Fit',
+  description: 'أمين حمدي — مدرب لياقة بدنية ومستشار تغذية معتمد بخلفية عسكرية نخبوية. برامج تدريب وتغذية مخصصة أونلاين.',
+  url: 'https://amine-fit.com',
+  telephone: '+97430653759',
+  address: { '@type': 'PostalAddress', addressLocality: 'الدوحة', addressCountry: 'QA' },
+  priceRange: '50–300 TND',
+  aggregateRating: { '@type': 'AggregateRating', ratingValue: '5', reviewCount: '100', bestRating: '5' },
+  founder: {
+    '@type': 'Person',
+    name: 'أمين حمدي',
+    jobTitle: 'مدرب شخصي ومستشار تغذية معتمد',
+    sameAs: ['https://amine-fit.com'],
+  },
+  offers: [
+    { '@type': 'Offer', name: 'برنامج التدريب', price: '50', priceCurrency: 'TND' },
+    { '@type': 'Offer', name: 'الباقة الشهرية', price: '125', priceCurrency: 'TND' },
+    { '@type': 'Offer', name: 'باقة 3 أشهر',    price: '300', priceCurrency: 'TND' },
+  ],
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
       <head>
         <meta name="theme-color" content="#fbbf24" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="AmineFit" />
@@ -78,7 +105,6 @@ export default function RootLayout({ children }) {
           `}</Script>
         </>}
         {children}
-        <WhatsAppButton />
       </body>
     </html>
   )

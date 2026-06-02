@@ -81,7 +81,7 @@ export default function Hero() {
           {/* Micro credentials */}
           <div className="flex flex-wrap gap-2 mb-10">
             {[
-              '🎓 بكالوريوس علوم الرياضة',
+              '🎓 Lic. STAPS — علوم الرياضة',
               '🥗 مدرب تغذية معتمد',
               '🧠 علم النفس الرياضي',
               '🏋️ مدرب شخصي معتمد',
