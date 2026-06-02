@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Star, Zap, Shield, Award } from 'lucide-react'
+import { ArrowLeft, Star, Zap, Shield, Eye } from 'lucide-react'
 
 const stats = [
   { val: '10+',  label: 'سنوات خبرة',      emoji: '📅' },
@@ -100,6 +100,11 @@ export default function Hero() {
               <Zap className="w-5 h-5" fill="black" />
               ابدأ رحلتك الآن
             </a>
+            <Link href="/client/demo"
+              className="flex items-center justify-center gap-2 px-8 py-4 border border-gold-400/30 bg-gold-400/5 text-gold-400 font-bold text-lg rounded-2xl hover:bg-gold-400/10 hover:border-gold-400/50 transition-all">
+              <Eye className="w-5 h-5" />
+              جرّب المنصة مجاناً
+            </Link>
             <a href="#about"
               className="flex items-center justify-center gap-2 px-8 py-4 border border-white/10 text-white/70 font-bold text-lg rounded-2xl hover:bg-white/5 hover:text-white hover:border-white/20 transition-all">
               من هو أمين؟
