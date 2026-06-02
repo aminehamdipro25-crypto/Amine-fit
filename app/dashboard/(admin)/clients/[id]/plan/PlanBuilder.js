@@ -854,12 +854,12 @@ export default function PlanBuilder({ client }) {
     try {
       const res  = await fetch(`/api/admin/preview-client/${client.id}`, { method: 'POST' })
       const data = await res.json()
-      if (!res.ok) { alert(data.error || 'فشل تسجيل الدخول كالعميل'); return }
+      if (!res.ok) { console.error('preview error:', data.error); return }
       if (data.success) {
         const tab = window.open('/client/dashboard', '_blank')
-        if (!tab) alert('يرجى السماح بفتح النوافذ المنبثقة في المتصفح')
+        if (!tab) window.location.href = '/client/dashboard'
       }
-    } catch { alert('حدث خطأ، تحقق من الاتصال') }
+    } catch (e) { console.error('preview failed:', e) }
     finally { setPreviewing(false) }
   }
 

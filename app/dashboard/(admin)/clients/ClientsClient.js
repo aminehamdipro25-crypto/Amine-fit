@@ -974,7 +974,8 @@ export default function ClientsClient({ error }) {
   const [deleting, setDeleting]   = useState(null)
   const [addOpen, setAddOpen]     = useState(false)
   const [approvalCode, setApprovalCode] = useState(null)
-  const [onlineData, setOnlineData]   = useState({}) // { [clientId]: { lastSeen, loginTime } }
+  const [onlineData, setOnlineData]   = useState({})
+  const [toast, setToast]           = useState(null)
 
   async function loadClients() {
     setLoading(true)
@@ -1037,11 +1038,11 @@ export default function ClientsClient({ error }) {
     try {
       const res  = await fetch(`/api/dashboard/approve/${id}`, { method: 'POST' })
       const data = await res.json()
-      if (!res.ok) { alert(data.error || 'حدث خطأ'); return }
+      if (!res.ok) { setToast({ msg: data.error || 'حدث خطأ', type: 'error' }); return }
       setClients(cs => cs.map(c => c.id === id ? { ...c, status: 'active' } : c))
       if (selected?.id === id) setSelected(null)
       setApprovalCode({ email: data.email, code: data.activationCode })
-    } catch { alert('حدث خطأ، حاول مرة أخرى') }
+    } catch { setToast({ msg: 'حدث خطأ، حاول مرة أخرى', type: 'error' }) }
   }
 
   const counts = {
@@ -1055,6 +1056,14 @@ export default function ClientsClient({ error }) {
 
   return (
     <>
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm transition-all
+          ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
+          onClick={() => setToast(null)}>
+          {toast.type === 'error' ? '✗' : '✓'} {toast.msg}
+        </div>
+      )}
       {selected && (
         <ClientModal
           client={selected}
