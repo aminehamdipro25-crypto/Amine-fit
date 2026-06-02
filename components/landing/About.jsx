@@ -4,8 +4,8 @@ import { Award, BookOpen, Globe, ChevronDown, ChevronUp, Shield, Zap } from 'luc
 
 const certifications = [
   { title: 'مدرب تغذية معتمد',           org: 'Diet Masters Association',     year: '2026', icon: '🥗' },
-  { title: 'التربية البدنية للتوحد',      org: 'شهادة معتمدة دولياً',           year: '2026', icon: '🤝' },
-  { title: 'علاج النطق — ADHD',          org: 'شهادة متخصصة',                 year: '2025', icon: '🧠' },
+  { title: 'النشاط البدني والتوحد',        org: 'شهادة معتمدة دولياً',           year: '2026', icon: '🤝' },
+  { title: 'التأهيل التخاطبي لأطفال ADHD', org: 'شهادة متخصصة',               year: '2025', icon: '🧠' },
   { title: 'علم النفس الرياضي',           org: 'شهادة معتمدة دولياً',           year: '2025', icon: '🎯' },
   { title: 'اليوغا العلاجية',             org: 'شهادة معتمدة',                 year: '2024', icon: '🧘' },
   { title: 'مدرب يوغا هوائية',            org: 'Aerial Yoga Instructor',       year: '2023', icon: '🪂' },
@@ -169,8 +169,8 @@ export default function About() {
               </div>
               <div className="space-y-3">
                 {[
-                  { deg: 'بكالوريوس علوم وتقنيات الأنشطة البدنية والرياضية (STAPS)', inst: 'ISSEP صفاقس', year: '2022–23' },
-                  { deg: 'بكالوريوس الحقوق والعلوم السياسية',     inst: 'المعهد العالي قابس', year: '2020–23' },
+                  { deg: 'الإجازة الوطنية في علوم وتقنيات الأنشطة البدنية والرياضية (STAPS)', inst: 'المعهد العالي للرياضة والتربية البدنية صفاقس', year: '2022–23' },
+                  { deg: 'الإجازة الوطنية في الحقوق والعلوم السياسية', inst: 'المعهد العالي للدراسات القانونية بقابس', year: '2020–23' },
                   { deg: 'شهادة مربي رياضي عسكري',                inst: 'المدرسة العسكرية', year: '2014–16' },
                 ].map(d => (
                   <div key={d.deg} className="flex items-start gap-3">
