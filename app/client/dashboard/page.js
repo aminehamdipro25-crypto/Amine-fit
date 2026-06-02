@@ -238,13 +238,17 @@ function StreakWidget() {
 
 /* ── Weekly check-in widget ─────────────────────────────────────────────── */
 const ENERGY_LABELS = ['', '😩 سيء', '😔 ضعيف', '😐 متوسط', '😊 جيد', '😁 ممتاز']
+const STRESS_LABELS = ['', '😌 هادئ', '🙂 عادي', '😐 متوسط', '😟 مرتفع', '😤 شديد']
 
 function WeeklyCheckin() {
   const [open, setOpen]       = useState(false)
   const [last, setLast]       = useState(null)
   const [saving, setSaving]   = useState(false)
   const [done, setDone]       = useState(false)
-  const [form, setForm] = useState({ energy: 3, sleep: 7, trainingDone: 3, nutritionDays: 5, note: '' })
+  const [form, setForm] = useState({
+    energy: 3, sleep: 7, trainingDone: 3, nutritionDays: 5,
+    note: '', weight: '', stress: 3, pain: '',
+  })
 
   useEffect(() => {
     fetch('/api/client/checkin')
@@ -306,12 +310,14 @@ function WeeklyCheckin() {
         </div>
         {alreadyThisWeek && (
           <>
-            <div className="mt-4 grid grid-cols-4 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {[
-                { label: 'الطاقة', val: `${last.energy}/5`, color: 'text-amber-600' },
-                { label: 'النوم', val: `${last.sleep}ساعة`, color: 'text-blue-600' },
-                { label: 'التدريب', val: `${last.trainingDone} أيام`, color: 'text-emerald-600' },
-                { label: 'التغذية', val: `${last.nutritionDays}/7`, color: 'text-rose-600' },
+                { label: 'الطاقة',   val: `${last.energy}/5`,                           color: 'text-amber-600' },
+                { label: 'النوم',    val: `${last.sleep} ساعة`,                          color: 'text-blue-600' },
+                { label: 'الوزن',    val: last.weight ? `${last.weight} كغ` : '—',       color: 'text-slate-600' },
+                { label: 'التوتر',   val: `${last.stress || 3}/5`,                       color: 'text-purple-600' },
+                { label: 'التدريب',  val: `${last.trainingDone} أيام`,                   color: 'text-emerald-600' },
+                { label: 'التغذية',  val: `${last.nutritionDays}/7`,                     color: 'text-rose-600' },
               ].map(s => (
                 <div key={s.label} className="bg-slate-50 rounded-xl p-2.5 text-center">
                   <p className={`font-extrabold text-sm ${s.color}`}>{s.val}</p>
@@ -319,6 +325,12 @@ function WeeklyCheckin() {
                 </div>
               ))}
             </div>
+            {last.pain && (
+              <div className="mt-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
+                <p className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wide mb-0.5">⚠️ ألم أو إصابة مُبلَّغ عنها</p>
+                <p className="text-xs text-slate-700 leading-relaxed">{last.pain}</p>
+              </div>
+            )}
             {/* Coach reply */}
             {last.coachReply && (
               <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
@@ -369,8 +381,40 @@ function WeeklyCheckin() {
                   onChange={e => setForm(p => ({...p, sleep: +e.target.value}))}
                   className="w-full accent-blue-500" />
                 <div className="flex justify-between text-[10px] text-slate-300 font-medium mt-1">
-                  <span>3ساعات</span><span>12ساعة</span>
+                  <span>3 ساعات</span><span>12 ساعة</span>
                 </div>
+              </div>
+
+              {/* Weight */}
+              <div>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wide block mb-2">
+                  وزنك هذا الأسبوع <span className="text-slate-300 font-medium normal-case">(اختياري)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" min="30" max="300" step="0.1"
+                    value={form.weight}
+                    onChange={e => setForm(p => ({...p, weight: e.target.value}))}
+                    placeholder="مثال: 82.5"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-slate-400 transition font-medium"
+                  />
+                  <span className="text-sm font-bold text-slate-400 flex-shrink-0">كغ</span>
+                </div>
+              </div>
+
+              {/* Stress */}
+              <div>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wide block mb-2">مستوى الضغط والتوتر</label>
+                <div className="flex gap-2">
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} onClick={() => setForm(p => ({...p, stress: n}))}
+                      className={`flex-1 py-2.5 rounded-xl text-lg font-bold border-2 transition-all
+                        ${form.stress === n ? 'border-purple-400 bg-purple-50 scale-105' : 'border-slate-100 hover:border-slate-200'}`}>
+                      {['😌','🙂','😐','😟','😤'][n-1]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-center text-xs font-bold text-slate-400 mt-1.5">{STRESS_LABELS[form.stress]}</p>
               </div>
 
               {/* Training */}
@@ -403,6 +447,20 @@ function WeeklyCheckin() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Pain / injury */}
+              <div>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wide block mb-2">
+                  ألم أو إصابة؟ <span className="text-slate-300 font-medium normal-case">(اتركه فارغاً إن لم يكن هناك شيء)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.pain}
+                  onChange={e => setForm(p => ({...p, pain: e.target.value}))}
+                  placeholder="مثال: ألم في الركبة اليسرى، آلام ظهر..."
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-orange-400 transition font-medium"
+                />
               </div>
 
               {/* Note */}
