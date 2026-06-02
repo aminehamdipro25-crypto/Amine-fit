@@ -1,13 +1,22 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Zap, FlaskConical, ChevronDown, ChevronUp, Clock, Flame, Heart, BarChart3, Lightbulb, Shield, RefreshCw } from 'lucide-react'
+import Link from 'next/link'
+import { Zap, FlaskConical, ChevronDown, ChevronUp, Clock, Flame, Heart, BarChart3, Lightbulb, Shield, RefreshCw, BookOpen, Activity } from 'lucide-react'
 
 const INTENSITY_CONFIG = {
-  'low':       { label: 'منخفضة',      color: 'bg-blue-100 text-blue-700 border-blue-200',     dot: 'bg-blue-400' },
-  'moderate':  { label: 'متوسطة',      color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
-  'high':      { label: 'عالية',        color: 'bg-amber-100 text-amber-700 border-amber-200',   dot: 'bg-amber-400' },
-  'very-high': { label: 'عالية جداً',  color: 'bg-red-100 text-red-700 border-red-200',         dot: 'bg-red-400' },
+  'low':       { label: 'منخفضة',     color: 'bg-blue-100 text-blue-700 border-blue-200',         dot: 'bg-blue-400' },
+  'moderate':  { label: 'متوسطة',     color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  'high':      { label: 'عالية',       color: 'bg-amber-100 text-amber-700 border-amber-200',       dot: 'bg-amber-400' },
+  'very-high': { label: 'عالية جداً', color: 'bg-red-100 text-red-700 border-red-200',             dot: 'bg-red-400' },
 }
+
+const ZONE_STYLE = [
+  { bar: 'bg-blue-400',    bg: 'bg-blue-500',    label: 'Z1' },
+  { bar: 'bg-emerald-400', bg: 'bg-emerald-500', label: 'Z2' },
+  { bar: 'bg-yellow-400',  bg: 'bg-yellow-500',  label: 'Z3' },
+  { bar: 'bg-orange-400',  bg: 'bg-orange-500',  label: 'Z4' },
+  { bar: 'bg-red-500',     bg: 'bg-red-600',     label: 'Z5' },
+]
 
 function IntensityBadge({ level }) {
   const cfg = INTENSITY_CONFIG[level] || INTENSITY_CONFIG.moderate
@@ -16,6 +25,73 @@ function IntensityBadge({ level }) {
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
+  )
+}
+
+function ZoneChart({ zoneRanges, maxHR }) {
+  if (!zoneRanges) return null
+  const zones = ['z1','z2','z3','z4','z5'].map((k, i) => ({
+    key: k, ...zoneRanges[k], ...ZONE_STYLE[i],
+  })).filter(z => z.min != null)
+
+  if (!zones.length) return null
+
+  return (
+    <div className="space-y-3 pt-2">
+      <div className="flex items-center gap-2 mb-1">
+        <Activity className="w-4 h-4 text-gold-400" />
+        <p className="text-white/60 text-xs font-bold uppercase tracking-widest">HEART RATE ZONES</p>
+      </div>
+      {/* Stacked bar */}
+      <div className="flex h-3 rounded-full overflow-hidden gap-px">
+        {zones.map(z => (
+          <div key={z.key} className={`${z.bar} flex-1`} />
+        ))}
+      </div>
+      {/* Zone rows */}
+      <div className="space-y-1.5">
+        {zones.map(z => (
+          <div key={z.key} className="flex items-center gap-2.5">
+            <div className={`w-8 h-6 rounded-lg ${z.bg} flex items-center justify-center flex-shrink-0`}>
+              <span className="text-white text-[10px] font-extrabold">{z.label}</span>
+            </div>
+            <p className="text-white/70 text-xs font-medium flex-1 truncate" dir="ltr">{z.name || z.key}</p>
+            <span className="text-white/50 text-xs font-mono flex-shrink-0" dir="ltr">{z.min}–{z.max} bpm</span>
+            <span className="text-white/25 text-[10px] flex-shrink-0">{z.pct}</span>
+          </div>
+        ))}
+      </div>
+      {maxHR && (
+        <p className="text-white/20 text-[10px] text-center pt-1" dir="ltr">
+          Max HR: {maxHR} bpm · Tanaka formula
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ExerciseChip({ name }) {
+  const [imgUrl, setImgUrl] = useState(undefined)
+
+  useEffect(() => {
+    fetch(`/api/exercise-image?name=${encodeURIComponent(name)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setImgUrl(data?.url ?? null))
+      .catch(() => setImgUrl(null))
+  }, [name])
+
+  return (
+    <div className="flex items-center bg-slate-100 rounded-xl overflow-hidden border border-slate-200 min-w-0">
+      {imgUrl && (
+        <img
+          src={imgUrl}
+          alt={name}
+          className="w-14 h-14 object-cover flex-shrink-0"
+          onError={() => setImgUrl(null)}
+        />
+      )}
+      <span className="px-3 py-2 text-slate-700 text-xs font-bold whitespace-nowrap" dir="ltr">{name}</span>
+    </div>
   )
 }
 
@@ -52,16 +128,28 @@ function SessionCard({ session, index }) {
             </div>
           )}
 
+          {session.warmUp && (
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">WARM UP</p>
+              <p className="text-slate-600 text-sm leading-relaxed" dir="ltr">{session.warmUp}</p>
+            </div>
+          )}
+
           {session.exercises?.length > 0 && (
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">EXERCISES</p>
               <div className="flex flex-wrap gap-2">
                 {session.exercises.map((ex, i) => (
-                  <span key={i} className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg" dir="ltr">
-                    {ex}
-                  </span>
+                  <ExerciseChip key={i} name={ex} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {session.coolDown && (
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">COOL DOWN</p>
+              <p className="text-slate-600 text-sm leading-relaxed" dir="ltr">{session.coolDown}</p>
             </div>
           )}
 
@@ -119,12 +207,21 @@ export default function LabPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-10">
 
+      {/* Guide link */}
+      <div className="flex justify-end">
+        <Link href="/client/lab/guide"
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:border-gold-400 hover:text-slate-900 transition text-xs font-bold shadow-sm">
+          <BookOpen className="w-3.5 h-3.5" />
+          GLOSSARY & GUIDE
+        </Link>
+      </div>
+
       {/* Hero card */}
       <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] p-6 shadow-xl">
         <div className="absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #fbbf24 0%, transparent 60%), radial-gradient(circle at 80% 50%, #fbbf24 0%, transparent 60%)' }} />
-        <div className="relative">
-          <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="relative space-y-6">
+          <div className="flex items-start justify-between gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gold-400/10 border border-gold-400/20 flex items-center justify-center text-3xl">
               {protocol.emoji}
             </div>
@@ -134,9 +231,11 @@ export default function LabPage() {
             </span>
           </div>
 
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">بروتوكول المختبر</p>
-          <h1 className="text-white font-extrabold text-2xl mb-1" dir="ltr">{protocol.methodName}</h1>
-          <p className="text-gold-400 font-bold text-sm mb-5">{protocol.tagline}</p>
+          <div>
+            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">بروتوكول المختبر</p>
+            <h1 className="text-white font-extrabold text-2xl mb-1" dir="ltr">{protocol.methodName}</h1>
+            <p className="text-gold-400 font-bold text-sm">{protocol.tagline}</p>
+          </div>
 
           {/* Weekly stats */}
           <div className="grid grid-cols-3 gap-3">
@@ -156,6 +255,13 @@ export default function LabPage() {
               <p className="text-white/30 text-xs mt-0.5">توزيع الشدة</p>
             </div>
           </div>
+
+          {/* HR Zones */}
+          {protocol.zoneRanges && (
+            <div className="border-t border-white/10 pt-4">
+              <ZoneChart zoneRanges={protocol.zoneRanges} maxHR={protocol.maxHR} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -228,6 +334,15 @@ export default function LabPage() {
           <p className="text-white/80 text-sm leading-relaxed">{protocol.weekNotes}</p>
         </div>
       )}
+
+      {/* Guide link bottom */}
+      <div className="flex justify-center pt-2">
+        <Link href="/client/lab/guide"
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-slate-900 hover:border-slate-300 transition text-xs font-bold">
+          <BookOpen className="w-4 h-4" />
+          لا تعرف ماذا تعني هذه المصطلحات؟ افتح الدليل
+        </Link>
+      </div>
 
     </div>
   )
