@@ -96,6 +96,8 @@ const INIT = {
   medications:'', activityLevel:'', sportType:'',
   hasDigestiveIssues:'', digestiveIssuesNote:'',
   hasHormonalIssues:'', hormonalIssuesNote:'',
+  trainingLocation:'', availableTrainingDays:'',
+  hasPhysicalLimitations:'', physicalLimitationsNote:'',
   sleepHours:'', hasPsychStress:'', foodPrep:'',
   motivation:'', previousPrograms:'', commitment:'', heardFrom:'', notes:'',
   interestedPlan: '',
@@ -457,6 +459,38 @@ export default function RegisterPage() {
                 <TextInput field="sportType" placeholder="كرة القدم، رفع الأثقال..."
                   form={form} setForm={setForm} errors={errors} />
               </Inp>
+
+              {/* ── Training Environment (used by the Lab AI) ── */}
+              <div className="pt-2 pb-1 border-t border-slate-100">
+                <p className="text-xs font-bold text-primary-600 uppercase tracking-widest">🔬 بيانات المختبر التدريبي</p>
+                <p className="text-xs text-slate-400 mt-0.5">تساعد الذكاء الاصطناعي في توليد برنامج دقيق لك</p>
+              </div>
+              <Inp label="أين تفضل التدريب؟" error={errors.trainingLocation}>
+                <RadioGroup field="trainingLocation" form={form} setForm={setForm} options={[
+                  {value:'gym',        label:'🏋️ صالة رياضية (نادي)'},
+                  {value:'home',       label:'🏠 المنزل (بدون معدات أو معدات بسيطة)'},
+                  {value:'outdoor',    label:'🌳 في الهواء الطلق (الحديقة، الملعب)'},
+                  {value:'combination',label:'🔀 مزيج (صالة + منزل أو خارج)'},
+                ]} />
+              </Inp>
+              <Inp label="كم يوماً في الأسبوع يمكنك التدريب؟" error={errors.availableTrainingDays}>
+                <RadioGroup field="availableTrainingDays" form={form} setForm={setForm} options={[
+                  {value:'2', label:'يومان'},
+                  {value:'3', label:'3 أيام'},
+                  {value:'4', label:'4 أيام'},
+                  {value:'5', label:'5 أيام أو أكثر'},
+                ]} />
+              </Inp>
+              <Inp label="هل لديك أي إصابات أو قيود جسدية؟" error={errors.hasPhysicalLimitations}
+                hint="آلام في الركبة، الظهر، الكتف، أي منطقة تحتاج تجنبها...">
+                <RadioGroup field="hasPhysicalLimitations" form={form} setForm={setForm}
+                  options={[{value:'yes',label:'نعم'},{value:'no',label:'لا'}]} />
+              </Inp>
+              {form.hasPhysicalLimitations === 'yes' && (
+                <Inp label="اذكر القيود أو الإصابات باختصار">
+                  <Textarea field="physicalLimitationsNote" form={form} setForm={setForm} errors={errors} rows={2} />
+                </Inp>
+              )}
             </>}
 
             {/* ── STEP 4: Lifestyle & Commitment ── */}

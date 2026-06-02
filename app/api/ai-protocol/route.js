@@ -20,21 +20,26 @@ function selectMethod(client) {
   const goal     = client.goal || 'maintain'
   const level    = client.trainingExperience || 'beginner'
   const activity = client.activityLevel || 'moderate'
-  const hasLimit = client.hasChronicDisease === 'yes' ||
+  const location = client.trainingLocation || 'gym'
+
+  const hasHealthLimit = client.hasChronicDisease === 'yes' ||
     client.hasHormonalIssues === 'yes' ||
     client.hasDigestiveIssues === 'yes' ||
     (client.medications && client.medications.trim() !== '')
 
-  if (hasLimit)                                          return 'liss_strength'
-  if (goal === 'loss' && activity === 'sedentary')       return 'liss_strength'
+  const hasPhysicalLimit = client.hasPhysicalLimitations === 'yes'
+  const isHomeOnly = location === 'home'
+
+  if (hasHealthLimit || hasPhysicalLimit)                return 'liss_strength'
+  if (goal === 'loss' && activity === 'sedentary')       return isHomeOnly ? 'circuit' : 'liss_strength'
   if (goal === 'loss' && (activity === 'light' || activity === 'moderate')) return 'hiit_zone2'
   if (goal === 'loss' && (activity === 'active' || activity === 'veryActive')) return 'tabata'
-  if (goal === 'gain' && level === 'beginner')           return 'progressive_overload'
+  if (goal === 'gain' && level === 'beginner')           return isHomeOnly ? 'circuit' : 'progressive_overload'
   if (goal === 'gain' && level === 'intermediate')       return 'rpe_periodization'
   if (goal === 'gain' && level === 'advanced')           return 'rpe_periodization'
   if (goal === 'performance')                            return 'polarized'
   if (goal === 'maintain' && level === 'advanced')       return 'hybrid'
-  if (goal === 'maintain')                               return 'hybrid'
+  if (goal === 'maintain')                               return isHomeOnly ? 'circuit' : 'hybrid'
   return 'circuit'
 }
 
@@ -73,34 +78,58 @@ function buildPrompt(client, methodKey) {
   const method = METHOD_LABELS[methodKey]
   const zones  = calcZones(client.age)
 
-  const goal    = { loss: 'Fat Loss', gain: 'Muscle Gain', maintain: 'Weight Maintenance', performance: 'Athletic Performance' }[client.goal] || 'General Fitness'
-  const level   = { beginner: 'Beginner (0-1 yr)', intermediate: 'Intermediate (1-3 yr)', advanced: 'Advanced (3+ yr)' }[client.trainingExperience] || 'Beginner'
-  const activ   = { sedentary: 'Sedentary (desk job, no exercise)', light: 'Lightly Active (1-2×/week)', moderate: 'Moderately Active (3-4×/week)', active: 'Active (5-6×/week)', veryActive: 'Very Active (athlete/physical job)' }[client.activityLevel] || 'Moderate'
-  const stress  = { yes: 'High psychological stress', no: 'No stress', sometimes: 'Occasional stress' }[client.hasPsychStress] || 'Unknown'
+  const goal     = { loss: 'Fat Loss', gain: 'Muscle Gain', maintain: 'Weight Maintenance', performance: 'Athletic Performance' }[client.goal] || 'General Fitness'
+  const level    = { beginner: 'Beginner (0-1 yr)', intermediate: 'Intermediate (1-3 yr)', advanced: 'Advanced (3+ yr)' }[client.trainingExperience] || 'Beginner'
+  const activ    = { sedentary: 'Sedentary (desk job, no exercise)', light: 'Lightly Active (1-2×/week)', moderate: 'Moderately Active (3-4×/week)', active: 'Active (5-6×/week)', veryActive: 'Very Active (athlete/physical job)' }[client.activityLevel] || 'Moderate'
+  const stress   = { yes: 'High psychological stress', no: 'No stress', sometimes: 'Occasional stress' }[client.hasPsychStress] || 'Unknown'
+  const location = { gym: 'Gym (full equipment)', home: 'Home (limited/no equipment — bodyweight focus)', outdoor: 'Outdoor (park, track — no equipment)', combination: 'Combination (gym + home/outdoor)' }[client.trainingLocation] || 'Gym'
+  const days     = client.availableTrainingDays ? `${client.availableTrainingDays} days/week` : '3-4 days/week'
+  const timeline = { '1month': 'Urgent — under 1 month', '3months': '1-3 months', '6months': '3-6 months', long: 'Long-term (6+ months)' }[client.goalTimeline] || 'No specific deadline'
+  const commit   = { high: 'High commitment', medium: 'Medium commitment', low: 'Low commitment' }[client.commitment] || 'Medium'
+  const appetite = { high: 'High appetite (overeating tendency)', medium: 'Normal appetite', low: 'Low appetite (undereating tendency)' }[client.appetite] || 'Normal'
 
   // Full health profile
   const healthFlags = [
-    client.hasChronicDisease  === 'yes' ? `Chronic disease: ${client.chronicDiseaseNote || 'yes'}` : null,
-    client.hasDigestiveIssues === 'yes' ? `Digestive issues: ${client.digestiveIssuesNote || 'yes'}` : null,
-    client.hasHormonalIssues  === 'yes' ? `Hormonal issues: ${client.hormonalIssuesNote || 'yes'}` : null,
-    client.medications?.trim()          ? `Medications: ${client.medications}` : null,
-    client.foodAllergy?.trim()          ? `Allergies: ${client.foodAllergy}` : null,
+    client.hasChronicDisease     === 'yes' ? `Chronic disease: ${client.chronicDiseaseNote || 'yes'}` : null,
+    client.hasDigestiveIssues    === 'yes' ? `Digestive issues: ${client.digestiveIssuesNote || 'yes'}` : null,
+    client.hasHormonalIssues     === 'yes' ? `Hormonal issues: ${client.hormonalIssuesNote || 'yes'}` : null,
+    client.hasPhysicalLimitations=== 'yes' ? `Physical limitations/injuries: ${client.physicalLimitationsNote || 'yes'}` : null,
+    client.medications?.trim()              ? `Medications: ${client.medications}` : null,
+    client.foodAllergy?.trim()              ? `Allergies: ${client.foodAllergy}` : null,
   ].filter(Boolean).join('\n- ') || 'None reported'
+
+  // Medical data section
+  const medicalData = [
+    client.hasInBody === 'yes' && client.inBodyNote?.trim() ? `Body composition (InBody): ${client.inBodyNote}` : null,
+    client.hasNFS    === 'yes' && client.nfsNote?.trim()    ? `Blood tests (NFS): ${client.nfsNote}` : null,
+  ].filter(Boolean).join('\n- ') || 'No recent tests provided'
 
   return `Generate a complete ${method.name} training protocol for this client.
 
 ═══ CLIENT PROFILE ═══
-Goal: ${goal}
-Training Experience: ${level}
+Goal: ${goal} | Timeline: ${timeline}
+Training Experience: ${level} | Commitment: ${commit}
 Activity Level: ${activ}
 Age: ${client.age || '?'} yrs | Gender: ${client.gender === 'male' ? 'Male' : 'Female'}
 Weight: ${client.weight || '?'} kg | Height: ${client.height || '?'} cm | Target: ${client.targetWeight || '?'} kg
-Sleep: ${client.sleepHours || '7'} hrs/night | Stress: ${stress}
+Sleep: ${client.sleepHours || '7'} hrs/night | Stress: ${stress} | Appetite: ${appetite}
+Hydration: ${client.waterIntake || '?'} L/day
 Work type: ${client.workActivity || 'office work'}
 Sport/activity background: ${client.sportType || 'none'}
+Previous programs: ${client.previousPrograms?.trim() || 'none mentioned'}
+
+═══ TRAINING ENVIRONMENT ═══
+Location: ${location}
+Available training days: ${days}
+IMPORTANT: Generate EXACTLY ${client.availableTrainingDays || '3'} sessions in weeklyStructure.
+${location.includes('Home') || location.includes('home') ? 'CRITICAL: Use only bodyweight exercises or minimal equipment (dumbbells, resistance bands). NO barbell/machine exercises.' : ''}
+${location.includes('Outdoor') || location.includes('outdoor') ? 'CRITICAL: Use outdoor-compatible exercises only (running, bodyweight, sprints). NO gym equipment.' : ''}
 
 ═══ HEALTH STATUS ═══
 - ${healthFlags}
+
+═══ MEDICAL DATA ═══
+- ${medicalData}
 
 ═══ PERSONALIZED HEART RATE ZONES (Tanaka formula: 208 − 0.7×age) ═══
 Max HR: ${zones.max} bpm
