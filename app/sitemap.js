@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const base = 'https://amine-fit.vercel.app'
+  const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.vercel.app'
   const now  = new Date().toISOString()
   return [
     { url: base,                    lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
