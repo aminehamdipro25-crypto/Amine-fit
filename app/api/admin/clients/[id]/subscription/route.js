@@ -155,7 +155,7 @@ function buildEmail(client, activationCode) {
   </div>
 
   <div style="background:#f8fafc;padding:12px 24px;text-align:center;border-top:1px solid #e2e8f0">
-    <p style="color:#9ca3af;font-size:11px;margin:0">Amine-Fit • تونس • +974 3065 3759</p>
+    <p style="color:#9ca3af;font-size:11px;margin:0">Amine-Fit • الدوحة، قطر • +974 3065 3759</p>
   </div>
 </div>
 </body></html>`

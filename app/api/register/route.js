@@ -225,7 +225,7 @@ function buildEmailHtml(e, printUrl) {
        style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
       عرض في لوحة التحكم
     </a>
-    <p style="color:#9ca3af;font-size:11px;margin:12px 0 0">Amine-Fit • تونس • +974 3065 3759</p>
+    <p style="color:#9ca3af;font-size:11px;margin:12px 0 0">Amine-Fit • الدوحة، قطر • +974 3065 3759</p>
   </div>
 </div>
 </body></html>`

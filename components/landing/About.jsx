@@ -85,7 +85,7 @@ export default function About() {
                 <div>
                   <h3 className="text-xl font-extrabold text-white">أمين حمدي</h3>
                   <p className="text-gold-400 text-sm font-bold mt-0.5">مدرب شخصي ومدرب تغذية معتمد</p>
-                  <p className="text-white/30 text-xs mt-1 font-medium">كوتش أونلاين — تونس 🏅</p>
+                  <p className="text-white/30 text-xs mt-1 font-medium">الدوحة، قطر 🏅</p>
                 </div>
               </div>
 

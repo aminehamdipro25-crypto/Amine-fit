@@ -79,7 +79,7 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} AmineFit. جميع الحقوق محفوظة.</p>
           <p dir="ltr" className="text-right sm:text-left">
             <a href="tel:+97430653759" className="hover:text-gold-400 transition">+974 3065 3759</a>
-            {' '}· تونس
+            {' '}· الدوحة، قطر
           </p>
         </div>
       </div>
