@@ -278,8 +278,8 @@ function printClientPDF(client) {
 </section>
 
 <div class="footer">
-  <span>Amine-Fit • الدوحة، قطر • +974 3065 3759</span>
-  <span>amine-fit.vercel.app</span>
+  <span>Amine-Fit • تونس • +974 3065 3759</span>
+  <span>amine-fit.com</span>
 </div>
 
 <script>window.onload = () => window.print()</script>
@@ -1117,7 +1117,7 @@ export default function ClientsClient({ error }) {
                   نسخ الكود
                 </button>
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`مرحباً! تم قبول طلبك في Amine-Fit 🎉\n\nكود التفعيل الخاص بك:\n${approvalCode.code}\n\nاذهب إلى: https://amine-fit.vercel.app/client/login\nواختر "تفعيل الحساب"`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`مرحباً! تم قبول طلبك في Amine-Fit 🎉\n\nكود التفعيل الخاص بك:\n${approvalCode.code}\n\nاذهب إلى: https://amine-fit.com/client/login\nواختر "تفعيل الحساب"`)}`}
                   target="_blank" rel="noreferrer"
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-500 text-white font-extrabold text-sm hover:bg-green-600 transition">
                   واتساب

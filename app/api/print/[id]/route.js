@@ -74,7 +74,7 @@ td.l{font-weight:600;background:#f1f5f9;width:38%;color:#374151}
   ${r('الدافع', v(e.motivation))} ${r('برامج سابقة', v(e.previousPrograms))}
   ${r('الالتزام', v(e.commitment))} ${r('كيف سمع عنّا', v(e.heardFrom))} ${r('ملاحظات', v(e.notes))}
 </table>
-<div class="ft"><span>Amine-Fit • الدوحة، قطر • +974 3065 3759</span><span>amine-fit.vercel.app</span></div>
+<div class="ft"><span>Amine-Fit • تونس • +974 3065 3759</span><span>amine-fit.com</span></div>
 <script>setTimeout(()=>window.print(),800)</script>
 </body></html>`
 

@@ -85,7 +85,7 @@ function buildEmail(client, activationCode) {
       </ol>
     </div>
 
-    <a href="https://amine-fit.vercel.app/client/login"
+    <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/client/login"
        style="display:block;text-align:center;background:#f59e0b;color:#000;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;margin-bottom:16px">
       ⚡ تفعيل الحساب الآن
     </a>
@@ -96,7 +96,7 @@ function buildEmail(client, activationCode) {
   </div>
 
   <div style="background:#f8fafc;padding:12px 24px;text-align:center;border-top:1px solid #e2e8f0">
-    <p style="color:#9ca3af;font-size:11px;margin:0">AmineFit • الدوحة، قطر • +974 3065 3759</p>
+    <p style="color:#9ca3af;font-size:11px;margin:0">Amine-Fit • تونس • +974 3065 3759</p>
   </div>
 </div>
 </body></html>`

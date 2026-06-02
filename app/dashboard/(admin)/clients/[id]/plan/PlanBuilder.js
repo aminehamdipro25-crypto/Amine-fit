@@ -1312,7 +1312,7 @@ export default function PlanBuilder({ client }) {
           <p className="text-white text-xs font-extrabold mb-1">كيف تصل الخطة للعميل؟</p>
           <p className="text-white/40 text-xs leading-relaxed">
             ابنِ الخطة ثم اضغط <span className="text-gold-400 font-bold">حفظ الخطة</span> — سيجدها العميل فوراً في بوابته على{' '}
-            <span className="text-gold-400 font-bold" dir="ltr">amine-fit.vercel.app/client/login</span>{' '}
+            <span className="text-gold-400 font-bold" dir="ltr">amine-fit.com/client/login</span>{' '}
             ببريده وكلمة المرور التي ضبطتها له.
           </p>
         </div>

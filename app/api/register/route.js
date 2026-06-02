@@ -112,7 +112,8 @@ export async function POST(req) {
 async function sendEmailNotification(entry) {
   if (!process.env.RESEND_API_KEY || !process.env.NOTIFY_EMAIL) return
   const adminEmail = process.env.NOTIFY_EMAIL
-  const printUrl = `https://amine-fit.vercel.app/api/print/${entry.id}`
+  const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+  const printUrl = `${BASE}/api/print/${entry.id}`
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -220,11 +221,11 @@ function buildEmailHtml(e, printUrl) {
        style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;margin-left:10px">
       🖨️ تنزيل / طباعة PDF
     </a>
-    <a href="https://amine-fit.vercel.app/dashboard/clients"
+    <a href="${BASE}/dashboard/clients"
        style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">
       عرض في لوحة التحكم
     </a>
-    <p style="color:#9ca3af;font-size:11px;margin:12px 0 0">Amine-Fit • الدوحة، قطر • +974 3065 3759</p>
+    <p style="color:#9ca3af;font-size:11px;margin:12px 0 0">Amine-Fit • تونس • +974 3065 3759</p>
   </div>
 </div>
 </body></html>`

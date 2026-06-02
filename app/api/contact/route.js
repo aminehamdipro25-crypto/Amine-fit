@@ -85,7 +85,7 @@ async function notifyNewLead(entry) {
          style="display:inline-block;background:#25d366;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;margin-left:8px">
         💬 رد عبر واتساب
       </a>
-      <a href="https://amine-fit.vercel.app/dashboard/clients"
+      <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/dashboard/clients"
          style="display:inline-block;background:#d97706;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px">
         لوحة التحكم
       </a>

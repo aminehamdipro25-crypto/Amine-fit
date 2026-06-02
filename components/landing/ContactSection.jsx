@@ -4,7 +4,7 @@ import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 const info = [
   { icon: Phone, label: 'الهاتف',      value: '+974 3065 3759',              href: 'tel:+97430653759',                   ltr: true },
   { icon: Mail,  label: 'البريد',      value: 'amine.hamdi.pro25@gmail.com', href: 'mailto:amine.hamdi.pro25@gmail.com', ltr: true },
-  { icon: MapPin,label: 'الموقع',      value: 'الدوحة، قطر',                href: '#' },
+  { icon: MapPin,label: 'الموقع',      value: 'أونلاين — تونس والخليج',      href: '#' },
   { icon: Clock, label: 'ساعات العمل', value: 'السبت – الخميس: 8ص – 9م',   href: '#' },
 ]
 

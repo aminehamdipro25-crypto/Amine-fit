@@ -10,7 +10,7 @@ const cairo = Cairo({
   display: 'swap',
 })
 
-const BASE_URL = 'https://amine-fit.vercel.app'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID
 
 export const metadata = {
