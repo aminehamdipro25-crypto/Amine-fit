@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
@@ -37,7 +38,7 @@ export async function POST(req, { params }) {
 
   if (needsActivation && client.email) {
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-    const bytes = (await import('crypto')).randomBytes(6)
+    const bytes = crypto.randomBytes(6)
     activationCode = ''
     for (let i = 0; i < 6; i++) activationCode += chars[bytes[i] % chars.length]
   }
@@ -50,7 +51,8 @@ export async function POST(req, { params }) {
     status:                'active',
   }
   if (activationCode) {
-    updateFields.activationCode = activationCode
+    // Store hash only — raw code sent in email, never in DB
+    updateFields.activationCode = crypto.createHash('sha256').update(activationCode).digest('hex')
     updateFields.clientPassword = null
     updateFields.approvedAt     = new Date().toISOString()
   }

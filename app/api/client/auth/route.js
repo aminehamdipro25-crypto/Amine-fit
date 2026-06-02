@@ -12,7 +12,7 @@ async function setClientCookie(res, clientId) {
   res.cookies.set('client_token', createToken(clientId, sessionId), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge: 30 * 24 * 60 * 60,
     path: '/',
   })
@@ -26,8 +26,8 @@ async function handleActivation(email, activationCode, password, confirmPassword
   if (password !== confirmPassword) {
     return NextResponse.json({ error: 'كلمة المرور وتأكيدها غير متطابقتين' }, { status: 400 })
   }
-  if (password.length < 6) {
-    return NextResponse.json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }, { status: 400 })
+  if (password.length < 8) {
+    return NextResponse.json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' }, { status: 400 })
   }
   if (password.length > 200) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
 
@@ -41,15 +41,28 @@ async function handleActivation(email, activationCode, password, confirmPassword
   if (!client || !client.activationCode) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
-  const storedBuf    = Buffer.from(client.activationCode)
-  const submittedBuf = Buffer.from(code)
-  const codeMatch = storedBuf.length === submittedBuf.length &&
-    crypto.timingSafeEqual(storedBuf, submittedBuf)
+
+  // Support both hashed (SHA-256 hex, 64 chars) and legacy plain-text codes
+  let codeMatch = false
+  if (client.activationCode.length === 64) {
+    // Hashed activation code — compare submitted code's hash
+    const submittedHash = crypto.createHash('sha256').update(code).digest('hex')
+    const storedBuf     = Buffer.from(client.activationCode, 'hex')
+    const submittedBuf  = Buffer.from(submittedHash, 'hex')
+    codeMatch = storedBuf.length === submittedBuf.length &&
+      crypto.timingSafeEqual(storedBuf, submittedBuf)
+  } else {
+    // Legacy plain-text code
+    const storedBuf    = Buffer.from(client.activationCode)
+    const submittedBuf = Buffer.from(code)
+    codeMatch = storedBuf.length === submittedBuf.length &&
+      crypto.timingSafeEqual(storedBuf, submittedBuf)
+  }
+
   if (!codeMatch) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 
-  // Set password and clear the activation code
   await updateSubmission(client.id, {
     clientPassword: hashPassword(password),
     activationCode: null,
@@ -65,7 +78,7 @@ async function handleLogin(email, password) {
   if (!email || !password) {
     return NextResponse.json({ error: 'البريد وكلمة المرور مطلوبان' }, { status: 400 })
   }
-  if (email.length > 200 || password.length > 200) {
+  if (email.length > 320 || password.length > 200) {
     return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 })
   }
 

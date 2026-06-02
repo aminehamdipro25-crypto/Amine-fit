@@ -3,8 +3,15 @@ import crypto from 'crypto'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
 
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/
+
 function generateOTP() {
   return crypto.randomInt(100000, 1000000).toString()
+}
+
+// Store only the SHA-256 hash — raw OTP never persisted to DB
+function hashOTP(otp) {
+  return crypto.createHash('sha256').update(String(otp)).digest('hex')
 }
 
 async function sendOTP(email, name, otp) {
@@ -12,7 +19,7 @@ async function sendOTP(email, name, otp) {
 
   const { Resend } = await import('resend')
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const safeName = String(name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const safeName = String(name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
   await resend.emails.send({
     from: 'Amine-Fit <noreply@amine-fit.vercel.app>',
@@ -41,15 +48,15 @@ export async function POST(req) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const { action, email, otp, name } = await req.json()
 
-    if (!email || typeof email !== 'string' || email.length > 200) {
+    // Validate email format strictly before using it in any key or query
+    if (!email || typeof email !== 'string' || email.length > 320 || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: 'بريد غير صالح' }, { status: 400 })
     }
     const emailLower = email.toLowerCase().trim()
 
     if (action === 'send') {
-      // 3 sends per email per hour, 10 per IP per hour
       if (await isRateLimited(`otp_send_email:${emailLower}`, 3, 3600)) {
-        return NextResponse.json({ sent: true }) // Silent to avoid enumeration
+        return NextResponse.json({ sent: true }) // Silent — avoid email enumeration
       }
       if (await isRateLimited(`otp_send_ip:${ip}`, 10, 3600)) {
         return NextResponse.json({ sent: true })
@@ -57,35 +64,61 @@ export async function POST(req) {
 
       const newOTP = generateOTP()
       const expiry = Date.now() + 10 * 60 * 1000
+      const otpHash = hashOTP(newOTP) // Only hash goes to DB
 
       const client = await getSubmissionByEmail(emailLower)
       if (client) {
-        await updateSubmission(client.id, { emailOTP: newOTP, emailOTPExpiry: expiry })
-        await sendOTP(emailLower, name, newOTP)
+        await updateSubmission(client.id, {
+          emailOTPHash:   otpHash,
+          emailOTPExpiry: expiry,
+          emailOTP:       null, // clear legacy plain-text field
+        })
+        await sendOTP(emailLower, name, newOTP) // Plain OTP only goes in email
       }
-      // Always return same response to prevent email enumeration
       return NextResponse.json({ sent: true })
     }
 
     if (action === 'verify') {
-      // 5 verify attempts per email per 15 min
       if (await isRateLimited(`otp_verify:${emailLower}`, 5, 900)) {
         return NextResponse.json({ valid: false, reason: 'too_many' })
       }
 
       const client = await getSubmissionByEmail(emailLower)
-      // Use constant-time-ish comparison; return generic error for not-found (prevent enumeration)
-      if (!client || !client.emailOTP) {
+      if (!client || (!client.emailOTPHash && !client.emailOTP)) {
         return NextResponse.json({ valid: false, reason: 'invalid' })
       }
-      if (client.emailOTP !== otp?.toString().trim()) {
+
+      const submittedRaw = otp?.toString().trim() ?? ''
+      let codeValid = false
+
+      if (client.emailOTPHash) {
+        // Hash-based comparison (constant-time)
+        const submittedHash = hashOTP(submittedRaw)
+        const storedBuf     = Buffer.from(client.emailOTPHash, 'hex')
+        const submittedBuf  = Buffer.from(submittedHash, 'hex')
+        codeValid = storedBuf.length === submittedBuf.length &&
+          crypto.timingSafeEqual(storedBuf, submittedBuf)
+      } else {
+        // Legacy plain-text OTP — constant-time compare during migration window
+        const storedBuf    = Buffer.from(String(client.emailOTP))
+        const submittedBuf = Buffer.from(submittedRaw)
+        codeValid = storedBuf.length === submittedBuf.length &&
+          crypto.timingSafeEqual(storedBuf, submittedBuf)
+      }
+
+      if (!codeValid) {
         return NextResponse.json({ valid: false, reason: 'invalid' })
       }
-      if (Date.now() > client.emailOTPExpiry) {
+      if (Date.now() > (client.emailOTPExpiry ?? 0)) {
         return NextResponse.json({ valid: false, reason: 'expired' })
       }
 
-      await updateSubmission(client.id, { emailVerified: true, emailOTP: null, emailOTPExpiry: null })
+      await updateSubmission(client.id, {
+        emailVerified:  true,
+        emailOTP:       null,
+        emailOTPHash:   null,
+        emailOTPExpiry: null,
+      })
       return NextResponse.json({ valid: true })
     }
 

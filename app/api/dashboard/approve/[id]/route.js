@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
 
@@ -11,12 +12,15 @@ export async function POST(req, { params }) {
 
   // Generate 6-char activation code using CSPRNG
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-  const bytes = (await import('crypto')).randomBytes(6)
+  const bytes = crypto.randomBytes(6)
   let activationCode = ''
   for (let i = 0; i < 6; i++) activationCode += chars[bytes[i] % chars.length]
 
+  // Store only the SHA-256 hash — raw code sent only in email
+  const activationCodeHash = crypto.createHash('sha256').update(activationCode).digest('hex')
+
   await updateSubmission(params.id, {
-    activationCode,
+    activationCode: activationCodeHash,
     clientPassword: null,
     status:         'active',
     approvedAt:     new Date().toISOString(),
@@ -26,6 +30,7 @@ export async function POST(req, { params }) {
     sendActivationEmail(client, activationCode).catch(e => console.error('[approve email]', e.message))
   }
 
+  // Return code to admin UI (admin-only endpoint, over HTTPS, for display in modal)
   return NextResponse.json({ success: true, email: client.email, activationCode })
 }
 
@@ -44,7 +49,7 @@ async function sendActivationEmail(client, activationCode) {
 }
 
 function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function buildEmail(client, activationCode) {
