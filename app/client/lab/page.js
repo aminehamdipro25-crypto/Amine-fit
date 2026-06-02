@@ -70,14 +70,27 @@ function ZoneChart({ zoneRanges, maxHR }) {
   )
 }
 
+const imgCache = new Map()
+
 function ExerciseChip({ name }) {
   const [imgUrl, setImgUrl] = useState(undefined)
 
   useEffect(() => {
+    if (imgCache.has(name)) {
+      setImgUrl(imgCache.get(name))
+      return
+    }
     fetch(`/api/exercise-image?name=${encodeURIComponent(name)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => setImgUrl(data?.url ?? null))
-      .catch(() => setImgUrl(null))
+      .then(data => {
+        const url = data?.url ?? null
+        imgCache.set(name, url)
+        setImgUrl(url)
+      })
+      .catch(() => {
+        imgCache.set(name, null)
+        setImgUrl(null)
+      })
   }, [name])
 
   return (

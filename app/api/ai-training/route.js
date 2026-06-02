@@ -166,7 +166,10 @@ export async function POST(req) {
   ]
 }`
 
-  const safeInjuries = injuries ? String(injuries).slice(0, 200) : ''
+  const safeInjuries = (injuries ?? '').toString()
+    .replace(/[<>"'`\\{}()[\];=\n\r]/g, '')
+    .trim()
+    .slice(0, 150)
 
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}

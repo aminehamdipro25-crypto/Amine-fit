@@ -6,7 +6,7 @@ import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
   Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon,
-  Calendar, CreditCard, RefreshCw, Star
+  Calendar, CreditCard, RefreshCw, Star, TrendingUp, ClipboardList, Scale
 } from 'lucide-react'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -736,6 +736,107 @@ function Badge({ status }) {
   )
 }
 
+// ── Client Progress + Check-ins (admin view) ─────────────────────────────────
+function ClientProgressPanel({ clientId }) {
+  const [progress, setProgress]   = useState(null)
+  const [checkins, setCheckins]   = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/admin/clients/${clientId}/progress`).then(r => r.ok ? r.json() : []),
+      fetch(`/api/admin/clients/${clientId}/checkins`).then(r => r.ok ? r.json() : []),
+    ]).then(([p, c]) => { setProgress(p); setCheckins(c) }).catch(() => {})
+  }, [clientId])
+
+  const latestWeight = progress?.filter(e => e.weight)?.at(-1)
+  const prevWeight   = progress?.filter(e => e.weight)?.at(-2)
+  const weightDiff   = latestWeight?.weight && prevWeight?.weight
+    ? (latestWeight.weight - prevWeight.weight).toFixed(1) : null
+  const lastCheckin  = checkins?.at(-1)
+
+  if (!progress && !checkins) return (
+    <div className="flex items-center justify-center py-6">
+      <Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+    </div>
+  )
+
+  return (
+    <div className="space-y-3">
+      {/* Latest measurements */}
+      {latestWeight ? (
+        <div className="bg-slate-50 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Scale className="w-4 h-4 text-amber-500" />
+            <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">آخر قياس</p>
+            <span className="text-[10px] text-slate-300 mr-auto">
+              {new Date(latestWeight.date).toLocaleDateString('ar', { month:'short', day:'numeric' })}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label:'الوزن', val: latestWeight.weight, unit:'كغ', diff: weightDiff },
+              { label:'الخصر', val: latestWeight.waist,  unit:'سم', diff: null },
+              { label:'الصدر', val: latestWeight.chest,  unit:'سم', diff: null },
+            ].filter(f => f.val).map(f => (
+              <div key={f.label} className="bg-white rounded-xl p-2.5 text-center border border-slate-100">
+                <p className="text-sm font-extrabold text-slate-900">{f.val} <span className="text-[10px] font-semibold text-slate-400">{f.unit}</span></p>
+                <p className="text-[10px] text-slate-400 font-semibold">{f.label}</p>
+                {f.diff !== null && (
+                  <p className={`text-[10px] font-extrabold mt-0.5 ${+f.diff < 0 ? 'text-emerald-500' : +f.diff > 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                    {+f.diff > 0 ? '+' : ''}{f.diff} {f.unit}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+            {progress.length} إدخال مسجل
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400 text-center py-3">لا توجد قياسات بعد</p>
+      )}
+
+      {/* Last check-in */}
+      {lastCheckin ? (
+        <div className="bg-slate-50 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList className="w-4 h-4 text-violet-500" />
+            <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">آخر تقرير أسبوعي</p>
+            <span className="text-[10px] text-slate-300 mr-auto">
+              {new Date(lastCheckin.date).toLocaleDateString('ar', { month:'short', day:'numeric' })}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label:'الطاقة', val:`${lastCheckin.energy}/5`, emoji:'⚡' },
+              { label:'النوم',  val:`${lastCheckin.sleep}ساعة`, emoji:'🌙' },
+              { label:'تدريب', val:`${lastCheckin.trainingDone}أيام`, emoji:'🏋️' },
+              { label:'تغذية', val:`${lastCheckin.nutritionDays}/7`, emoji:'🥗' },
+            ].map(s => (
+              <div key={s.label} className="bg-white rounded-xl p-2 text-center border border-slate-100">
+                <p className="text-base">{s.emoji}</p>
+                <p className="text-xs font-extrabold text-slate-800">{s.val}</p>
+                <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          {lastCheckin.note && (
+            <p className="text-xs text-slate-500 mt-2 bg-white rounded-xl px-3 py-2 border border-slate-100 italic">
+              "{lastCheckin.note}"
+            </p>
+          )}
+          <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+            {checkins.length} تقرير مسجل
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400 text-center py-3">لا توجد تقارير أسبوعية بعد</p>
+      )}
+    </div>
+  )
+}
+
 function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   if (!value) return null
   return (
@@ -916,6 +1017,15 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
               <DetailRow icon={Heart} label="ضغط نفسي"       value={{yes:'نعم',no:'لا',sometimes:'أحياناً'}[client.hasPsychStress]} />
               <DetailRow icon={Utensils} label="مَن يحضر الطعام" value={client.foodPrep} />
             </div>
+          </div>
+
+          {/* Progress & weekly check-ins */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide">تقدم العميل وتقاريره الأسبوعية</h3>
+            </div>
+            <ClientProgressPanel clientId={client.id} />
           </div>
         </div>
 

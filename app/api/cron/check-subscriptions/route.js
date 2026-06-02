@@ -25,7 +25,7 @@ export async function GET(req) {
       new Date(client.subscriptionEndDate).getTime() < now &&
       client.status === 'active'
     ) {
-      await updateSubmission(client.id, { status: 'suspended' })
+      await updateSubmission(client.id, { status: 'suspended', suspendedAt: new Date().toISOString() })
       await deleteClientSession(client.id).catch(() => {})
       suspended++
     }
