@@ -1,15 +1,25 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react'
 
 /* ══════════════════════════════════════════════════════════════
    WEB AUDIO MUSIC ENGINE
-   Motivational 120-BPM beat: kick/clap/hat + bass + melody
+   Motivational 128-BPM beat with reverb + compression
 ══════════════════════════════════════════════════════════════ */
-const _BPM  = 120
-const _B    = 60 / _BPM       // 0.5s per beat
-const _BAR  = _B * 4          // 2.0s per bar
+const _BPM  = 128
+const _B    = 60 / _BPM
+const _BAR  = _B * 4
 const _P5   = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25] // C4..C5 pentatonic
+
+function _makeReverb(ctx) {
+  const len = Math.floor(ctx.sampleRate * 1.8)
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate)
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c)
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5)
+  }
+  const conv = ctx.createConvolver(); conv.buffer = buf; return conv
+}
 
 function _kick(ctx, dest, t) {
   const o = ctx.createOscillator(), g = ctx.createGain()
@@ -60,25 +70,48 @@ function _note(ctx, dest, t, freq, dur, vol = 0.11) {
 }
 
 // Bass pattern: [beat_offset, freq_hz, dur_beats]
-const _BASS = [[0,65.41,0.85],[1,65.41,0.4],[2,87.31,0.45],[3,98.00,0.55]]
+const _BASS = [[0,65.41,0.9],[1,65.41,0.45],[2,87.31,0.5],[3,110.00,0.6]]
 
-// Melody (2-bar, beat-indexed): G4 E4 G4 A4 C5 A4 G4 | E4 G4 A4 C5(long) G4 E4
+// Melody A (2-bar) — uplifting ascending phrase
 const _MEL = [
-  [0,3,0.45],[0.5,2,0.35],[1,3,0.35],[1.5,4,0.35],[2,5,0.55],[2.5,4,0.35],[3,3,0.6],
-  [4,2,0.4],[4.5,3,0.4],[5,4,0.4],[5.5,5,1.0],[7,3,0.45],[7.5,2,0.6]
+  [0,3,0.5],[0.75,4,0.4],[1.5,5,0.4],[2,5,0.5],[2.5,4,0.4],[3,3,0.7],
+  [4,2,0.45],[4.75,3,0.4],[5.5,4,0.4],[6,5,1.1],[7.5,3,0.45],[7.75,4,0.6]
 ]
+
+// Pad chords: quiet sustained chords for atmosphere [beat, freqs_array, dur_beats]
+const _PADS = [
+  [0, [130.81, 164.81, 196.00], 4.0], // C3 E3 G3
+  [4, [110.00, 138.59, 164.81], 4.0], // A2 Db3 E3
+]
+
+function _pad(ctx, dest, t, freqs, dur) {
+  freqs.forEach(freq => {
+    const o = ctx.createOscillator(), g = ctx.createGain()
+    o.connect(g); g.connect(dest); o.type = 'sine'; o.frequency.value = freq
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(0.055, t + 0.4)
+    g.gain.setValueAtTime(0.055, t + dur - 0.5)
+    g.gain.linearRampToValueAtTime(0, t + dur)
+    o.start(t); o.stop(t + dur + 0.1)
+  })
+}
 
 function _scheduleBar(ctx, dest, t, idx) {
   for (let b = 0; b < 4; b++) {
     const bt = t + b * _B
     _kick(ctx, dest, bt)
     _hat(ctx, dest, bt, 0.07)
-    _hat(ctx, dest, bt + _B * 0.5, 0.12)
+    _hat(ctx, dest, bt + _B * 0.5, 0.13)
     if (b === 1 || b === 3) _clap(ctx, dest, bt)
   }
   _BASS.forEach(([bo, freq, dur]) => _bass(ctx, dest, t + bo * _B, freq, dur * _B))
+  // Melody every 2 bars
   if (idx % 2 === 0) {
     _MEL.forEach(([bo, ni, dur]) => _note(ctx, dest, t + bo * _B, _P5[ni], dur * _B))
+  }
+  // Pad every 2 bars (offset from melody)
+  if (idx % 2 === 0) {
+    _PADS.forEach(([bo, freqs, dur]) => _pad(ctx, dest, t + bo * _B, freqs, dur * _B))
   }
 }
 
@@ -106,7 +139,22 @@ function useMusicEngine() {
     const AC = window.AudioContext || window.webkitAudioContext
     if (!AC) return
     const ctx = new AC()
-    const master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination)
+
+    // Dynamics compressor — punch + glue
+    const comp = ctx.createDynamicsCompressor()
+    comp.threshold.value = -18; comp.knee.value = 8
+    comp.ratio.value = 6; comp.attack.value = 0.004; comp.release.value = 0.12
+    comp.connect(ctx.destination)
+
+    // Reverb send — spaciousness
+    const reverb = _makeReverb(ctx)
+    const rvGain = ctx.createGain(); rvGain.gain.value = 0.14
+    reverb.connect(rvGain); rvGain.connect(ctx.destination)
+
+    // Master → compressor (dry) + reverb (wet)
+    const master = ctx.createGain(); master.gain.value = 0.52
+    master.connect(comp); master.connect(reverb)
+
     ctxRef.current = ctx
     nextRef.current = ctx.currentTime + 0.1
     barRef.current = 0
@@ -520,43 +568,135 @@ function S4_Pending({ p }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 5 — Client Login
+   SCENE 5 — Client Login (matches real page)
+   Phase A (0-0.48): تفعيل الحساب tab — type email + activation code
+   Phase B (0.50-1.0): دخول tab — type email+password, login
 ══════════════════════════════════════ */
 function S5_Login({ p }) {
-  const emailTyped = typed('ahmed.sport@gmail.com', p, 0.14, 0.44)
-  const dotCount   = Math.floor(typed('12345678', p, 0.50, 0.74).length)
+  const tab        = p < 0.50 ? 'activate' : 'login'
+  const actEmail   = typed('ahmed.sport@gmail.com', p, 0.12, 0.36)
+  const actCode    = typed('AF-8X2K', p, 0.38, 0.48)
+  const loginEmail = typed('ahmed.sport@gmail.com', p, 0.54, 0.72)
+  const dotCount   = Math.floor(typed('••••••••', p, 0.74, 0.88).length)
+
+  // Left food emojis (scaled down for the mini browser)
+  const LEFT_BG  = ['🥗','🍎','🥦','🥑','🍗']
+  const RIGHT_BG = ['🏋️','💪','🔥','⚡','🎯']
+
   return (
-    <div className="h-full flex items-center justify-center" style={{ background: '#0a0a0a' }}>
-      <div className="w-[62%] max-w-[200px]"
-        style={{ opacity: p > 0.04 ? 1 : 0, transform: `translateY(${p > 0.04 ? 0 : 10}px)`, transition: 'all 0.5s' }}>
-        <div className="text-center mb-4">
-          <div className="w-10 h-10 bg-[#fbbf24] rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-[#fbbf24]/20">
-            <span className="text-black font-black text-sm">⚡</span>
+    <div className="h-full relative flex items-center justify-center overflow-hidden"
+      style={{ background: 'linear-gradient(135deg,#0a0a0a 0%,#111827 50%,#0a0a0a 100%)' }}>
+
+      {/* Background emojis — matches real page */}
+      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+        {LEFT_BG.map((e, i) => (
+          <span key={`l${i}`} className="absolute" style={{
+            top:`${8+i*18}%`, left:`${2+i%2*8}%`,
+            fontSize: 28 - i*2, opacity: 0.08, transform:`rotate(${i%2===0?-10:10}deg)`
+          }}>{e}</span>
+        ))}
+        {RIGHT_BG.map((e, i) => (
+          <span key={`r${i}`} className="absolute" style={{
+            top:`${8+i*18}%`, right:`${2+i%2*8}%`,
+            fontSize: 28 - i*2, opacity: 0.08, transform:`rotate(${i%2===0?10:-10}deg)`
+          }}>{e}</span>
+        ))}
+        {/* Gold diagonal lines */}
+        {[20,50,80].map(pct => (
+          <div key={pct} className="absolute opacity-[0.04]"
+            style={{ width:'200%', height:'1px',
+              background:'linear-gradient(90deg,transparent,#fbbf24,transparent)',
+              top:`${pct}%`, left:'-50%', transform:'rotate(-8deg)' }} />
+        ))}
+      </div>
+
+      {/* Card */}
+      <div className="relative z-10 w-[72%] max-w-[210px]"
+        style={{ opacity: p > 0.04 ? 1 : 0, transform:`translateY(${p>0.04?0:10}px)`, transition:'all 0.5s' }}>
+
+        {/* Logo */}
+        <div className="text-center mb-3">
+          <div className="w-10 h-10 bg-[#fbbf24] rounded-2xl flex items-center justify-center mx-auto mb-1.5 shadow-lg shadow-[#fbbf24]/25">
+            <span className="text-black text-lg">⚡</span>
           </div>
-          <p className="text-white font-black text-[11px]">بوابة العميل</p>
-          <p className="text-white/25 text-[8px] mt-0.5">تم تفعيل حسابك ✓</p>
+          <p className="text-white font-black text-[11px] tracking-widest uppercase">Amine<span className="text-[#fbbf24]">Fit</span></p>
+          <p className="text-white/30 text-[7px] mt-0.5">بوابة العميل الشخصية</p>
         </div>
-        {/* Email */}
-        <div className="mb-2">
-          <label className="text-white/40 text-[7px] font-bold mb-0.5 block">البريد الإلكتروني</label>
-          <div className={`border rounded-xl px-2.5 py-1.5 text-[8px] font-medium min-h-[26px] flex items-center transition-colors ${p > 0.11 && p < 0.48 ? 'border-[#fbbf24]/60 bg-[#fbbf24]/5' : 'border-white/10 bg-white/[0.03]'}`} dir="ltr">
-            {emailTyped ? <span className="text-white">{emailTyped}{p > 0.11 && p < 0.48 ? <span className="animate-pulse text-[#fbbf24] ml-px">|</span> : null}</span>
-                        : <span className="text-white/15">email@example.com</span>}
+
+        {/* Tabs */}
+        <div className="flex rounded-xl overflow-hidden border border-white/10 mb-2.5"
+          style={{ background:'rgba(255,255,255,0.04)' }}>
+          <div className={`flex-1 flex items-center justify-center gap-1 py-2 text-[7px] font-black transition-all duration-300 ${tab==='login' ? 'bg-[#fbbf24] text-black' : 'text-white/40'}`}>
+            🔒 دخول
+          </div>
+          <div className={`flex-1 flex items-center justify-center gap-1 py-2 text-[7px] font-black transition-all duration-300 ${tab==='activate' ? 'bg-[#fbbf24] text-black' : 'text-white/40'}`}>
+            🛡️ تفعيل الحساب
           </div>
         </div>
-        {/* Password */}
-        <div className="mb-3">
-          <label className="text-white/40 text-[7px] font-bold mb-0.5 block">كلمة المرور</label>
-          <div className={`border rounded-xl px-2.5 py-1.5 text-[10px] font-medium min-h-[26px] flex items-center transition-colors ${p > 0.47 && p < 0.78 ? 'border-[#fbbf24]/60 bg-[#fbbf24]/5' : 'border-white/10 bg-white/[0.03]'}`}>
-            {dotCount > 0 ? <span className="text-white tracking-widest">{'●'.repeat(dotCount)}{p > 0.47 && p < 0.78 ? <span className="animate-pulse text-[#fbbf24] ml-px text-[8px]">|</span> : null}</span>
-                          : <span className="text-white/15 text-[8px]">••••••••</span>}
-          </div>
+
+        {/* Glass card */}
+        <div className="rounded-xl border border-white/8 p-3"
+          style={{ background:'rgba(255,255,255,0.04)', backdropFilter:'blur(12px)' }}>
+
+          {/* ── Activation tab ── */}
+          {tab === 'activate' && (
+            <div>
+              <p className="text-white font-black text-[10px] mb-0.5">أول مرة؟ فعّل حسابك</p>
+              <p className="text-white/30 text-[7px] mb-2.5">أدخل البريد ورمز التفعيل الذي أرسله المدرب</p>
+              {/* Email */}
+              <div className="mb-2">
+                <label className="text-white/35 text-[6px] font-bold uppercase tracking-wide mb-0.5 block">البريد الإلكتروني</label>
+                <div className={`border rounded-lg px-2 py-1.5 text-[8px] min-h-[24px] flex items-center transition-colors ${p>0.09&&p<0.38?'border-[#fbbf24]/60 bg-[#fbbf24]/5':'border-white/10 bg-white/[0.03]'}`} dir="ltr">
+                  {actEmail
+                    ? <span className="text-white">{actEmail}{p>0.09&&p<0.38?<span className="animate-pulse text-[#fbbf24]">|</span>:null}</span>
+                    : <span className="text-white/15">your@email.com</span>}
+                </div>
+              </div>
+              {/* Activation code */}
+              <div className="mb-2.5">
+                <label className="text-white/35 text-[6px] font-bold uppercase tracking-wide mb-0.5 block">رمز التفعيل</label>
+                <div className={`border rounded-lg px-2 py-1.5 text-[8px] min-h-[24px] flex items-center transition-colors ${p>0.36&&p<0.50?'border-[#fbbf24]/60 bg-[#fbbf24]/5':'border-white/10 bg-white/[0.03]'}`} dir="ltr">
+                  {actCode
+                    ? <span className="text-white font-mono">{actCode}{p>0.36&&p<0.50?<span className="animate-pulse text-[#fbbf24]">|</span>:null}</span>
+                    : <span className="text-white/15">AF-XXXX</span>}
+                </div>
+              </div>
+              <div className={`w-full rounded-lg py-1.5 text-center text-[7px] font-black bg-[#fbbf24] text-black transition-all ${p>0.44?'scale-[1.02] shadow-md shadow-[#fbbf24]/25':''}`}>
+                تفعيل الحساب ←
+              </div>
+            </div>
+          )}
+
+          {/* ── Login tab ── */}
+          {tab === 'login' && (
+            <div>
+              <p className="text-white font-black text-[10px] mb-0.5">تسجيل الدخول</p>
+              <p className="text-white/30 text-[7px] mb-2.5">أدخل بريدك وكلمة مرورك للوصول لبرنامجك</p>
+              {/* Email */}
+              <div className="mb-2">
+                <label className="text-white/35 text-[6px] font-bold uppercase tracking-wide mb-0.5 block">البريد الإلكتروني</label>
+                <div className={`border rounded-lg px-2 py-1.5 text-[8px] min-h-[24px] flex items-center transition-colors ${p>0.51&&p<0.74?'border-[#fbbf24]/60 bg-[#fbbf24]/5':'border-white/10 bg-white/[0.03]'}`} dir="ltr">
+                  {loginEmail
+                    ? <span className="text-white">{loginEmail}{p>0.51&&p<0.74?<span className="animate-pulse text-[#fbbf24]">|</span>:null}</span>
+                    : <span className="text-white/15">your@email.com</span>}
+                </div>
+              </div>
+              {/* Password */}
+              <div className="mb-2.5">
+                <label className="text-white/35 text-[6px] font-bold uppercase tracking-wide mb-0.5 block">كلمة المرور</label>
+                <div className={`border rounded-lg px-2 py-1.5 text-[10px] min-h-[24px] flex items-center transition-colors ${p>0.72&&p<0.90?'border-[#fbbf24]/60 bg-[#fbbf24]/5':'border-white/10 bg-white/[0.03]'}`}>
+                  {dotCount > 0
+                    ? <span className="text-white/70 tracking-widest">{'●'.repeat(dotCount)}{p>0.72&&p<0.90?<span className="animate-pulse text-[#fbbf24] text-[7px]">|</span>:null}</span>
+                    : <span className="text-white/15 text-[7px]">••••••••</span>}
+                </div>
+              </div>
+              <div className={`w-full rounded-lg py-1.5 text-center text-[7px] font-black bg-[#fbbf24] text-black transition-all flex items-center justify-center gap-1 ${p>0.90?'scale-[1.03] shadow-md shadow-[#fbbf24]/25':''}`}>
+                {p>0.95 ? '✓ جارٍ الدخول...' : <><span>⚡</span> دخول</>}
+              </div>
+              <p className="text-center text-white/20 text-[6px] mt-2">أول مرة؟ <span className="text-[#fbbf24]">فعّل حسابك هنا</span></p>
+            </div>
+          )}
         </div>
-        <div className={`w-full bg-[#fbbf24] rounded-xl py-2 text-center font-black transition-all ${p > 0.82 ? 'scale-[1.03] shadow-lg shadow-[#fbbf24]/25' : ''}`}
-          style={{ fontSize: '9px' }}>
-          {p > 0.9 ? '✓ جارٍ الدخول...' : 'دخول إلى المنصة →'}
-        </div>
-        <p className="text-white/15 text-[7px] text-center mt-2">نسيت كلمة المرور؟</p>
       </div>
     </div>
   )
@@ -843,10 +983,11 @@ const SCENES = [
   },
   {
     url:    'amine-fit.com/client/login',
-    label:  '🔑 دخول بوابة العميل',
+    label:  '🔑 تفعيل الحساب ثم الدخول',
     icon:   '🔑',
-    ms:     5000,
-    cursor: [[0,.50,.38],[.10,.50,.50],[.43,.50,.60],[.77,.50,.73],[.86,.50,.73],[1,.50,.73]],
+    ms:     6500,
+    // Cursor: page → تفعيل tab → email field → code field → دخول tab → email → pw → button
+    cursor: [[0,.50,.40],[.08,.35,.40],[.12,.50,.56],[.37,.50,.63],[.44,.35,.40],[.51,.65,.40],[.56,.50,.56],[.74,.50,.63],[.90,.50,.74],[1,.50,.74]],
     render: (p) => <S5_Login p={p} />,
   },
   {
@@ -876,6 +1017,8 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
   const [si,      setSi]      = useState(0)
   const [pct,     setPct]     = useState(0)
   const [playing, setPlaying] = useState(autoPlay)
+  const [fullscreen, setFullscreen] = useState(false)
+  const containerRef = useRef(null)
 
   const { muted, toggle: toggleMute, start: startMusic, stop: stopMusic } = useMusicEngine()
 
@@ -884,6 +1027,21 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
     if (playing) startMusic()
     else stopMusic()
   }, [playing]) // eslint-disable-line
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handler = () => setFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    return () => document.removeEventListener('fullscreenchange', handler)
+  }, [])
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.()
+    } else {
+      document.exitFullscreen?.()
+    }
+  }
 
   useEffect(() => {
     if (!playing) return
@@ -908,8 +1066,10 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
   const isClick  = pct > 0.80 && pct < 0.92
 
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden border border-white/10"
-      style={{ aspectRatio: '16/9', background: '#111' }}>
+    <div ref={containerRef}
+      className="relative w-full rounded-3xl overflow-hidden border border-white/10"
+      style={{ aspectRatio: fullscreen ? undefined : '16/9', background: '#111',
+        ...(fullscreen ? { height: '100vh', borderRadius: 0, border: 'none' } : {}) }}>
 
       {/* Browser + scene */}
       <div className="absolute inset-0 p-0">
@@ -965,6 +1125,14 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
                   style={{ width: i === si ? '14px' : '6px', height: '6px' }} />
               ))}
             </div>
+            {/* Fullscreen */}
+            <button onClick={toggleFullscreen}
+              title={fullscreen ? 'خروج من ملء الشاشة' : 'ملء الشاشة'}
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0">
+              {fullscreen
+                ? <Minimize2 className="w-3 h-3 text-white" />
+                : <Maximize2 className="w-3 h-3 text-white" />}
+            </button>
           </div>
         </div>
       </div>

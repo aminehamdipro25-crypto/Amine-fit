@@ -97,7 +97,7 @@ export default function VideoSection() {
                   {VIDEO_ID ? 'فيديو تعريفي — أمين حمدي' : 'جولة داخل المنصة — Amine-Fit'}
                 </p>
                 {!VIDEO_ID && (
-                  <p className="text-white/30 text-xs mt-0.5">6 ميزات رئيسية — تشغيل تلقائي</p>
+                  <p className="text-white/30 text-xs mt-0.5">7 مشاهد — رحلة العميل الكاملة من التسجيل إلى البوابة</p>
                 )}
               </div>
               <button onClick={() => setOpen(false)}
