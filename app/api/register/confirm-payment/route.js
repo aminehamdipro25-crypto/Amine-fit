@@ -23,12 +23,15 @@ export async function POST(req) {
   const submission = await getSubmissionByEmail(email.toLowerCase().trim())
   if (!submission) return NextResponse.json({ ok: true }) // silent — no enumeration
 
-  // Extend deadline if paying later
-  let paymentDeadline = submission.paymentDeadline
+  // Only pending submissions can confirm payment — never overwrite an active account
+  if (submission.status === 'active') return NextResponse.json({ ok: true })
+
+  // Extend deadline if paying later (max 30 days from now)
+  const MAX_LATER = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  let paymentDeadline = submission.paymentDeadline || new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
   if (method.startsWith('later_') && payLaterDate) {
     const d = new Date(payLaterDate)
-    if (!isNaN(d) && d > new Date()) {
-      // Give extra 24h after the chosen date
+    if (!isNaN(d) && d > new Date() && d <= MAX_LATER) {
       paymentDeadline = new Date(d.getTime() + 24 * 60 * 60 * 1000).toISOString()
     }
   }

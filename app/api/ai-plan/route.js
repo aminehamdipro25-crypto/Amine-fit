@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
+import { isRateLimited } from '@/lib/rateLimit'
 import {
   calcBMR, calcTDEE, calcTarget, calcExchanges, generateMenu,
 } from '@/lib/nutritionEngine'
@@ -87,7 +88,22 @@ export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
 
+  // Rate-limit: max 30 AI plan generations per hour per admin session
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (await isRateLimited(`ai_plan:${ip}`, 30, 3600)) {
+    return NextResponse.json({ error: 'تجاوزت الحد المسموح — حاول لاحقاً' }, { status: 429 })
+  }
+
   const form = await req.json()
+
+  // Validate numeric fields before passing to engine
+  const weight = parseFloat(form.weight)
+  const height = parseFloat(form.height)
+  const age    = parseInt(form.age, 10)
+  if (!weight || !height || !age || weight < 20 || weight > 400 || height < 50 || height > 280 || age < 5 || age > 120) {
+    return NextResponse.json({ error: 'بيانات القياسات غير صالحة' }, { status: 400 })
+  }
+  form.weight = weight; form.height = height; form.age = age
 
   // If no API key → use local engine immediately (no error)
   if (!process.env.ANTHROPIC_API_KEY) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
+import { isRateLimited } from '@/lib/rateLimit'
 
 const SYSTEM_PROMPT = `You are an elite personal trainer and strength & conditioning specialist. Generate scientifically-sound, personalized training programs.
 
@@ -123,6 +124,11 @@ const FALLBACKS = {
 export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (await isRateLimited(`ai_training:${ip}`, 20, 3600)) {
+    return NextResponse.json({ error: 'تجاوزت الحد المسموح — حاول لاحقاً' }, { status: 429 })
+  }
 
   const body = await req.json()
   const { goal, level, daysPerWeek, equipment, injuries, age, gender } = body

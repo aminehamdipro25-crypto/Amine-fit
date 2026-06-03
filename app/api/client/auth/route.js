@@ -43,6 +43,10 @@ async function handleActivation(email, activationCode, password, confirmPassword
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
   }
 
+  if (client.status === 'suspended') {
+    return NextResponse.json({ error: 'تم تعليق حسابك. تواصل مع المدرب أمين للاستفسار.' }, { status: 403 })
+  }
+
   // Activation codes are stored as SHA-256 hex (64 chars)
   if (client.activationCode.length !== 64) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
@@ -108,14 +112,14 @@ export async function POST(req) {
       if (await isRateLimited(emailKey, 5, 900)) {
         return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
       }
-      return handleActivation(body.email, body.activationCode, body.password, body.confirmPassword)
+      return await handleActivation(body.email, body.activationCode, body.password, body.confirmPassword)
     }
 
     const emailKey = `client_login:${String(body.email || '').toLowerCase().trim()}`
     if (await isRateLimited(emailKey, 5, 900)) {
       return NextResponse.json({ error: 'محاولات كثيرة. حاول لاحقاً.' }, { status: 429 })
     }
-    return handleLogin(body.email, body.password)
+    return await handleLogin(body.email, body.password)
   } catch (err) {
     console.error('[client auth]', err.message)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })

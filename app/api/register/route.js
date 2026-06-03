@@ -104,6 +104,18 @@ export async function POST(req) {
     const entry = await saveSubmission(safeEntry)
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
+
+    // Mark gift code as used if one was supplied (fire-and-forget, non-blocking)
+    const giftCode = sanitizeStr(body.giftCode, 12)
+    if (giftCode) {
+      const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+      fetch(`${BASE}/api/gift`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: giftCode, email: safeEntry.email }),
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ success: true, id: entry.id, email: safeEntry.email })
   } catch (err) {
     console.error('[register FAILED]', err.message)
