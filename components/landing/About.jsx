@@ -233,7 +233,7 @@ export default function About() {
               خبرة عسكرية + شهادات أكاديمية = نتائج مضمونة لك
             </p>
           </div>
-          <a href="/register"
+          <a href="#pricing"
             className="flex items-center gap-2 px-7 py-3.5 bg-gold-400 text-black font-extrabold rounded-2xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20 flex-shrink-0">
             <Zap className="w-4 h-4" fill="black" />
             اشترك الآن

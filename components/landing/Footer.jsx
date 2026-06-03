@@ -27,7 +27,7 @@ export default function Footer() {
               منصة متكاملة للتدريب الشخصي والتغذية — برامج مخصصة بنظام التبادل
               الغذائي المعتمد، مع متابعة يومية لضمان وصولك لهدفك.
             </p>
-            <a href="/register"
+            <a href="/#pricing"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-400 text-black font-extrabold text-sm rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20">
               <Zap className="w-4 h-4" fill="black" />
               ابدأ رحلتك الآن

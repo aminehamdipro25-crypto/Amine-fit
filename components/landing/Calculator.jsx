@@ -191,7 +191,7 @@ export default function CalculatorSection() {
                 <div className="bg-gradient-to-r from-gold-400/15 to-gold-400/5 border border-gold-400/25 rounded-2xl p-5 text-center">
                   <p className="text-white font-extrabold text-sm mb-1">هل تريد خطة مخصصة لك؟</p>
                   <p className="text-white/40 text-xs mb-4">أمين سيصمم برنامجك الغذائي والتدريبي بناءً على نتائجك</p>
-                  <a href="/register"
+                  <a href="#pricing"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-gold-400 text-black font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20 text-sm">
                     <Zap className="w-4 h-4" fill="black" />
                     ابدأ برنامجك الآن

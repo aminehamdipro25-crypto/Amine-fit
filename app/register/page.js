@@ -201,8 +201,8 @@ export default function RegisterPage() {
             </div>
             <span className="text-white font-extrabold text-xl">Amine-Fit</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white mb-1">إستبيان وضع البرنامج الغذائي</h1>
-          <p className="text-white/60 text-sm">يرجى الإجابة بدقة لتمكيننا من وضع برنامج مخصص لك</p>
+          <h1 className="text-2xl font-extrabold text-white mb-1">استبيان التقييم الأولي</h1>
+          <p className="text-white/60 text-sm">إجاباتك الدقيقة تُمكّن المدرب من تصميم برنامجك الشخصي بدقة عالية</p>
         </div>
 
         {/* Progress */}
@@ -460,10 +460,10 @@ export default function RegisterPage() {
                   form={form} setForm={setForm} errors={errors} />
               </Inp>
 
-              {/* ── Training Environment (used by the Lab AI) ── */}
+              {/* ── Training Environment ── */}
               <div className="pt-2 pb-1 border-t border-slate-100">
-                <p className="text-xs font-bold text-primary-600 uppercase tracking-widest">🔬 بيانات المختبر التدريبي</p>
-                <p className="text-xs text-slate-400 mt-0.5">تساعد الذكاء الاصطناعي في توليد برنامج دقيق لك</p>
+                <p className="text-xs font-bold text-primary-600 uppercase tracking-widest">🔬 بيئة التدريب</p>
+                <p className="text-xs text-slate-400 mt-0.5">تساعد المدرب في تخصيص التمارين حسب إمكانياتك الفعلية</p>
               </div>
               <Inp label="أين تفضل التدريب؟" error={errors.trainingLocation}>
                 <RadioGroup field="trainingLocation" form={form} setForm={setForm} options={[

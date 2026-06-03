@@ -182,7 +182,7 @@ const features = [
   {
     icon: FlaskConical,
     title: 'المختبر العلمي 🔬',
-    desc: 'بروتوكول تدريبي مولّد بالذكاء الاصطناعي بناءً على بياناتك الصحية الكاملة',
+    desc: 'بروتوكول تدريبي مُصمَّم من المدرب بناءً على بياناتك الصحية ومستواك الفعلي',
     accent: 'text-emerald-400',
     iconBg: 'bg-emerald-500/10 border-emerald-500/20',
     mockup: LabMockup,
@@ -299,10 +299,10 @@ export default function PlatformTour() {
               </Link>
 
               <Link
-                href="/register"
+                href="#pricing"
                 className="flex items-center gap-2 text-white/50 font-bold text-sm
                            hover:text-white/80 transition-colors px-4 py-4">
-                أو سجّل مباشرة
+                اختر باقتك
                 <ArrowLeft className="w-4 h-4" />
               </Link>
             </div>
