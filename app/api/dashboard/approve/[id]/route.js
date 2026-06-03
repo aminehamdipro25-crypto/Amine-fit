@@ -39,10 +39,12 @@ async function sendActivationEmail(client, activationCode) {
     method:  'POST',
     headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from:    'AmineFit <onboarding@resend.dev>',
-      to:      [client.email],
-      subject: `🎉 تمت الموافقة على طلبك — Amine-Fit`,
-      html:    buildEmail(client, activationCode),
+      from:     'AmineFit <onboarding@resend.dev>',
+      reply_to: 'amine.hamdi.pro25@gmail.com',
+      to:       [client.email],
+      subject:  `تمت الموافقة على طلبك في Amine-Fit — كود التفعيل: ${activationCode}`,
+      html:     buildEmail(client, activationCode),
+      text:     `مرحباً ${client.name || ''}،\n\nتمت الموافقة على طلبك في Amine-Fit.\n\nكود التفعيل: ${activationCode}\n\nاذهب إلى: https://amine-fit.com/client/login\nاختر "تفعيل الحساب" وأدخل الكود.\n\nهذا الكود للاستخدام مرة واحدة فقط.\n\nأمين حمدي — Amine-Fit`,
     }),
   })
   if (!res.ok) console.error('[approve email resend]', await res.text())

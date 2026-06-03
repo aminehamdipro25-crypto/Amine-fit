@@ -76,20 +76,63 @@ function SubscriptionCard({ client }) {
     )
   }
 
-  // No active subscription — show interested plan if exists
+  // No active subscription — show interested plan + payment deadline countdown
   if (client.interestedPlan) {
     const info = PLAN_NAME_DISPLAY[client.interestedPlan]
+
+    // Payment deadline countdown
+    const deadline   = client.paymentDeadline ? new Date(client.paymentDeadline) : null
+    const msLeft     = deadline ? deadline.getTime() - Date.now() : null
+    const expired    = msLeft !== null && msLeft <= 0
+    const daysLeft   = (msLeft !== null && msLeft > 0) ? Math.floor(msLeft / 86400000) : 0
+    const hoursLeft  = (msLeft !== null && msLeft > 0) ? Math.floor((msLeft % 86400000) / 3600000) : 0
+    const urgent     = !expired && msLeft !== null && daysLeft === 0 // < 24 h
+
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-center gap-4">
-        <div className="text-2xl">{info?.emoji || '⭐'}</div>
-        <div className="flex-1">
-          <p className="font-extrabold text-amber-800 text-sm">الباقة المختارة: {client.interestedPlan}</p>
-          <p className="text-amber-600 text-xs font-medium mt-0.5">في انتظار تأكيد الدفع من المدرب</p>
+      <div className={`rounded-2xl border overflow-hidden ${expired ? 'border-red-300' : urgent ? 'border-orange-300' : 'border-amber-200'}`}>
+        {/* Header row */}
+        <div className={`px-5 py-4 flex items-center gap-4 ${expired ? 'bg-red-50' : urgent ? 'bg-orange-50' : 'bg-amber-50'}`}>
+          <div className="text-2xl">{info?.emoji || '⭐'}</div>
+          <div className="flex-1">
+            <p className={`font-extrabold text-sm ${expired ? 'text-red-800' : 'text-amber-800'}`}>
+              الباقة المختارة: {client.interestedPlan}
+            </p>
+            <p className={`text-xs font-medium mt-0.5 ${expired ? 'text-red-600' : 'text-amber-600'}`}>
+              {expired ? '⚠️ انتهت مهلة الدفع — تواصل مع المدرب' : 'في انتظار تأكيد الدفع من المدرب'}
+            </p>
+          </div>
+          <a href="https://wa.me/97430653759" target="_blank" rel="noreferrer"
+            className="flex-shrink-0 bg-green-500 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-green-600 transition">
+            تواصل
+          </a>
         </div>
-        <a href="https://wa.me/97430653759" target="_blank" rel="noreferrer"
-          className="flex-shrink-0 bg-green-500 text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-green-600 transition">
-          تواصل
-        </a>
+
+        {/* Deadline countdown bar */}
+        {deadline && (
+          <div className={`px-5 py-3 border-t flex items-center justify-between gap-3 ${
+            expired ? 'bg-red-100 border-red-200' : urgent ? 'bg-orange-100 border-orange-200' : 'bg-white border-amber-100'
+          }`}>
+            <div className="flex items-center gap-2">
+              <Clock className={`w-4 h-4 flex-shrink-0 ${expired ? 'text-red-500' : urgent ? 'text-orange-500' : 'text-amber-500'}`} />
+              <span className={`text-xs font-bold ${expired ? 'text-red-700' : urgent ? 'text-orange-700' : 'text-amber-700'}`}>
+                {expired
+                  ? 'انتهت مهلة إتمام الدفع'
+                  : 'المتبقي لإتمام الدفع:'}
+              </span>
+            </div>
+            {!expired && (
+              <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${
+                urgent
+                  ? 'bg-orange-200 text-orange-800 border-orange-300'
+                  : 'bg-amber-100 text-amber-800 border-amber-200'
+              }`}>
+                {daysLeft > 0
+                  ? `${daysLeft} يوم${hoursLeft > 0 ? ` و ${hoursLeft} ساعة` : ''}`
+                  : `${hoursLeft} ساعة فقط`}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     )
   }

@@ -93,7 +93,7 @@ function ClientLoginInner() {
   async function submitActivation(e) {
     e.preventDefault()
     if (actPw !== actConfirm) { setError('كلمة المرور وتأكيدها غير متطابقتين'); return }
-    if (actPw.length < 6)     { setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return }
+    if (actPw.length < 8)     { setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
     setLoading(true)
     setError('')
     try {
@@ -242,9 +242,13 @@ function ClientLoginInner() {
               <>
                 <h2 className="text-xl font-extrabold text-white mb-1">تفعيل الحساب</h2>
                 <p className="text-white/30 text-sm mb-1 font-medium">أدخل الكود الذي أرسله لك المدرب وأنشئ كلمة مرورك</p>
-                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 mb-5">
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 mb-2">
                   <KeyRound className="w-4 h-4 text-amber-400 flex-shrink-0" />
                   <p className="text-amber-300 text-xs font-medium">كود التفعيل يُستخدم مرة واحدة فقط ثم يصبح كلمة مرورك هي وسيلة دخولك</p>
+                </div>
+                <div className="flex items-start gap-2 bg-blue-500/8 border border-blue-500/15 rounded-xl px-3 py-2 mb-5">
+                  <Mail className="w-3.5 h-3.5 text-blue-300 flex-shrink-0 mt-0.5" />
+                  <p className="text-blue-200/60 text-xs font-medium leading-relaxed">لم تجد الإيميل؟ تحقق من مجلد <strong className="text-blue-300">Spam / البريد غير المرغوب</strong> — قد يصل متأخراً بضع دقائق</p>
                 </div>
                 <form onSubmit={submitActivation} className="space-y-4">
                   <div>
@@ -265,7 +269,7 @@ function ClientLoginInner() {
                         className="w-full pl-4 pr-10 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/15 focus:border-gold-400/60 outline-none transition text-sm font-mono tracking-widest font-bold" />
                     </div>
                   </div>
-                  <PasswordField value={actPw} onChange={setActPw} label="كلمة مرور جديدة" placeholder="6 أحرف على الأقل" />
+                  <PasswordField value={actPw} onChange={setActPw} label="كلمة مرور جديدة" placeholder="8 أحرف على الأقل" />
                   <PasswordField value={actConfirm} onChange={setActConfirm} label="تأكيد كلمة المرور" />
                   {error && (
                     <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 font-medium">{error}</p>

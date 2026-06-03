@@ -561,9 +561,14 @@ function ClientAccessSection({ client, onUpdate }) {
                 : <><Mail className="w-4 h-4" /> {isActive ? 'إعادة إرسال رمز التفعيل' : 'إرسال رمز التفعيل للعميل'}</>}
             </button>
             {sentMsg && (
-              <p className="text-xs font-bold text-center text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2">
-                {sentMsg}
-              </p>
+              <div>
+                <p className="text-xs font-bold text-center text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                  {sentMsg}
+                </p>
+                <p className="text-[10px] text-amber-600 text-center mt-1.5 font-medium">
+                  ⚠️ إذا لم يصل العميل بريداً — اطلب منه التحقق من مجلد Spam، أو أرسل له الكود مباشرةً عبر واتساب
+                </p>
+              </div>
             )}
             <p className="text-xs text-slate-400 text-center">
               سيصل الرمز إلى: <span className="text-slate-600 font-bold" dir="ltr">{client.email}</span>
