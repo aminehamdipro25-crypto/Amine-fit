@@ -207,19 +207,6 @@ function useMusicEngine() {
 }
 
 /* ── animation helpers ── */
-function lerp(a, b, t) { return a + (b - a) * t }
-
-function getCursor(frames, p) {
-  for (let i = 1; i < frames.length; i++) {
-    if (p <= frames[i][0]) {
-      const [p0, x0, y0] = frames[i - 1], [p1, x1, y1] = frames[i]
-      const t = p1 === p0 ? 1 : (p - p0) / (p1 - p0)
-      return { x: lerp(x0, x1, t), y: lerp(y0, y1, t) }
-    }
-  }
-  const l = frames[frames.length - 1]; return { x: l[1], y: l[2] }
-}
-
 function typed(text, p, s, e) {
   if (p < s) return ''
   return text.slice(0, Math.floor(Math.min((p - s) / (e - s), 1) * text.length))
@@ -254,19 +241,6 @@ function Browser({ url, children }) {
   )
 }
 
-/* ── Cursor ── */
-function Cursor({ x, y, click }) {
-  return (
-    <div className="absolute pointer-events-none"
-      style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, transform: 'translate(-3px,-2px)',
-        transition: 'left 0.18s linear, top 0.18s linear' }}>
-      <svg width="16" height="20" viewBox="0 0 16 20" style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.7))' }}>
-        <path d="M0 0L0 17L4.5 12.5L7.5 19.5L9.5 18.5L6.5 11.5L12 11.5Z" fill="white" stroke="rgba(0,0,0,.3)" strokeWidth="0.8" />
-      </svg>
-      {click && <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full border-2 border-gold-400 animate-ping opacity-80" />}
-    </div>
-  )
-}
 
 /* ══════════════════════════════════════
    SCENE 1 — Landing Page (matches real amine-fit.com)
@@ -1177,63 +1151,13 @@ function S7_Portal({ p }) {
    Scene Registry  (7 scenes)
 ══════════════════════════════════════ */
 const SCENES = [
-  {
-    url:    'amine-fit.com',
-    label:  '🌐 صفحة الهبوط — الميزات والأسعار',
-    icon:   '🌐',
-    ms:     11000,
-    cursor: [[0,.50,.40],[.20,.50,.50],[.40,.50,.62],[.58,.50,.72],[.76,.50,.80],[.90,.50,.87],[1,.50,.90]],
-    render: (p) => <S1_Landing p={p} />,
-  },
-  {
-    url:    'amine-fit.com/#pricing',
-    label:  '💰 اختيار الباقة الشهرية',
-    icon:   '💰',
-    ms:     8000,
-    cursor: [[0,.50,.35],[.25,.50,.55],[.50,.50,.68],[.65,.50,.73],[.80,.50,.73],[1,.50,.73]],
-    render: (p) => <S2_Pricing p={p} />,
-  },
-  {
-    url:    'amine-fit.com/register?plan=monthly',
-    label:  '📋 نموذج التسجيل (5 خطوات)',
-    icon:   '📋',
-    ms:     9000,
-    cursor: [[0,.50,.28],[.10,.38,.42],[.44,.38,.53],[.70,.38,.64],[.85,.50,.80],[.92,.50,.80],[1,.50,.80]],
-    render: (p) => <S3_Register p={p} />,
-  },
-  {
-    url:    'amine-fit.com/register/success?plan=monthly',
-    label:  '💳 إتمام الدفع عبر D17',
-    icon:   '💳',
-    ms:     9000,
-    cursor: [[0,.50,.30],[.15,.50,.45],[.30,.50,.55],[.45,.50,.65],[.58,.50,.72],[.70,.50,.78],[.85,.50,.82],[1,.50,.85]],
-    render: (p) => <S4_Pending p={p} />,
-  },
-  {
-    url:    'amine-fit.com/client/login',
-    label:  '🔑 تفعيل الحساب ثم الدخول',
-    icon:   '🔑',
-    ms:     9000,
-    // Cursor: page → تفعيل tab → email field → code field → دخول tab → email → pw → button
-    cursor: [[0,.50,.40],[.08,.35,.40],[.12,.50,.56],[.37,.50,.63],[.44,.35,.40],[.51,.65,.40],[.56,.50,.56],[.74,.50,.63],[.90,.50,.74],[1,.50,.74]],
-    render: (p) => <S5_Login p={p} />,
-  },
-  {
-    url:    'amine-fit.com/client/home',
-    label:  '📱 تطبيق Amine-Fit — الصفحة الرئيسية',
-    icon:   '📱',
-    ms:     9000,
-    cursor: [[0,.35,.28],[.20,.35,.45],[.45,.35,.60],[.65,.35,.72],[.85,.65,.72],[1,.65,.72]],
-    render: (p) => <S6_Dashboard p={p} />,
-  },
-  {
-    url:    'amine-fit.com/client/plan',
-    label:  '⚡ التطبيق — التغذية / التدريب / التقدم',
-    icon:   '⚡',
-    ms:     9000,
-    cursor: [[0,.75,.18],[.12,.25,.18],[.34,.25,.18],[.38,.50,.18],[.55,.50,.18],[.70,.75,.18],[.86,.75,.18],[1,.75,.18]],
-    render: (p) => <S7_Portal p={p} />,
-  },
+  { url: 'amine-fit.com',                             label: '🌐 صفحة الهبوط — الميزات والأسعار',      ms: 11000, render: (p) => <S1_Landing p={p} /> },
+  { url: 'amine-fit.com/#pricing',                    label: '💰 اختيار الباقة الشهرية',              ms:  8000, render: (p) => <S2_Pricing p={p} /> },
+  { url: 'amine-fit.com/register?plan=monthly',       label: '📋 نموذج التسجيل (5 خطوات)',            ms:  9000, render: (p) => <S3_Register p={p} /> },
+  { url: 'amine-fit.com/register/success?plan=monthly',label: '💳 إتمام الدفع عبر D17',               ms:  9000, render: (p) => <S4_Pending p={p} /> },
+  { url: 'amine-fit.com/client/login',                label: '🔑 تفعيل الحساب ثم الدخول',             ms:  9000, render: (p) => <S5_Login p={p} /> },
+  { url: 'amine-fit.com/client/home',                 label: '📱 تطبيق Amine-Fit — الصفحة الرئيسية', ms:  9000, render: (p) => <S6_Dashboard p={p} /> },
+  { url: 'amine-fit.com/client/plan',                 label: '⚡ التطبيق — التغذية / التدريب / التقدم',ms:  9000, render: (p) => <S7_Portal p={p} /> },
 ]
 
 /* ══════════════════════════════════════
@@ -1306,9 +1230,7 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
     return () => window.removeEventListener('keydown', handler)
   }, []) // eslint-disable-line
 
-  const cur      = getCursor(SCENES[si].cursor, pct)
   const totalPct = (si + pct) / SCENES.length
-  const isClick  = pct > 0.80 && pct < 0.92
 
   return (
     <div ref={containerRef}
@@ -1323,10 +1245,6 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
         </Browser>
       </div>
 
-      {/* Cursor */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 15 }}>
-        <Cursor x={cur.x * 100} y={cur.y * 91 + 9} click={isClick} />
-      </div>
 
       {/* Page-change flash */}
       <div className="absolute inset-0 bg-white pointer-events-none"

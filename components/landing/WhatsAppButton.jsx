@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { X, ChevronLeft, Send, Loader2 } from 'lucide-react'
+import { X, ChevronLeft, Send, Loader2, RotateCcw } from 'lucide-react'
 
 const WA_NUMBER = '97430653759'
 
@@ -73,7 +73,7 @@ export default function WhatsAppButton() {
           <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-extrabold text-sm">
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-extrabold text-sm flex-shrink-0">
                 أح
               </div>
               <div>
@@ -84,9 +84,19 @@ export default function WhatsAppButton() {
                 </span>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition p-1">
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              {started && (
+                <button
+                  onClick={() => { setMessages([]); setStarted(false); setInput('') }}
+                  title="بدء محادثة جديدة"
+                  className="text-white/60 hover:text-white transition p-1.5 rounded-full hover:bg-white/10">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition p-1.5">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
