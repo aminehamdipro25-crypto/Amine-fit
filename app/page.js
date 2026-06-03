@@ -13,6 +13,7 @@ import Calculator      from '@/components/landing/Calculator'
 import Testimonials    from '@/components/landing/Testimonials'
 import Results         from '@/components/landing/Results'
 import FAQ             from '@/components/landing/FAQ'
+import Referral        from '@/components/landing/Referral'
 import WaitingList     from '@/components/landing/WaitingList'
 import ContactSection  from '@/components/landing/ContactSection'
 import Footer          from '@/components/landing/Footer'
@@ -37,6 +38,7 @@ export default function Home() {
         <Testimonials />
         <Results />
         <FAQ />
+        <Referral />
         <WaitingList />
         <ContactSection />
       </main>
