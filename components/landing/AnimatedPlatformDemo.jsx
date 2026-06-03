@@ -245,147 +245,198 @@ function Cursor({ x, y, click }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 1 — Landing Page (full scroll)
+   SCENE 1 — Landing Page (matches real amine-fit.com)
 ══════════════════════════════════════ */
 function S1_Landing({ p }) {
-  const scrollY = p > 0.22 ? Math.min((p - 0.22) / 0.60, 1) * 48 : 0
+  // Start scrolling at p=0.15, reach full scroll at p=0.90
+  // Max 72% of content height → ensures app + pricing sections are visible
+  const scrollY = p > 0.15 ? Math.min((p - 0.15) / 0.75, 1) * 72 : 0
+
   return (
     <div className="h-full overflow-hidden" style={{ background: '#0a0a0a' }}>
-      <div style={{ transform: `translateY(-${scrollY}%)`, transition: 'transform 0.08s linear' }}>
-        {/* Navbar */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+      <div style={{ transform: `translateY(-${scrollY}%)`, transition: 'transform 0.10s linear' }}>
+
+        {/* ── Navbar — matches real site ── */}
+        <div className="flex items-center justify-between px-2.5 py-2 border-b border-white/5" dir="rtl">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-[#fbbf24] rounded-md flex items-center justify-center">
-              <span className="text-black text-[8px] font-black">⚡</span>
+            <div className="w-5 h-5 bg-[#fbbf24] rounded-md flex items-center justify-center flex-shrink-0">
+              <span className="text-black text-[9px] font-black">⚡</span>
             </div>
-            <span className="text-white font-black text-[10px] tracking-widest">AMINE<span className="text-[#fbbf24]">FIT</span></span>
+            <span className="text-white font-black text-[9px] tracking-widest">AMINE<span className="text-[#fbbf24]">FIT</span></span>
           </div>
-          <div className="flex gap-2.5">
-            {['الخدمات','الأسعار','كيف يعمل'].map(l => (
-              <span key={l} className="text-white/25 text-[8px]">{l}</span>
+          <div className="flex gap-2">
+            {['الخدمات','كيف يعمل','الأسعار','الحاسبة'].map(l => (
+              <span key={l} className="text-white/20 text-[6.5px]">{l}</span>
             ))}
           </div>
-          <div className="bg-[#fbbf24]/10 border border-[#fbbf24]/30 rounded-lg px-2 py-0.5">
-            <span className="text-[#fbbf24] text-[8px] font-black">دخول العميل</span>
-          </div>
-        </div>
-        {/* Promo */}
-        <div className="bg-gradient-to-r from-red-800 via-red-700 to-red-800 text-white text-center py-1.5">
-          <span className="text-[8px] font-bold">🔥 عرض الإطلاق — خصم 50% على جميع الباقات • محدود</span>
-        </div>
-        {/* Hero */}
-        <div className="px-4 pt-4 pb-3 text-center" style={{ opacity: p > 0.02 ? 1 : 0, transition: 'opacity 0.5s' }}>
-          <div className="inline-flex items-center gap-1 bg-[#fbbf24]/10 border border-[#fbbf24]/25 rounded-full px-2.5 py-1 mb-3">
-            <span className="text-[#fbbf24] text-[7px] font-black">⭐ خبرة 10 سنوات — القوات الخاصة والغواصين البحريين</span>
-          </div>
-          <h1 className="text-white font-black leading-tight mb-2 tracking-tight" style={{ fontSize: 'clamp(13px,2.5vw,20px)' }}>
-            برنامجك المخصص بالكامل<br />
-            <span className="text-[#fbbf24]">من المدرب أمين حمدي</span>
-          </h1>
-          <p className="text-white/35 mb-3 max-w-xs mx-auto" style={{ fontSize: '8px', lineHeight: 1.6 }}>
-            تدريب + تغذية + متابعة أسبوعية — مصمّم خصيصاً لك وجاهز خلال 24 ساعة
-          </p>
-          <div className="flex gap-2 justify-center">
-            <div className="bg-[#fbbf24] rounded-xl px-3 py-1.5 shadow-lg shadow-[#fbbf24]/25">
-              <span className="text-black text-[9px] font-black">اشترك الآن ⚡</span>
+          <div className="flex items-center gap-1">
+            <div className="border border-white/12 rounded-lg px-1.5 py-0.5">
+              <span className="text-white/40 text-[6px]">دخول العميل</span>
             </div>
-            <div className="border border-white/15 rounded-xl px-3 py-1.5">
-              <span className="text-white/50 text-[8px]">اكتشف أكثر</span>
+            <div className="bg-[#fbbf24] rounded-lg px-1.5 py-0.5">
+              <span className="text-black text-[6px] font-black">لوحة التحكم</span>
             </div>
           </div>
         </div>
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-1.5 px-3 mt-1" style={{ opacity: p > 0.15 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          {[['100+','عميل راضٍ'],['95%','نسبة النجاح'],['10+','سنوات خبرة'],['24h','استجابة']].map(([v,l]) => (
-            <div key={l} className="bg-white/[0.04] border border-white/8 rounded-xl p-2 text-center">
-              <p className="text-[#fbbf24] font-black text-xs">{v}</p>
-              <p className="text-white/25 text-[7px] leading-tight">{l}</p>
-            </div>
-          ))}
+
+        {/* ── Promo banner — matches real site ── */}
+        <div className="flex items-center justify-center gap-2 py-1.5"
+          style={{ background: 'linear-gradient(90deg,#7f1d1d,#b91c1c,#7f1d1d)' }}>
+          <span className="text-white text-[7px] font-bold">🔥 عرض الإطلاق — خصم 50% على جميع الباقات لفترة محدودة</span>
+          <div className="bg-white text-red-700 rounded-full px-1.5 font-black" style={{ fontSize: '5.5px' }}>احجز الآن</div>
         </div>
-        {/* How it works */}
-        <div className="px-3 mt-3" style={{ opacity: p > 0.35 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">كيف يعمل</p>
+
+        {/* ── Hero — matches real site (trainer photo + text overlay) ── */}
+        <div className="relative overflow-hidden" dir="rtl"
+          style={{ minHeight: '122px', background: 'linear-gradient(135deg,#0d0d0d 0%,#1c1c1c 50%,#111 100%)' }}>
+
+          {/* Simulate trainer photo: dark gym gradient with vignette */}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to right, rgba(10,10,10,0.97) 0%, rgba(10,10,10,0.75) 48%, rgba(10,10,10,0.2) 100%)' }} />
+          {/* Gym equipment bg hint */}
+          <div className="absolute bottom-0 right-1 opacity-[0.07]" style={{ fontSize: '100px', lineHeight: 0.85 }}>🏋️</div>
+          <div className="absolute top-2 right-1 opacity-[0.04]" style={{ fontSize: '60px' }}>💪</div>
+
+          {/* Floating stats — matches real site */}
+          <div className="absolute left-1.5 top-2 flex flex-col gap-1"
+            style={{ opacity: p > 0.22 ? 1 : 0, transition: 'opacity 0.7s' }}>
+            {['+100 عميل','10+ سنوات','95% نجاح'].map((s, i) => (
+              <div key={i} className="flex items-center gap-1 bg-black/70 border border-white/8 rounded-lg px-1.5 py-0.5">
+                <div className="w-1 h-1 rounded-full bg-[#fbbf24]" />
+                <span className="text-[#fbbf24] font-black" style={{ fontSize: '6px' }}>{s}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="relative z-10 px-3 pt-2.5 pb-2.5">
+            {/* Trust badge */}
+            <div className="inline-flex items-center gap-1 bg-[#fbbf24]/8 border border-[#fbbf24]/20 rounded-full px-2 py-0.5 mb-1.5"
+              style={{ opacity: p > 0.04 ? 1 : 0, transition: 'opacity 0.5s' }}>
+              <span className="text-[#fbbf24] text-[7px]">★★★★★</span>
+              <span className="text-white/35 text-[5.5px]">مدرب معتمد • 100+ عميل راضٍ</span>
+            </div>
+
+            {/* Main headline — EXACT match to real site */}
+            <div style={{ opacity: p > 0.06 ? 1 : 0, transition: 'opacity 0.5s' }}>
+              <h1 className="text-white font-black leading-tight" style={{ fontSize: 'clamp(11px,2.1vw,15px)' }}>
+                من القوات الخاصة البحرية
+              </h1>
+              <h1 className="font-black leading-tight mb-1" style={{ fontSize: 'clamp(11px,2.1vw,15px)', color: '#fbbf24' }}>
+                إلى قوّتك الشخصية
+              </h1>
+            </div>
+
+            <p className="text-white/30 mb-1.5" style={{ fontSize: '6px', lineHeight: 1.5, opacity: p > 0.10 ? 1 : 0, transition: 'opacity 0.5s' }}>
+              خبير رياضي وغذائي معتمد بخلفية عسكرية تخصصية — أكثر من 10 سنوات
+            </p>
+
+            {/* Credential pills — matches real site */}
+            <div className="flex flex-wrap gap-1 mb-2"
+              style={{ opacity: p > 0.13 ? 1 : 0, transition: 'opacity 0.5s' }}>
+              {['Lic. STAPS','مدرب تغذية معتمد','علم النفس الرياضي','مدرب شخصي'].map(b => (
+                <span key={b} className="bg-white/[0.05] border border-white/8 rounded-full px-1.5 py-0.5 text-white/30"
+                  style={{ fontSize: '5px' }}>{b}</span>
+              ))}
+            </div>
+
+            {/* CTA buttons — matches real site */}
+            <div className="flex gap-1.5" style={{ opacity: p > 0.16 ? 1 : 0, transition: 'opacity 0.5s' }}>
+              <div className="bg-[#fbbf24] rounded-xl px-2.5 py-1.5 shadow-lg shadow-[#fbbf24]/20">
+                <span className="text-black text-[7.5px] font-black">ابدأ رحلتك الآن ⚡</span>
+              </div>
+              <div className="border border-white/12 rounded-xl px-2.5 py-1.5">
+                <span className="text-white/40 text-[6.5px]">جرب المنصة مجاناً ←</span>
+              </div>
+              <div className="flex items-center px-1.5">
+                <span className="text-white/25 text-[6.5px]">من هو أمين ←</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── How it works ── */}
+        <div className="px-3 mt-2.5" dir="rtl"
+          style={{ opacity: p > 0.25 ? 1 : 0, transition: 'opacity 0.7s' }}>
+          <p className="text-white/15 text-[6px] font-black uppercase tracking-widest text-center mb-1.5">كيف يعمل</p>
           <div className="grid grid-cols-3 gap-1.5">
             {[
-              ['1️⃣','سجّل واملأ الاستبيان','خلال 5 دقائق'],
-              ['2️⃣','يراجع المدرب بياناتك','خلال 24 ساعة'],
-              ['3️⃣','احصل على برنامجك','جاهز للبدء فوراً'],
+              ['1️⃣','سجّل الاستبيان','5 دقائق فقط'],
+              ['2️⃣','يراجع أمين بياناتك','خلال 24 ساعة'],
+              ['3️⃣','برنامجك جاهز','ابدأ فوراً'],
             ].map(([i,n,d]) => (
-              <div key={n} className="bg-white/[0.03] border border-white/8 rounded-xl p-2 text-center">
-                <div className="text-lg mb-0.5">{i}</div>
-                <p className="text-white/60 text-[7px] font-bold leading-tight">{n}</p>
-                <p className="text-white/25 text-[6px] mt-0.5">{d}</p>
+              <div key={n} className="bg-white/[0.03] border border-white/7 rounded-xl p-2 text-center">
+                <div className="text-base mb-0.5">{i}</div>
+                <p className="text-white/55 text-[6.5px] font-bold leading-tight">{n}</p>
+                <p className="text-white/20 text-[5.5px] mt-0.5">{d}</p>
               </div>
             ))}
           </div>
         </div>
-        {/* Services */}
-        <div className="px-3 mt-3" style={{ opacity: p > 0.50 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">ما تحصل عليه</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {[['🏋️','برنامج تدريب','مصمّم لهدفك'],['🥗','خطة تغذية','ADA علمية دقيقة'],['📊','متابعة أسبوعية','تقارير وتعديلات']].map(([i,n,d]) => (
-              <div key={n} className="bg-white/[0.03] border border-white/8 rounded-xl p-2 text-center">
-                <div className="text-lg mb-0.5">{i}</div>
-                <p className="text-white/60 text-[7px] font-bold">{n}</p>
-                <p className="text-white/25 text-[6px] mt-0.5">{d}</p>
+
+        {/* ── App showcase — PROMINENT ── */}
+        <div className="px-3 mt-2.5" dir="rtl"
+          style={{ opacity: p > 0.38 ? 1 : 0, transition: 'opacity 0.7s' }}>
+          <p className="text-white/15 text-[6px] font-black uppercase tracking-widest text-center mb-1.5">تطبيقك الشخصي</p>
+          <div className="bg-[#fbbf24]/6 border border-[#fbbf24]/25 rounded-2xl p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-9 h-9 bg-[#fbbf24] rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#fbbf24]/25">
+                <span className="text-black font-black" style={{ fontSize: '16px' }}>⚡</span>
               </div>
-            ))}
-          </div>
-        </div>
-        {/* App showcase */}
-        <div className="px-3 mt-3" style={{ opacity: p > 0.58 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">تطبيقك الشخصي</p>
-          <div className="bg-[#fbbf24]/5 border border-[#fbbf24]/20 rounded-xl p-2.5 flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#fbbf24] rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-black font-black text-sm">⚡</span>
+              <div>
+                <p className="text-white font-black" style={{ fontSize: '10px' }}>تطبيق Amine-Fit</p>
+                <p className="text-white/30 text-[6.5px]">بوابتك الشخصية بعد الاشتراك</p>
+              </div>
+              <div className="mr-auto bg-emerald-500/15 border border-emerald-500/25 rounded-full px-1.5 py-0.5">
+                <span className="text-emerald-400 font-bold" style={{ fontSize: '6px' }}>مجاناً مع الباقة</span>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-white font-black text-[9px]">تطبيق Amine-Fit</p>
-              <p className="text-white/30 text-[6.5px]">بوابتك الشخصية — خطتك + تقدمك + دعمك</p>
-            </div>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-              {[['🥗','غذاء'],['🏋️','تدريب'],['📊','تقدم'],['💬','دعم']].map(([ic,l]) => (
-                <div key={l} className="flex items-center gap-0.5">
-                  <span style={{ fontSize: '8px' }}>{ic}</span>
-                  <span className="text-white/30 text-[5.5px]">{l}</span>
+            <div className="grid grid-cols-4 gap-1">
+              {[['🥗','خطة غذائية'],['🏋️','برنامج تدريب'],['📊','متابعة التقدم'],['💬','دعم مباشر']].map(([ic,l]) => (
+                <div key={l} className="bg-black/25 rounded-xl p-1.5 text-center border border-white/5">
+                  <div style={{ fontSize: '13px', marginBottom: '2px' }}>{ic}</div>
+                  <p className="text-white/35 font-bold leading-tight" style={{ fontSize: '5.5px' }}>{l}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
-        {/* Pricing preview */}
-        <div className="px-3 mt-3" style={{ opacity: p > 0.68 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">الأسعار</p>
+
+        {/* ── Pricing ── */}
+        <div className="px-3 mt-2.5" dir="rtl"
+          style={{ opacity: p > 0.53 ? 1 : 0, transition: 'opacity 0.7s' }}>
+          <p className="text-white/15 text-[6px] font-black uppercase tracking-widest text-center mb-1.5">الأسعار</p>
           <div className="grid grid-cols-3 gap-1.5">
             {[
-              { n:'التدريب فقط', p:'50',  h:false },
-              { n:'الشهرية ⭐',  p:'125', h:true  },
-              { n:'3 أشهر',      p:'300', h:false },
+              { n:'التدريب فقط', pr:'50',  h:false },
+              { n:'الشهرية ⭐',  pr:'125', h:true  },
+              { n:'3 أشهر 🏆',   pr:'300', h:false },
             ].map(c => (
-              <div key={c.n} className={`rounded-xl p-2 text-center border ${c.h ? 'bg-[#fbbf24]/12 border-[#fbbf24]/40 scale-[1.04]' : 'bg-white/[0.03] border-white/8'}`}>
-                <p className={`font-black text-[8px] ${c.h ? 'text-[#fbbf24]' : 'text-white/50'}`}>{c.n}</p>
-                <p className={`font-black text-xs ${c.h ? 'text-[#fbbf24]' : 'text-white/40'}`}>{c.p}<span className="text-[7px] font-medium"> د.ت</span></p>
+              <div key={c.n} className={`rounded-xl p-2 text-center border ${c.h ? 'bg-[#fbbf24]/10 border-[#fbbf24]/35' : 'bg-white/[0.03] border-white/7'}`}>
+                <p className={`font-black text-[7.5px] ${c.h ? 'text-[#fbbf24]' : 'text-white/45'}`}>{c.n}</p>
+                <p className={`font-black text-[11px] ${c.h ? 'text-[#fbbf24]' : 'text-white/35'}`}>{c.pr}<span className="text-[6px] font-normal"> د.ت</span></p>
+                {c.h && <p className="text-emerald-400 text-[5.5px] font-bold mt-0.5">الأكثر طلباً</p>}
               </div>
             ))}
           </div>
         </div>
-        {/* Testimonials */}
-        <div className="px-3 mt-3 pb-2" style={{ opacity: p > 0.84 ? 1 : 0, transition: 'opacity 0.6s' }}>
-          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">آراء العملاء</p>
+
+        {/* ── Testimonials ── */}
+        <div className="px-3 mt-2.5 pb-3" dir="rtl"
+          style={{ opacity: p > 0.67 ? 1 : 0, transition: 'opacity 0.7s' }}>
           <div className="flex gap-1.5">
             {[
-              { name:'محمد خ.', txt:'خسرت 8 كغ في شهرين!', stars:5 },
-              { name:'سارة م.',  txt:'أفضل استثمار لصحتي', stars:5 },
+              { name:'محمد خ.', txt:'خسرت 8 كغ في شهرين فقط!', stars:5 },
+              { name:'سارة م.', txt:'أفضل استثمار لصحتي',       stars:5 },
             ].map(t => (
-              <div key={t.name} className="flex-1 bg-white/[0.03] border border-white/8 rounded-xl p-2">
+              <div key={t.name} className="flex-1 bg-white/[0.03] border border-white/7 rounded-xl p-2">
                 <div className="flex gap-0.5 mb-1">{[...Array(t.stars)].map((_,i) => <span key={i} className="text-[#fbbf24] text-[8px]">★</span>)}</div>
-                <p className="text-white/40 text-[7px] leading-snug">"{t.txt}"</p>
-                <p className="text-white/20 text-[6px] mt-1">{t.name}</p>
+                <p className="text-white/35 text-[6.5px] leading-snug">"{t.txt}"</p>
+                <p className="text-white/20 text-[5.5px] mt-1">{t.name}</p>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   )
@@ -1106,7 +1157,7 @@ const SCENES = [
     url:    'amine-fit.com',
     label:  '🌐 صفحة الهبوط — الميزات والأسعار',
     icon:   '🌐',
-    ms:     7000,
+    ms:     11000,
     cursor: [[0,.50,.40],[.20,.50,.50],[.40,.50,.62],[.58,.50,.72],[.76,.50,.80],[.90,.50,.87],[1,.50,.90]],
     render: (p) => <S1_Landing p={p} />,
   },
@@ -1114,7 +1165,7 @@ const SCENES = [
     url:    'amine-fit.com/#pricing',
     label:  '💰 اختيار الباقة الشهرية',
     icon:   '💰',
-    ms:     5500,
+    ms:     8000,
     cursor: [[0,.50,.35],[.25,.50,.55],[.50,.50,.68],[.65,.50,.73],[.80,.50,.73],[1,.50,.73]],
     render: (p) => <S2_Pricing p={p} />,
   },
@@ -1122,7 +1173,7 @@ const SCENES = [
     url:    'amine-fit.com/register?plan=monthly',
     label:  '📋 نموذج التسجيل (5 خطوات)',
     icon:   '📋',
-    ms:     6500,
+    ms:     9000,
     cursor: [[0,.50,.28],[.10,.38,.42],[.44,.38,.53],[.70,.38,.64],[.85,.50,.80],[.92,.50,.80],[1,.50,.80]],
     render: (p) => <S3_Register p={p} />,
   },
@@ -1130,7 +1181,7 @@ const SCENES = [
     url:    'amine-fit.com/register/success?plan=monthly',
     label:  '💳 إتمام الدفع عبر D17',
     icon:   '💳',
-    ms:     7000,
+    ms:     9000,
     cursor: [[0,.50,.30],[.15,.50,.45],[.30,.50,.55],[.45,.50,.65],[.58,.50,.72],[.70,.50,.78],[.85,.50,.82],[1,.50,.85]],
     render: (p) => <S4_Pending p={p} />,
   },
@@ -1138,7 +1189,7 @@ const SCENES = [
     url:    'amine-fit.com/client/login',
     label:  '🔑 تفعيل الحساب ثم الدخول',
     icon:   '🔑',
-    ms:     6500,
+    ms:     9000,
     // Cursor: page → تفعيل tab → email field → code field → دخول tab → email → pw → button
     cursor: [[0,.50,.40],[.08,.35,.40],[.12,.50,.56],[.37,.50,.63],[.44,.35,.40],[.51,.65,.40],[.56,.50,.56],[.74,.50,.63],[.90,.50,.74],[1,.50,.74]],
     render: (p) => <S5_Login p={p} />,
@@ -1147,7 +1198,7 @@ const SCENES = [
     url:    'amine-fit.com/client/home',
     label:  '📱 تطبيق Amine-Fit — الصفحة الرئيسية',
     icon:   '📱',
-    ms:     6000,
+    ms:     9000,
     cursor: [[0,.35,.28],[.20,.35,.45],[.45,.35,.60],[.65,.35,.72],[.85,.65,.72],[1,.65,.72]],
     render: (p) => <S6_Dashboard p={p} />,
   },
@@ -1155,7 +1206,7 @@ const SCENES = [
     url:    'amine-fit.com/client/plan',
     label:  '⚡ التطبيق — التغذية / التدريب / التقدم',
     icon:   '⚡',
-    ms:     6500,
+    ms:     9000,
     cursor: [[0,.75,.18],[.12,.25,.18],[.34,.25,.18],[.38,.50,.18],[.55,.50,.18],[.70,.75,.18],[.86,.75,.18],[1,.75,.18]],
     render: (p) => <S7_Portal p={p} />,
   },
