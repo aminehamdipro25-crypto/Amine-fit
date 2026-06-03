@@ -6,7 +6,7 @@ import {
   Search, Eye, X, User, Target, Activity,
   Droplets, Moon, Utensils, Heart, CheckCircle2, Clock, AlertCircle, Download,
   Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon,
-  Calendar, CreditCard, RefreshCw, Star, TrendingUp, ClipboardList, Scale, Camera
+  Calendar, CreditCard, RefreshCw, Star, TrendingUp, ClipboardList, Scale, Camera, Gift, Copy
 } from 'lucide-react'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -1187,6 +1187,11 @@ export default function ClientsClient({ error }) {
   const [approvalCode, setApprovalCode] = useState(null)
   const [onlineData, setOnlineData]   = useState({})
   const [toast, setToast]           = useState(null)
+  const [giftOpen, setGiftOpen]     = useState(false)
+  const [giftResult, setGiftResult] = useState(null)
+  const [giftPlan, setGiftPlan]     = useState('monthly')
+  const [giftNote, setGiftNote]     = useState('')
+  const [giftLoading, setGiftLoading] = useState(false)
 
   async function loadClients() {
     setLoading(true)
@@ -1293,6 +1298,85 @@ export default function ClientsClient({ error }) {
         />
       )}
 
+      {/* Gift code modal */}
+      {giftOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={e => e.target === e.currentTarget && setGiftOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-center">
+              <div className="text-4xl mb-2">🎁</div>
+              <h2 className="text-xl font-extrabold text-white">منح هدية مجانية</h2>
+              <p className="text-white/70 text-sm mt-1">أنشئ رابطاً يتيح لصديق الاشتراك مجاناً</p>
+            </div>
+            <div className="p-6 space-y-4">
+              {!giftResult ? (
+                <>
+                  <div>
+                    <label className="text-slate-700 text-sm font-bold mb-1.5 block">الباقة</label>
+                    <select value={giftPlan} onChange={e => setGiftPlan(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-400 transition">
+                      <option value="training">برنامج التدريب — 50 د.ت</option>
+                      <option value="monthly">الباقة الشهرية — 125 د.ت</option>
+                      <option value="3months">باقة 3 أشهر — 300 د.ت</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-700 text-sm font-bold mb-1.5 block">ملاحظة (اختياري)</label>
+                    <input value={giftNote} onChange={e => setGiftNote(e.target.value)}
+                      placeholder="مثلاً: هدية لأخي أحمد"
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-400 transition" />
+                  </div>
+                  <button
+                    disabled={giftLoading}
+                    onClick={async () => {
+                      setGiftLoading(true)
+                      try {
+                        const res = await fetch('/api/admin/gift', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ plan: giftPlan, note: giftNote }),
+                        })
+                        const data = await res.json()
+                        if (data.code) setGiftResult(data)
+                      } catch {}
+                      finally { setGiftLoading(false) }
+                    }}
+                    className="w-full py-3 rounded-xl bg-violet-600 text-white font-extrabold text-sm hover:bg-violet-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    {giftLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gift className="w-4 h-4" />}
+                    إنشاء رابط الهدية
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-slate-700 text-sm font-bold text-center">✅ تم إنشاء الرابط</p>
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 mb-1 font-medium">الرابط (صالح 60 يوماً)</p>
+                    <p className="text-violet-700 text-xs font-bold break-all" dir="ltr">{giftResult.link}</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-xs text-slate-500 mb-0.5">الكود فقط</p>
+                    <p className="text-2xl font-extrabold tracking-widest text-slate-800" dir="ltr">{giftResult.code}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => { navigator.clipboard.writeText(giftResult.link) }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition">
+                      <Copy className="w-3.5 h-3.5" /> نسخ الرابط
+                    </button>
+                    <a href={`https://wa.me/?text=${encodeURIComponent('مرحباً! 🎁 أمين يهديك باقة مجانية في Amine-Fit\n\n' + giftResult.link)}`}
+                      target="_blank" rel="noreferrer"
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-500 text-white font-bold text-xs hover:bg-green-600 transition">
+                      إرسال واتساب
+                    </a>
+                  </div>
+                </div>
+              )}
+              <button onClick={() => setGiftOpen(false)}
+                className="w-full py-2 text-slate-400 text-sm hover:text-slate-600 transition font-medium">إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Activation code modal shown after approving a client */}
       {approvalCode && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
@@ -1368,6 +1452,11 @@ export default function ClientsClient({ error }) {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-400 text-black font-extrabold text-sm hover:bg-gold-300 transition shadow-sm flex-shrink-0">
             <UserPlus className="w-4 h-4" />
             إضافة عميل
+          </button>
+          <button onClick={() => { setGiftOpen(true); setGiftResult(null) }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-100 text-violet-700 border border-violet-200 font-extrabold text-sm hover:bg-violet-200 transition flex-shrink-0">
+            <Gift className="w-4 h-4" />
+            منح هدية
           </button>
         </div>
 

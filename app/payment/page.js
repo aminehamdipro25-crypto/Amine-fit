@@ -1,11 +1,12 @@
 'use client'
-import { useState } from 'react'
-import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
-const CCP_NUMBER  = 'XXXXXXXX'     // ← ضع رقم الحساب الجاري CCP هنا
+const CCP_IBAN    = 'TN59 1780 1000 0002 1931 0870'
+const CCP_NAME    = 'HAMDI AMINE B JALOUL'
 
 const PLANS = [
   {
@@ -47,13 +48,46 @@ const PLANS = [
 ]
 
 export default function PaymentPage() {
-  const [selected, setSelected]   = useState(null)
-  const [copied, setCopied]       = useState(false)
-  const [copiedCCP, setCopiedCCP] = useState(false)
-  const [step, setStep]           = useState(1) // 1=اختر الباقة  2=ادفع
-  const [method, setMethod]       = useState(null) // 'd17' | 'post'
+  const [selected, setSelected]     = useState(null)
+  const [copied, setCopied]         = useState(false)
+  const [copiedCCP, setCopiedCCP]   = useState(false)
+  const [step, setStep]             = useState(1)
+  const [method, setMethod]         = useState(null)
+  const [giftCode, setGiftCode]     = useState('')
+  const [giftStatus, setGiftStatus] = useState(null) // null | 'checking' | 'valid' | 'invalid'
+  const [giftData, setGiftData]     = useState(null)
+  const [showGift, setShowGift]     = useState(false)
+
+  // Read gift code from URL if present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const g = params.get('gift')
+    if (g) { setGiftCode(g.toUpperCase()); validateGift(g.toUpperCase()) }
+  }, [])
+
+  async function validateGift(code) {
+    if (!code.trim()) return
+    setGiftStatus('checking')
+    try {
+      const res = await fetch(`/api/gift?code=${encodeURIComponent(code.trim())}`)
+      const data = await res.json()
+      if (data.valid) {
+        setGiftData(data)
+        setGiftStatus('valid')
+        // Auto-select the gifted plan
+        const match = PLANS.find(p => p.id === data.plan)
+        if (match) setSelected(match.id)
+      } else {
+        setGiftStatus('invalid')
+        setGiftData(null)
+      }
+    } catch {
+      setGiftStatus('invalid')
+    }
+  }
 
   const plan = PLANS.find(p => p.id === selected)
+  const isGift = giftStatus === 'valid'
 
   function copyNumber() {
     navigator.clipboard.writeText(D17_NUMBER.replace(/\s/g, '')).catch(() => {})
@@ -62,17 +96,16 @@ export default function PaymentPage() {
   }
 
   function copyCCP() {
-    navigator.clipboard.writeText(CCP_NUMBER.replace(/\s/g, '')).catch(() => {})
+    navigator.clipboard.writeText(CCP_IBAN.replace(/\s/g, '')).catch(() => {})
     setCopiedCCP(true)
     setTimeout(() => setCopiedCCP(false), 2000)
   }
 
   function waMessage() {
     if (!plan) return ''
+    if (isGift) return encodeURIComponent(`مرحباً أمين 👋\nلديّ كود هدية: ${giftCode}\nأريد تفعيل باقة ${plan.name}. شكراً!`)
     const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : 'عبر D17'
-    return encodeURIComponent(
-      `مرحباً أمين 👋\nلقد أرسلت ${plan.price} ${plan.currency} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`
-    )
+    return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${plan.price} ${plan.currency} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
   }
 
   return (
@@ -150,17 +183,60 @@ export default function PaymentPage() {
           </div>
 
           <div className="max-w-4xl mx-auto px-4 pb-16 flex flex-col items-center gap-4">
-            <button
-              onClick={() => selected && setStep(2)}
-              disabled={!selected}
-              className={`w-full sm:w-80 py-4 rounded-2xl font-extrabold text-base transition flex items-center justify-center gap-2 ${
-                selected
-                  ? 'bg-[#fbbf24] text-black hover:bg-[#f59e0b] cursor-pointer'
-                  : 'bg-white/5 text-white/20 cursor-not-allowed'
-              }`}>
-              <Zap className="w-5 h-5" fill={selected ? 'black' : 'none'} />
-              {selected ? `متابعة — ${plan?.price} ${plan?.currency}` : 'اختر باقة أولاً'}
-            </button>
+
+            {/* Gift code input */}
+            <div className="w-full sm:w-80">
+              <button onClick={() => setShowGift(g => !g)}
+                className="flex items-center gap-2 text-white/30 hover:text-[#fbbf24] text-xs font-bold transition mb-2">
+                <Gift className="w-3.5 h-3.5" />
+                {showGift ? 'إخفاء' : 'لديك كود هدية؟'}
+              </button>
+              {showGift && (
+                <div className="flex gap-2">
+                  <input
+                    value={giftCode}
+                    onChange={e => { setGiftCode(e.target.value.toUpperCase()); setGiftStatus(null); setGiftData(null) }}
+                    placeholder="أدخل الكود"
+                    maxLength={12}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm font-bold placeholder-white/20 outline-none focus:border-[#fbbf24]/40 transition"
+                    dir="ltr"
+                  />
+                  <button onClick={() => validateGift(giftCode)}
+                    disabled={!giftCode.trim() || giftStatus === 'checking'}
+                    className="px-4 py-2.5 bg-[#fbbf24] text-black rounded-xl font-extrabold text-sm disabled:opacity-40 transition hover:bg-[#f59e0b]">
+                    {giftStatus === 'checking' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تحقق'}
+                  </button>
+                </div>
+              )}
+              {giftStatus === 'valid' && (
+                <div className="mt-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <span className="text-emerald-400 text-xs font-bold">✓ هدية مجانية — {giftData?.planName}</span>
+                </div>
+              )}
+              {giftStatus === 'invalid' && (
+                <p className="mt-1.5 text-red-400 text-xs font-medium">الكود غير صحيح أو مستخدم مسبقاً</p>
+              )}
+            </div>
+
+            {isGift ? (
+              <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
+                className="w-full sm:w-80 py-4 bg-emerald-500 text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2 hover:bg-emerald-400 transition">
+                <Gift className="w-5 h-5" />
+                تفعيل الهدية عبر واتساب
+              </a>
+            ) : (
+              <button
+                onClick={() => selected && setStep(2)}
+                disabled={!selected}
+                className={`w-full sm:w-80 py-4 rounded-2xl font-extrabold text-base transition flex items-center justify-center gap-2 ${
+                  selected
+                    ? 'bg-[#fbbf24] text-black hover:bg-[#f59e0b] cursor-pointer'
+                    : 'bg-white/5 text-white/20 cursor-not-allowed'
+                }`}>
+                <Zap className="w-5 h-5" fill={selected ? 'black' : 'none'} />
+                {selected ? `متابعة — ${plan?.price} ${plan?.currency}` : 'اختر باقة أولاً'}
+              </button>
+            )}
 
             <div className="flex items-center gap-3 w-full sm:w-80">
               <div className="flex-1 h-px bg-white/10" />
@@ -290,14 +366,15 @@ export default function PaymentPage() {
                   <div className="flex gap-3">
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
                     <div className="flex-1">
-                      <p className="text-white font-bold text-sm mb-2">أودع <span className="text-[#fbbf24]">{plan.price} {plan.currency}</span> في الحساب الجاري:</p>
+                      <p className="text-white font-bold text-sm mb-2">أودع <span className="text-[#fbbf24]">{plan.price} {plan.currency}</span> — IBAN:</p>
                       <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
-                        <span className="text-white font-extrabold text-xl tracking-widest flex-1 text-center" dir="ltr">{CCP_NUMBER}</span>
+                        <span className="text-white font-bold text-sm tracking-wider flex-1 text-center" dir="ltr">{CCP_IBAN}</span>
                         <button onClick={copyCCP} className="text-white/40 hover:text-[#fbbf24] transition flex-shrink-0">
                           {copiedCCP ? <CheckCheck className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
                         </button>
                       </div>
-                      {copiedCCP && <p className="text-emerald-400 text-xs mt-1.5 font-medium text-center">تم النسخ ✓</p>}
+                      <p className="text-white/30 text-xs text-center mt-1.5">{CCP_NAME}</p>
+                      {copiedCCP && <p className="text-emerald-400 text-xs mt-1 font-medium text-center">تم النسخ ✓</p>}
                     </div>
                   </div>
                   <div className="flex gap-3">
