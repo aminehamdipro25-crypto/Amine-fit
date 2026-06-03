@@ -48,8 +48,8 @@ export async function POST(req) {
         },
         quantity: 1,
       }],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.vercel.app'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.vercel.app'}/payment`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/payment`,
     })
 
     return NextResponse.json({ url: session.url })

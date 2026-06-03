@@ -22,7 +22,7 @@ async function sendOTP(email, name, otp) {
   const safeName = String(name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
   await resend.emails.send({
-    from: 'Amine-Fit <noreply@amine-fit.vercel.app>',
+    from: 'Amine-Fit <onboarding@resend.dev>',
     to: email,
     subject: `${otp} — رمز التحقق من Amine-Fit`,
     html: `
