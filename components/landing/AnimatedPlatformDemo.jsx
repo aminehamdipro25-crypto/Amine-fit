@@ -506,62 +506,139 @@ function S3_Register({ p }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 4 — Waiting for Trainer Approval
+   SCENE 4 — Payment Instructions (after registration)
+   Phase A (0–0.52): success page + choose D17 + show number
+   Phase B (0.52–1.0): WhatsApp confirmation → pending
 ══════════════════════════════════════ */
 function S4_Pending({ p }) {
-  const dots = ['','.','..',  '...'][Math.floor(p * 16) % 4]
-  return (
-    <div className="h-full flex flex-col items-center justify-center px-4" style={{ background: '#0a0a0a' }}>
-      <div className="w-full max-w-[220px]"
-        style={{ opacity: p > 0.04 ? 1 : 0, transform: `translateY(${p > 0.04 ? 0 : 12}px)`, transition: 'all 0.5s' }}>
+  const phaseB = p >= 0.52
+  const pb     = phaseB ? (p - 0.52) / 0.48 : 0
 
-        {/* Success check */}
-        <div className="w-14 h-14 bg-emerald-500/15 border-2 border-emerald-500/50 rounded-full flex items-center justify-center mx-auto mb-3"
-          style={{ opacity: p > 0.12 ? 1 : 0, transform: `scale(${p > 0.12 ? 1 : 0.5})`, transition: 'all 0.5s cubic-bezier(.34,1.56,.64,1)' }}>
-          <span className="text-emerald-400 text-xl">✓</span>
+  if (phaseB) {
+    // Phase B: sent confirmation → waiting
+    return (
+      <div className="h-full flex flex-col items-center justify-center px-3" style={{ background: '#0a0a0a' }}>
+        <div className="w-full max-w-[210px]">
+          {/* WA sent badge */}
+          <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-xl p-3 text-center mb-4"
+            style={{ opacity: pb > 0.08 ? 1 : 0, transform: `scale(${pb > 0.08 ? 1 : 0.9})`, transition: 'all 0.5s cubic-bezier(.34,1.56,.64,1)' }}>
+            <p className="text-emerald-400 font-black text-[10px]">✅ تم إرسال إثبات الدفع!</p>
+            <p className="text-white/30 text-[7px] mt-0.5">في انتظار تأكيد المدرب أمين</p>
+          </div>
+
+          {/* Timeline */}
+          <div className="space-y-1.5">
+            {[
+              { icon:'✅', text:'تم التسجيل',             done:true,  active:false, delay:0.20 },
+              { icon:'💳', text:'تم إرسال إثبات الدفع',   done:true,  active:false, delay:0.30 },
+              { icon:'👨‍💼', text:'المدرب يؤكد ويفعّل',    done:false, active:true,  delay:0.42 },
+              { icon:'📧', text:'كود تفعيل على إيميلك',   done:false, active:false, delay:0.58 },
+              { icon:'🚀', text:'ادخل بوابتك الشخصية',   done:false, active:false, delay:0.72 },
+            ].map((s, i) => (
+              <div key={i}
+                className={`flex items-center gap-2 rounded-xl px-2.5 py-2 border ${
+                  s.active ? 'bg-[#fbbf24]/10 border-[#fbbf24]/30' :
+                  s.done   ? 'bg-emerald-500/8 border-emerald-500/20' :
+                             'bg-white/[0.02] border-white/5'}`}
+                style={{ opacity: pb > s.delay ? 1 : 0, transform: `translateX(${pb > s.delay ? 0 : 8}px)`, transition: 'all 0.4s' }}>
+                <span style={{ fontSize: '9px' }}>{s.icon}</span>
+                <span className={`text-[7.5px] font-bold flex-1 ${s.active ? 'text-[#fbbf24]' : s.done ? 'text-emerald-400' : 'text-white/25'}`}>{s.text}</span>
+                {s.active && <div className="flex gap-0.5">{[0,1,2].map(d=><div key={d} className="w-1 h-1 rounded-full bg-[#fbbf24] animate-bounce" style={{animationDelay:`${d*0.15}s`}}/>)}</div>}
+              </div>
+            ))}
+          </div>
+          <p className="text-white/15 text-[6.5px] text-center mt-3"
+            style={{ opacity: pb > 0.85 ? 1 : 0, transition: 'opacity 0.4s' }}>
+            ستصلك رسالة على ahmed.sport@gmail.com ✉️
+          </p>
         </div>
+      </div>
+    )
+  }
 
-        <p className="text-white font-black text-[12px] text-center mb-1"
-          style={{ opacity: p > 0.18 ? 1 : 0, transition: 'opacity 0.4s' }}>تم إرسال طلبك! 🎉</p>
-        <p className="text-white/30 text-[8px] text-center mb-4 leading-relaxed"
-          style={{ opacity: p > 0.24 ? 1 : 0, transition: 'opacity 0.4s' }}>
-          المدرب أمين يراجع بياناتك الآن{dots}
-        </p>
+  // Phase A: payment success page
+  const showPlan     = p > 0.04
+  const showSteps    = p > 0.14
+  const showD17box   = p > 0.28
+  const showNumber   = p > 0.38
+  const showWA       = p > 0.44
 
-        {/* Status timeline */}
-        <div className="space-y-2">
-          {[
-            { icon:'✅', text:'تم استلام الاستبيان بنجاح',    done:true,  active:false, delay:0.28 },
-            { icon:'👨‍💼', text:'المدرب يراجع بياناتك (1-24 ساعة)', done:false, active:true,  delay:0.40 },
-            { icon:'📋', text:'إعداد البرنامج المخصص لك',      done:false, active:false, delay:0.54 },
-            { icon:'📧', text:'إرسال البرنامج + تفعيل حسابك',  done:false, active:false, delay:0.66 },
-            { icon:'🚀', text:'ابدأ رحلتك في بوابة العميل',    done:false, active:false, delay:0.78 },
-          ].map((s, i) => (
-            <div key={i}
-              className={`flex items-center gap-2 rounded-xl px-2.5 py-2 border transition-all ${
-                s.active  ? 'bg-[#fbbf24]/10 border-[#fbbf24]/30' :
-                s.done    ? 'bg-emerald-500/8 border-emerald-500/20' :
-                            'bg-white/[0.02] border-white/5'}`}
-              style={{ opacity: p > s.delay ? 1 : 0, transform: `translateX(${p > s.delay ? 0 : 8}px)`, transition: 'all 0.4s' }}>
-              <span style={{ fontSize: '10px' }}>{s.icon}</span>
-              <span className={`text-[8px] font-bold flex-1 ${s.active ? 'text-[#fbbf24]' : s.done ? 'text-emerald-400' : 'text-white/25'}`}>
-                {s.text}
-              </span>
-              {s.active && (
-                <div className="flex gap-0.5">
-                  {[0,1,2].map(d => (
-                    <div key={d} className="w-1 h-1 rounded-full bg-[#fbbf24] animate-bounce" style={{ animationDelay: `${d*0.15}s` }} />
-                  ))}
-                </div>
-              )}
+  return (
+    <div className="h-full overflow-y-auto" style={{ background: '#0a0a0a' }}>
+      <div className="px-3 pt-3 pb-4 flex flex-col items-center">
+
+        {/* Journey indicator */}
+        <div className="flex items-center gap-1 mb-3 w-full justify-center"
+          style={{ opacity: p > 0.02 ? 1 : 0, transition: 'opacity 0.4s' }}>
+          {[{n:1,label:'تسجيل',done:true},{n:2,label:'دفع',active:true},{n:3,label:'تفعيل',done:false}].map((s,i)=>(
+            <div key={s.n} className="flex items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-extrabold ${s.done?'bg-emerald-500 text-white':s.active?'bg-[#fbbf24] text-black ring-2 ring-[#fbbf24]/30':'bg-white/10 text-white/30'}`}>{s.done?'✓':s.n}</div>
+                <span className={`text-[6px] font-bold ${s.active?'text-[#fbbf24]':s.done?'text-emerald-400':'text-white/20'}`}>{s.label}</span>
+              </div>
+              {i<2&&<div className="w-5 h-px bg-white/10 mb-2"/>}
             </div>
           ))}
         </div>
 
-        <p className="text-white/15 text-[7px] text-center mt-3"
-          style={{ opacity: p > 0.85 ? 1 : 0, transition: 'opacity 0.4s' }}>
-          ستصلك رسالة على ahmed.sport@gmail.com ✉️
-        </p>
+        {/* Header */}
+        <div className="text-center mb-3"
+          style={{ opacity: showPlan ? 1 : 0, transform: `translateY(${showPlan?0:8}px)`, transition: 'all 0.5s' }}>
+          <div className="w-9 h-9 bg-emerald-500/15 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <span className="text-emerald-400 text-sm">✓</span>
+          </div>
+          <p className="text-white font-black text-[10px]">تم التسجيل ✅</p>
+          <p className="text-white/35 text-[7px]">الخطوة الأخيرة — أرسل الدفع</p>
+        </div>
+
+        {/* Plan badge */}
+        <div className="w-full bg-[#fbbf24]/8 border border-[#fbbf24]/20 rounded-xl px-3 py-2 flex items-center gap-2 mb-3"
+          style={{ opacity: showPlan ? 1 : 0, transform: `translateY(${showPlan?0:6}px)`, transition: 'all 0.5s 0.1s' }}>
+          <span className="text-base">⚡</span>
+          <div className="flex-1">
+            <p className="text-white/40 text-[6.5px] font-bold">الباقة المختارة</p>
+            <p className="text-white font-extrabold text-[9px]">الباقة الشهرية</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[#fbbf24] font-extrabold text-[14px]">125</p>
+            <p className="text-white/25 text-[6.5px]">د.ت</p>
+          </div>
+        </div>
+
+        {/* Method: D17 selected */}
+        <div className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-2.5 mb-2.5"
+          style={{ opacity: showD17box ? 1 : 0, transform: `translateY(${showD17box?0:6}px)`, transition: 'all 0.5s' }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[10px]">📱</span>
+            <p className="text-white font-extrabold text-[8px]">الدفع عبر D17</p>
+          </div>
+          <div className="space-y-1.5">
+            {[
+              { n:'1', text:'افتح تطبيق D17 أو *194#', sub:'' },
+              { n:'2', text:'أرسل 125 د.ت إلى:', isNumber:true },
+              { n:'3', text:'أرسل إثبات الدفع على واتساب', sub:'' },
+            ].map((s,i)=>(
+              <div key={i} className="flex gap-1.5 items-start">
+                <div className="w-4 h-4 rounded-full bg-[#fbbf24] text-black text-[6px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">{s.n}</div>
+                <div className="flex-1">
+                  <p className="text-white font-bold text-[7.5px]">{s.text}</p>
+                  {s.isNumber && showNumber && (
+                    <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1 mt-1">
+                      <span className="text-white font-bold text-[8px] tracking-widest flex-1 text-center" dir="ltr">XX XXX XXX</span>
+                      <span className="text-white/30 text-[8px]">⎘</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* WA CTA */}
+        <div className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 font-extrabold text-[8px] text-white"
+          style={{ background: '#25d366', opacity: showWA ? 1 : 0, transform: `scale(${showWA?1:0.95})`, transition: 'all 0.4s cubic-bezier(.34,1.56,.64,1)' }}>
+          <span>💬</span> أرسلت الدفع — فعّل حسابي
+        </div>
       </div>
     </div>
   )
@@ -974,11 +1051,11 @@ const SCENES = [
     render: (p) => <S3_Register p={p} />,
   },
   {
-    url:    'amine-fit.com/register/pending',
-    label:  '⏳ قيد مراجعة المدرب',
-    icon:   '⏳',
-    ms:     5500,
-    cursor: [[0,.50,.50],[.30,.50,.50],[.60,.50,.50],[1,.50,.50]],
+    url:    'amine-fit.com/register/success?plan=monthly',
+    label:  '💳 إتمام الدفع عبر D17',
+    icon:   '💳',
+    ms:     7000,
+    cursor: [[0,.50,.30],[.15,.50,.45],[.30,.50,.55],[.45,.50,.65],[.58,.50,.72],[.70,.50,.78],[.85,.50,.82],[1,.50,.85]],
     render: (p) => <S4_Pending p={p} />,
   },
   {

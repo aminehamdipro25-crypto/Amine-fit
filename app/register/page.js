@@ -179,7 +179,8 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'خطأ')
-      router.push(data.alreadyRegistered ? '/register/success?existing=1' : '/register/success')
+      const planParam = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''
+      router.push(data.alreadyRegistered ? `/register/success?existing=1${planParam}` : `/register/success?${planParam}`)
     } catch (e) {
       setApiErr(e.message)
     } finally {
