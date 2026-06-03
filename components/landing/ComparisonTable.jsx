@@ -25,7 +25,7 @@ const cols = [
 ]
 
 function Cell({ val, highlight }) {
-  if (val) return <Check className={`w-4 h-4 mx-auto ${highlight ? 'text-black' : 'text-emerald-400'}`} />
+  if (val) return <Check className={`w-4 h-4 mx-auto ${highlight ? 'text-gold-400' : 'text-emerald-400'}`} />
   return <X className="w-4 h-4 mx-auto text-white/15" />
 }
 
