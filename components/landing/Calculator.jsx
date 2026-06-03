@@ -187,17 +187,32 @@ export default function CalculatorSection() {
                   <p className="text-white/20 text-[10px] font-medium mt-3">معدل الأيض الأساسي (BMR): {result.bmr.toLocaleString()} سعرة</p>
                 </div>
 
-                {/* CTA */}
-                <div className="bg-gradient-to-r from-gold-400/15 to-gold-400/5 border border-gold-400/25 rounded-2xl p-5 text-center">
-                  <p className="text-white font-extrabold text-sm mb-1">هل تريد خطة مخصصة لك؟</p>
-                  <p className="text-white/40 text-xs mb-4">أمين سيصمم برنامجك الغذائي والتدريبي بناءً على نتائجك</p>
-                  <a href="#pricing"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gold-400 text-black font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20 text-sm">
-                    <Zap className="w-4 h-4" fill="black" />
-                    ابدأ برنامجك الآن
-                    <ArrowLeft className="w-4 h-4" />
-                  </a>
-                </div>
+                {/* Smart Plan Recommendation */}
+                {(() => {
+                  const bmi = Number(result.bmi)
+                  const rec = bmi > 27
+                    ? { label: 'الباقة الشهرية', emoji: '⚡', planParam: 'الباقة الشهرية', msg: 'بناءً على مؤشر كتلة جسمك، الجمع بين التدريب والتغذية المحكمة هو طريقك الأمثل لنتيجة سريعة ومستدامة.' }
+                    : bmi < 20
+                    ? { label: 'الباقة الشهرية', emoji: '⚡', planParam: 'الباقة الشهرية', msg: 'لبناء كتلة عضلية صحيحة تحتاج برنامجاً تدريبياً وغذائياً متكاملاً في آنٍ واحد.' }
+                    : { label: 'برنامج التدريب', emoji: '🏋️', planParam: 'برنامج التدريب', msg: 'وزنك في المدى الطبيعي — برنامج التدريب المخصص هو نقطة انطلاقك المثالية.' }
+
+                  return (
+                    <div className="bg-gradient-to-br from-gold-400/10 to-gold-400/5 border border-gold-400/20 rounded-2xl p-5">
+                      <p className="text-gold-400 text-[10px] font-extrabold uppercase tracking-widest mb-2">🎯 توصية المدرب بناءً على نتائجك</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{rec.emoji}</span>
+                        <p className="text-white font-extrabold text-base">{rec.label}</p>
+                      </div>
+                      <p className="text-white/50 text-xs leading-relaxed mb-4">{rec.msg}</p>
+                      <a href={`/register?plan=${encodeURIComponent(rec.planParam)}`}
+                        className="flex items-center justify-center gap-2 py-3 bg-gold-400 text-black font-extrabold rounded-xl hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20 text-sm">
+                        <Zap className="w-4 h-4" fill="black" />
+                        ابدأ هذه الباقة الآن
+                        <ArrowLeft className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>

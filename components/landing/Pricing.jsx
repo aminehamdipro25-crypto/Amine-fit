@@ -75,7 +75,7 @@ const plans = [
     ],
     notIncluded: ['قياسات InBody (تُضاف عند الطلب)'],
     results: 'تغيير ملموس في التركيب الجسدي خلال 4 أسابيع',
-    guarantee: null,
+    guarantee: '7 أيام ضمان استرداد كامل',
     cta: 'احصل على خطتك',
     duration: 'شهر واحد',
     sessions: '3–5 أيام / أسبوع',
@@ -300,6 +300,23 @@ export default function Pricing() {
         <p className="text-white/30 text-center max-w-xl mx-auto font-medium text-sm mb-10">
           باقات بالدينار التونسي — اضغط على أي باقة لتعرف كل التفاصيل
         </p>
+
+        {/* Social proof */}
+        <div className="flex items-center justify-center gap-3 mb-10">
+          <div className="flex" style={{ direction: 'ltr' }}>
+            {['أ','م','ي','س','ع'].map((l, i) => (
+              <div key={i} className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-400 to-amber-500 border-2 border-[#0f0f0f] flex items-center justify-center text-black font-extrabold text-xs -ml-2 first:ml-0">
+                {l}
+              </div>
+            ))}
+          </div>
+          <p className="text-white/50 text-sm font-medium">
+            <strong className="text-white">37+</strong> شخص انضم هذا الشهر
+          </p>
+          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+            🟢 مفتوح للتسجيل
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           {plans.map(p => {
