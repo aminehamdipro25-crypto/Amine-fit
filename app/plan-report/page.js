@@ -249,6 +249,28 @@ export default function PlanReport() {
               <span><span style={{ color: '#8b5cf6', fontWeight: 700 }}>■</span> دهون {ex.pct?.fat || 25}% — {Math.round(totalF)} غ</span>
             </div>
           </div>
+
+          {/* Water & Fiber summary */}
+          {(plan.water || ex.fiber) && (
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+              {plan.water && (
+                <div style={{ flex: 1, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>💧</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8' }}>{plan.water.liters} L</div>
+                  <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600 }}>هدف الماء اليومي</div>
+                  <div style={{ fontSize: 10, color: '#93c5fd' }}>{plan.water.glasses} كوب (250 مل)</div>
+                </div>
+              )}
+              {ex.fiber && (
+                <div style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>🌿</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#166534' }}>{ex.fiber.g || ex.fiber} غ</div>
+                  <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>الألياف الغذائية</div>
+                  <div style={{ fontSize: 10, color: '#4ade80' }}>الموصى: {ex.fiber?.recommended || 25} غ/يوم</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Meal Plan (Day / Week / Month) ─────────────────────────────── */}

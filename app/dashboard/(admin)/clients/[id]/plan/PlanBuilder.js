@@ -868,11 +868,13 @@ export default function PlanBuilder({ client }) {
   const [toast, setToast]   = useState('')
 
   // Nutrition state
-  const [calories, setCalories] = useState(existing.nutrition?.calories || '')
-  const [protein, setProtein]   = useState(existing.nutrition?.protein  || '')
-  const [carbs, setCarbs]       = useState(existing.nutrition?.carbs    || '')
-  const [fats, setFats]         = useState(existing.nutrition?.fats     || '')
-  const [nutritionNote, setNNote] = useState(existing.nutrition?.note   || '')
+  const [calories, setCalories] = useState(existing.nutrition?.calories   || '')
+  const [protein, setProtein]   = useState(existing.nutrition?.protein    || '')
+  const [carbs, setCarbs]       = useState(existing.nutrition?.carbs      || '')
+  const [fats, setFats]         = useState(existing.nutrition?.fats       || '')
+  const [waterGoal, setWater]   = useState(existing.nutrition?.waterGoal  || '')
+  const [fiberG, setFiber]      = useState(existing.nutrition?.fiberG     || '')
+  const [nutritionNote, setNNote] = useState(existing.nutrition?.note     || '')
   const [nutritionTips, setNTips] = useState(existing.nutrition?.tips?.join('\n') || '')
   const [meals, setMeals]       = useState(() => linkMealsToDB(existing.nutrition?.meals || []))
   const [importStatus, setImportStatus] = useState('')
@@ -967,6 +969,7 @@ export default function PlanBuilder({ client }) {
         weight:       client.weight       || '',
         height:       client.height       || '',
         targetWeight: client.targetWeight || '',
+        bodyFatPct:   client.bodyFatPct   || null,
         activity:     client.activityLevel || 'moderate',
         goal:         GOAL_MAP[client.goal] || 'maintain',
         preferred:    genPreferred,
@@ -988,6 +991,8 @@ export default function PlanBuilder({ client }) {
         setCarbs(String(Math.round(plan.ex.macros.carbs    || 0)))
         setFats(String(Math.round(plan.ex.macros.fat       || 0)))
       }
+      if (plan.water?.liters) setWater(String(plan.water.liters))
+      if (plan.ex?.fiber?.g)  setFiber(String(plan.ex.fiber.g))
 
       if (genDuration === 'day' && Array.isArray(plan.menu) && plan.menu.length > 0) {
         setMeals(menuToMeals(plan.menu))
@@ -1248,6 +1253,8 @@ export default function PlanBuilder({ client }) {
     const plan = {
       nutrition: {
         calories, protein, carbs, fats,
+        ...(waterGoal ? { waterGoal } : {}),
+        ...(fiberG    ? { fiberG }    : {}),
         note: nutritionNote,
         tips: nutritionTips.split('\n').map(t => t.trim()).filter(Boolean),
         meals,
@@ -1508,6 +1515,8 @@ export default function PlanBuilder({ client }) {
                 { f: protein,  set: setProtein,  label: 'بروتين (غ)',     ph: '150' },
                 { f: carbs,    set: setCarbs,    label: 'كربوهيدرات (غ)', ph: '250' },
                 { f: fats,     set: setFats,     label: 'دهون (غ)',        ph: '60' },
+                { f: waterGoal,set: setWater,    label: 'ماء (لتر/يوم)',   ph: '2.5' },
+                { f: fiberG,   set: setFiber,    label: 'ألياف (غ/يوم)',   ph: '25' },
               ].map(({ f, set, label, ph }) => (
                 <div key={label}>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">{label}</label>

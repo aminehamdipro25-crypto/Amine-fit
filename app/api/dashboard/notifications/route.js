@@ -39,5 +39,39 @@ export async function GET() {
     })
   }
 
+  // Subscriptions expiring within 7 days
+  const now = Date.now()
+  const expiringSoon = clients.filter(c => {
+    if (!c.subscriptionEndDate) return false
+    const msLeft = new Date(c.subscriptionEndDate).getTime() - now
+    return msLeft > 0 && msLeft <= 7 * 24 * 60 * 60 * 1000
+  })
+  for (const c of expiringSoon.slice(0, 5)) {
+    const daysLeft = Math.ceil((new Date(c.subscriptionEndDate).getTime() - now) / 86400000)
+    notifications.push({
+      type: 'expiring',
+      title: `اشتراك ${c.name} ينتهي قريباً`,
+      body: `متبقي ${daysLeft} ${daysLeft === 1 ? 'يوم' : 'أيام'} — تواصل معه للتجديد`,
+      href: `/dashboard/clients/${c.id}`,
+      read: false,
+    })
+  }
+
+  // Subscriptions already expired (within last 3 days)
+  const recentlyExpired = clients.filter(c => {
+    if (!c.subscriptionEndDate) return false
+    const msAgo = now - new Date(c.subscriptionEndDate).getTime()
+    return msAgo > 0 && msAgo <= 3 * 24 * 60 * 60 * 1000
+  })
+  for (const c of recentlyExpired.slice(0, 3)) {
+    notifications.push({
+      type: 'expired',
+      title: `انتهى اشتراك ${c.name}`,
+      body: 'انتهى اشتراكه — يحتاج تجديداً',
+      href: `/dashboard/clients/${c.id}`,
+      read: false,
+    })
+  }
+
   return NextResponse.json({ notifications, count: notifications.length })
 }

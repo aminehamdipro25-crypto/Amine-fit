@@ -150,6 +150,28 @@ export default function NutritionPlan() {
         </div>
       )}
 
+      {/* Water & Fiber */}
+      {(plan.waterGoal || plan.fiberG) && (
+        <div className="grid grid-cols-2 gap-3">
+          {plan.waterGoal && (
+            <div className="bg-cyan-50 rounded-2xl p-4 border border-cyan-100 text-center">
+              <div className="text-3xl mb-1">💧</div>
+              <p className="text-2xl font-extrabold text-cyan-700">{plan.waterGoal} L</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">يومياً</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">هدف الماء</p>
+            </div>
+          )}
+          {plan.fiberG && (
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100 text-center">
+              <div className="text-3xl mb-1">🌿</div>
+              <p className="text-2xl font-extrabold text-green-700">{plan.fiberG} غ</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">يومياً</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1">الألياف الغذائية</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Meals */}
       {plan.meals?.length > 0 && (
         <div className="space-y-3">
