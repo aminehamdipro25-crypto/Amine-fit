@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
 
 const PLANS = {
-  basic:    { name: 'الأساسي',   price: 20000, desc: 'خطة تغذية شهرية' },      // 200 QAR
-  standard: { name: 'المتوسط',   price: 35000, desc: 'تغذية + تدريب + متابعة' }, // 350 QAR
-  premium:  { name: 'البريميوم', price: 55000, desc: 'كل الخدمات + تواصل مباشر' }, // 550 QAR
+  training: { name: 'برنامج التدريب', price:  5000, desc: 'برنامج تدريب مخصص' },         // 50 TND
+  monthly:  { name: 'الباقة الشهرية', price: 12500, desc: 'تغذية + تدريب + متابعة' },    // 125 TND
+  '3months':{ name: 'باقة 3 أشهر',   price: 30000, desc: 'كل الخدمات — الأوفر قيمة' }, // 300 TND
 }
 
 export async function POST(req) {
@@ -39,7 +39,7 @@ export async function POST(req) {
       metadata: { plan, name: name || '' },
       line_items: [{
         price_data: {
-          currency: 'qar',
+          currency: 'tnd',
           product_data: {
             name: `Amine-Fit — ${selectedPlan.name}`,
             description: selectedPlan.desc,
