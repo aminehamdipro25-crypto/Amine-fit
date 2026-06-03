@@ -118,6 +118,12 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true, id: entry.id, email: safeEntry.email })
   } catch (err) {
+    if (err.code === 'EMAIL_EXISTS') {
+      return NextResponse.json({
+        error: 'هذا البريد الإلكتروني مسجل مسبقاً — تواصل مع المدرب عبر واتساب لتحديد باقتك',
+        loginUrl: '/client/login',
+      }, { status: 409 })
+    }
     console.error('[register FAILED]', err.message)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
