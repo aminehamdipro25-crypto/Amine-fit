@@ -333,8 +333,29 @@ function S1_Landing({ p }) {
             ))}
           </div>
         </div>
+        {/* App showcase */}
+        <div className="px-3 mt-3" style={{ opacity: p > 0.58 ? 1 : 0, transition: 'opacity 0.6s' }}>
+          <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">تطبيقك الشخصي</p>
+          <div className="bg-[#fbbf24]/5 border border-[#fbbf24]/20 rounded-xl p-2.5 flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#fbbf24] rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-black font-black text-sm">⚡</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-black text-[9px]">تطبيق Amine-Fit</p>
+              <p className="text-white/30 text-[6.5px]">بوابتك الشخصية — خطتك + تقدمك + دعمك</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              {[['🥗','غذاء'],['🏋️','تدريب'],['📊','تقدم'],['💬','دعم']].map(([ic,l]) => (
+                <div key={l} className="flex items-center gap-0.5">
+                  <span style={{ fontSize: '8px' }}>{ic}</span>
+                  <span className="text-white/30 text-[5.5px]">{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
         {/* Pricing preview */}
-        <div className="px-3 mt-3" style={{ opacity: p > 0.65 ? 1 : 0, transition: 'opacity 0.6s' }}>
+        <div className="px-3 mt-3" style={{ opacity: p > 0.68 ? 1 : 0, transition: 'opacity 0.6s' }}>
           <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">الأسعار</p>
           <div className="grid grid-cols-3 gap-1.5">
             {[
@@ -350,7 +371,7 @@ function S1_Landing({ p }) {
           </div>
         </div>
         {/* Testimonials */}
-        <div className="px-3 mt-3 pb-2" style={{ opacity: p > 0.80 ? 1 : 0, transition: 'opacity 0.6s' }}>
+        <div className="px-3 mt-3 pb-2" style={{ opacity: p > 0.84 ? 1 : 0, transition: 'opacity 0.6s' }}>
           <p className="text-white/20 text-[7px] font-black uppercase tracking-widest text-center mb-2">آراء العملاء</p>
           <div className="flex gap-1.5">
             {[
@@ -780,97 +801,128 @@ function S5_Login({ p }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 6 — Client Dashboard
+   SCENE 6 — Client Dashboard (matches real client/home page)
 ══════════════════════════════════════ */
 function S6_Dashboard({ p }) {
-  const ringFill = Math.min(p * 1.1, 1) * 60
-  const cards = [
-    { v:'18/30', l:'يوم التقدم',  c:'#fbbf24' },
-    { v:'82.5',  l:'كغ الوزن الحالي', c:'#ffffff' },
-    { v:'1,840', l:'kcal هدف اليوم', c:'#34d399' },
-    { v:'−3.7',  l:'كغ خسرتها',  c:'#34d399' },
+  const showHero  = p > 0.05
+  const showStats = p > 0.28
+  const showCards = p > 0.52
+
+  const navItems = [
+    { label: 'الرئيسية',         active: true  },
+    { label: 'الخطة الغذائية',   active: false },
+    { label: 'الخطة التدريبية',  active: false },
+    { label: 'المختبر',           active: false },
+    { label: 'متابعة التقدم',    active: false },
+    { label: 'يوميتي',           active: false },
+    { label: 'قائمة التسوق',     active: false },
   ]
+
   return (
     <div className="h-full flex" style={{ background: '#0a0a0a' }}>
-      {/* Sidebar */}
-      <div className="w-11 bg-[#111] border-r border-white/5 flex flex-col items-center py-3 gap-2.5 flex-shrink-0">
-        <div className="w-7 h-7 bg-[#fbbf24] rounded-xl flex items-center justify-center mb-1">
-          <span className="text-black text-[9px] font-black">⚡</span>
+      {/* ── Main content ── */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Demo banner */}
+        <div className="bg-[#fbbf24] px-2 py-1.5 flex items-center justify-between gap-1 flex-shrink-0">
+          <span className="text-black font-bold truncate" style={{ fontSize: '5.5px' }}>
+            وضع العرض التجريبي — هذه نسخة تجريبية من منصة Amine-Fit
+          </span>
+          <div className="bg-black text-[#fbbf24] rounded px-1.5 py-0.5 font-black whitespace-nowrap flex-shrink-0"
+            style={{ fontSize: '5.5px' }}>اختر خطتك ←</div>
         </div>
-        {[
-          { i:'🏠', active:true  },
-          { i:'🥗', active:false },
-          { i:'🏋️', active:false },
-          { i:'📊', active:false },
-          { i:'📝', active:false },
-          { i:'📷', active:false },
-        ].map((item, idx) => (
-          <div key={idx} className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs cursor-pointer transition-all
-            ${item.active ? 'bg-[#fbbf24]/15 border border-[#fbbf24]/30' : 'hover:bg-white/5'}`}>
-            {item.i}
+
+        <div className="flex-1 overflow-hidden p-2">
+          {/* Trial badge */}
+          <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-2 py-0.5 mb-2"
+            style={{ opacity: p > 0.03 ? 1 : 0, transition: 'opacity 0.4s' }}>
+            <span style={{ fontSize: '8px' }}>🎭</span>
+            <span className="text-white/40 font-bold" style={{ fontSize: '6px' }}>جولة تجريبية</span>
           </div>
-        ))}
+
+          {/* Hero card */}
+          <div className="rounded-2xl mb-2 p-3 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg,#1c1c1c 0%,#0f0f0f 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              opacity: showHero ? 1 : 0,
+              transition: 'opacity 0.5s',
+            }}>
+            <div className="absolute left-1 bottom-0 opacity-[0.08]" style={{ fontSize: '44px' }}>🏋️</div>
+            <p className="text-white/25 font-bold mb-0.5 text-right" style={{ fontSize: '5.5px' }}>منصة AMINE-FIT الشخصية</p>
+            <p className="text-white font-black text-right mb-1" style={{ fontSize: '12px' }}>أهلاً بك، عميلنا الكريم</p>
+            <p className="text-white/30 text-right mb-1.5" style={{ fontSize: '6px', lineHeight: 1.5 }}>
+              خطتك الغذائية والتدريبية المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك
+            </p>
+            <div className="flex items-center gap-1 justify-end">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 font-bold" style={{ fontSize: '6px' }}>حسابك نشط</span>
+            </div>
+          </div>
+
+          {/* 4 stats row — matches real page */}
+          <div className="grid grid-cols-4 gap-1 mb-2"
+            style={{ opacity: showStats ? 1 : 0, transform: `translateY(${showStats ? 0 : 4}px)`, transition: 'all 0.5s' }}>
+            {[
+              { emoji: '🎂', val: '26',  unit: 'سنة', label: 'العمر'           },
+              { emoji: '📏', val: '178', unit: 'سم',  label: 'الطول'           },
+              { emoji: '🎯', val: '75',  unit: 'كغ',  label: 'الوزن المستهدف' },
+              { emoji: '⚖️', val: '88',  unit: 'كغ',  label: 'الوزن الحالي'   },
+            ].map((s, i) => (
+              <div key={i} className="bg-white/[0.04] border border-white/8 rounded-xl p-1.5 text-center">
+                <div style={{ fontSize: '13px', lineHeight: 1.2 }}>{s.emoji}</div>
+                <p className="text-white font-black" style={{ fontSize: '10px' }}>{s.val}</p>
+                <p className="text-[#fbbf24] font-bold" style={{ fontSize: '6px' }}>{s.unit}</p>
+                <p className="text-white/20" style={{ fontSize: '5px', lineHeight: 1.1 }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Plan access cards — matches real page */}
+          <div className="grid grid-cols-2 gap-1.5"
+            style={{ opacity: showCards ? 1 : 0, transform: `translateY(${showCards ? 0 : 4}px)`, transition: 'all 0.5s' }}>
+            <div className="rounded-xl p-2.5"
+              style={{ background: 'linear-gradient(135deg,#1a1a1a,#0f0f0f)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="text-center" style={{ fontSize: '20px' }}>🏋️</div>
+              <p className="text-white font-black text-center" style={{ fontSize: '8px' }}>الخطة التدريبية</p>
+              <p className="text-[#fbbf24] text-center font-bold" style={{ fontSize: '6.5px' }}>4 أيام / أسبوع</p>
+            </div>
+            <div className="rounded-xl p-2.5"
+              style={{ background: 'linear-gradient(135deg,#0d2b1e,#091a12)', border: '1px solid rgba(52,211,153,0.2)' }}>
+              <div className="text-center" style={{ fontSize: '20px' }}>🥗</div>
+              <p className="text-white font-black text-center" style={{ fontSize: '8px' }}>الخطة الغذائية</p>
+              <p className="text-emerald-400 text-center font-bold" style={{ fontSize: '6.5px' }}>1850 سعرة • 5 وجبات</p>
+            </div>
+          </div>
+        </div>
       </div>
-      {/* Content */}
-      <div className="flex-1 p-3 overflow-hidden">
-        <div className="flex items-center justify-between mb-2.5">
-          <div>
-            <p className="text-white font-black" style={{ fontSize: '9px' }}>أهلاً، أحمد 👋</p>
-            <p className="text-white/25" style={{ fontSize: '7px' }}>الاثنين 03 يونيو 2026</p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <div className="w-6 h-6 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/30 flex items-center justify-center">
-              <span className="text-[#fbbf24] font-black" style={{ fontSize: '8px' }}>أ</span>
-            </div>
+
+      {/* ── Sidebar (RIGHT — matches real page) ── */}
+      <div className="w-[68px] bg-[#111] border-l border-white/5 flex flex-col py-2.5 px-1.5 flex-shrink-0">
+        {/* AMINEFIT logo — top right of sidebar */}
+        <div className="flex items-center justify-end gap-1 mb-3">
+          <span className="text-white font-black" style={{ fontSize: '7px', letterSpacing: '0.5px' }}>AMINEFIT</span>
+          <div className="w-6 h-6 bg-[#fbbf24] rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-black font-black" style={{ fontSize: '11px' }}>⚡</span>
           </div>
         </div>
-        {/* Progress ring */}
-        <div className="bg-white/[0.04] border border-white/8 rounded-xl p-2.5 flex items-center gap-2.5 mb-2"
-          style={{ opacity: p > 0.08 ? 1 : 0, transition: 'opacity 0.5s' }}>
-          <div className="relative w-12 h-12 flex-shrink-0">
-            <svg viewBox="0 0 36 36" className="w-12 h-12" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="4" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#fbbf24" strokeWidth="4"
-                strokeDasharray={`${(ringFill * 0.879).toFixed(1)} 87.96`} strokeLinecap="round"
-                style={{ transition: 'stroke-dasharray 0.3s' }} />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center font-black text-[#fbbf24]" style={{ fontSize: '8px' }}>
-              {Math.round(ringFill)}%
-            </span>
-          </div>
-          <div>
-            <p className="text-white font-black" style={{ fontSize: '9px' }}>تقدم البرنامج</p>
-            <p className="text-white/30" style={{ fontSize: '7px' }}>18 يوم من 30 مكتملة</p>
-            <div className="flex gap-0.5 mt-1.5">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className={`rounded-full ${i < 5 ? 'bg-[#fbbf24]' : 'bg-white/10'}`} style={{ width: '12px', height: '5px' }} />
-              ))}
-            </div>
-          </div>
-        </div>
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-1.5 mb-2">
-          {cards.map((c, i) => (
-            <div key={i} className="bg-white/[0.03] border border-white/8 rounded-xl p-2"
-              style={{ opacity: p > 0.18 + i * 0.10 ? 1 : 0, transform: `translateY(${p > 0.18 + i * 0.10 ? 0 : 5}px)`, transition: 'all 0.4s' }}>
-              <p className="font-black text-xs" style={{ color: c.c }}>{c.v}</p>
-              <p className="text-white/25 mt-0.5" style={{ fontSize: '7px' }}>{c.l}</p>
+
+        {/* Nav items */}
+        <div className="space-y-0.5" style={{ opacity: p > 0.06 ? 1 : 0, transition: 'opacity 0.5s' }}>
+          {navItems.map((item, i) => (
+            <div key={i}
+              className={`flex items-center px-1.5 py-1 rounded-xl justify-end gap-1.5 ${item.active ? 'bg-[#fbbf24]' : ''}`}>
+              <span
+                className={`text-right font-bold truncate ${item.active ? 'text-black' : 'text-white/20'}`}
+                style={{ fontSize: '5.5px' }}>
+                {item.label}
+              </span>
+              <div className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 ${item.active ? 'bg-black/10' : 'bg-white/5'}`}>
+                <span style={{ fontSize: '8px', opacity: item.active ? 1 : 0.5 }}>
+                  {['🏠','🥗','🏋️','🔬','📊','📅','🛒'][i]}
+                </span>
+              </div>
             </div>
           ))}
-        </div>
-        {/* Next session */}
-        <div className="bg-[#fbbf24]/8 border border-[#fbbf24]/20 rounded-xl p-2"
-          style={{ opacity: p > 0.65 ? 1 : 0, transition: 'opacity 0.5s' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[#fbbf24] font-black" style={{ fontSize: '8px' }}>💪 تمرين اليوم</p>
-              <p className="text-white/35" style={{ fontSize: '7px' }} dir="ltr">Push Day A — Week 3</p>
-            </div>
-            <div className="bg-[#fbbf24] rounded-lg px-2 py-1">
-              <span className="text-black font-black" style={{ fontSize: '7px' }}>ابدأ ←</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -878,145 +930,169 @@ function S6_Dashboard({ p }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 7 — Portal (Nutrition / Training / Progress)
+   SCENE 7 — Client Plan (matches real client/plan page)
+   3 top tabs: التغذية | التدريب | التقدم
+   Right icon column
 ══════════════════════════════════════ */
 function S7_Portal({ p }) {
-  const tab = p < 0.33 ? 0 : p < 0.66 ? 1 : 2
-  const tabs = [
-    { icon:'🥗', label:'التغذية' },
-    { icon:'🏋️', label:'التدريب' },
-    { icon:'📊', label:'التقدم'  },
-  ]
+  // Start with training (1), then nutrition (0), then progress (2)
+  const tab = p < 0.35 ? 1 : p < 0.68 ? 0 : 2
+
+  const rightIcons = ['📊','🏋️','🥗','🔬','📅','🛒','📷']
+
   return (
-    <div className="h-full flex" style={{ background: '#0a0a0a' }}>
-      {/* Sidebar */}
-      <div className="w-11 bg-[#111] border-r border-white/5 flex flex-col items-center py-3 gap-2.5 flex-shrink-0">
-        <div className="w-7 h-7 bg-[#fbbf24] rounded-xl flex items-center justify-center mb-1">
-          <span className="text-black text-[9px] font-black">⚡</span>
-        </div>
-        {['🏠','🥗','🏋️','📊','📝','📷'].map((ic, i) => (
-          <div key={i} className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs transition-all
-            ${i === tab + 1 ? 'bg-[#fbbf24]/15 border border-[#fbbf24]/35' : ''}`}>
-            {ic}
+    <div className="h-full flex flex-col" style={{ background: '#0a0a0a' }}>
+
+      {/* ── 3 top tabs — matches real page ── */}
+      <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {[
+          { label: 'التغذية', idx: 0 },
+          { label: 'التدريب', idx: 1 },
+          { label: 'التقدم',  idx: 2 },
+        ].map((t) => (
+          <div key={t.idx}
+            className={`flex-1 py-2 text-center font-black transition-all ${
+              t.idx === tab ? 'bg-[#fbbf24] text-black' : 'text-white/25'
+            }`}
+            style={{ fontSize: '8px' }}>
+            {t.label}
           </div>
         ))}
       </div>
-      {/* Main */}
-      <div className="flex-1 p-3 overflow-hidden">
-        {/* Tab switcher */}
-        <div className="flex bg-white/[0.04] border border-white/8 rounded-xl p-1 mb-3">
-          {tabs.map((t, i) => (
-            <div key={t.label} className={`flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 transition-all cursor-pointer ${i === tab ? 'bg-[#fbbf24] shadow-md' : ''}`}>
-              <span style={{ fontSize: '9px' }}>{t.icon}</span>
-              <span className={`font-black ${i === tab ? 'text-black' : 'text-white/25'}`} style={{ fontSize: '7px' }}>{t.label}</span>
-            </div>
-          ))}
-        </div>
 
-        {/* ── Nutrition tab ── */}
-        {tab === 0 && (
-          <div className="space-y-1.5">
-            <div className="bg-white/[0.04] border border-white/8 rounded-xl p-2 mb-1">
-              <div className="flex justify-between text-[7px] font-black mb-1">
-                <span className="text-blue-400">بروتين 35%</span>
-                <span className="text-yellow-400">كارب 47%</span>
-                <span className="text-rose-400">دهون 18%</span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden flex">
-                <div className="bg-blue-400 rounded-l-full" style={{ width:`${p > 0.04 ? 35 : 0}%`, transition:'width 0.8s' }} />
-                <div className="bg-yellow-400"               style={{ width:`${p > 0.06 ? 47 : 0}%`, transition:'width 1s' }} />
-                <div className="bg-rose-400 flex-1 rounded-r-full" style={{ opacity: p > 0.08 ? 1 : 0, transition:'opacity 0.5s' }} />
-              </div>
-              <div className="flex justify-between mt-1.5 text-[6px] text-white/20">
-                <span>1,840 kcal / يوم</span>
-                <span>161g بروتين</span>
-              </div>
-            </div>
-            {[
-              { ic:'🌅', n:'الفطور',   t:'07:00', kcal:'420', d:'شوفان + بيض مسلوق + موز' },
-              { ic:'🍎', n:'وجبة خفيفة', t:'10:30', kcal:'180', d:'تفاحة + مكسرات' },
-              { ic:'☀️', n:'الغداء',   t:'13:00', kcal:'650', d:'أرز + دجاج + خضار مشوية' },
-              { ic:'🌙', n:'العشاء',   t:'19:30', kcal:'480', d:'تونة + سلطة + بطاطا حلوة' },
-            ].map((m, i) => (
-              <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/8 rounded-xl px-2 py-1.5"
-                style={{ opacity: p > i * 0.06 ? 1 : 0, transition: 'opacity 0.4s' }}>
-                <span style={{ fontSize: '12px' }}>{m.ic}</span>
-                <div className="flex-1">
-                  <p className="text-white font-black" style={{ fontSize: '8px' }}>{m.n} <span className="text-white/20 font-normal">{m.t}</span></p>
-                  <p className="text-white/25" style={{ fontSize: '6px' }}>{m.d}</p>
+      {/* ── Body ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Content */}
+        <div className="flex-1 overflow-hidden p-2" dir="rtl">
+
+          {/* ── Training tab ── */}
+          {tab === 1 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg px-2 py-0.5">
+                  <span className="text-blue-400 font-black" style={{ fontSize: '7px' }} dir="ltr">WARM UP ✓</span>
                 </div>
-                <span className="text-emerald-400 font-black" style={{ fontSize: '8px' }}>{m.kcal}</span>
+                <span className="text-white/25 font-medium" style={{ fontSize: '6.5px' }} dir="ltr">
+                  Push / Pull Day A — Week 1
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── Training tab ── */}
-        {tab === 1 && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="bg-blue-500/15 border border-blue-500/25 rounded-lg px-2 py-0.5">
-                <span className="text-blue-400 font-black" style={{ fontSize: '7px' }} dir="ltr">WARM UP ✓</span>
-              </div>
-              <p className="text-white/25" style={{ fontSize: '7px' }} dir="ltr">Push / Pull Day A — Week 3</p>
-            </div>
-            {[
-              { n:'Bench Press',      sets:'4', reps:'8',   rest:'90s', m:'Chest',     done:true  },
-              { n:'Incline DB Press', sets:'3', reps:'10',  rest:'75s', m:'Chest',     done:true  },
-              { n:'Pull-Up',          sets:'4', reps:'Max', rest:'90s', m:'Back',      done:false },
-              { n:'Barbell Row',      sets:'3', reps:'10',  rest:'75s', m:'Back',      done:false },
-              { n:'Overhead Press',   sets:'3', reps:'10',  rest:'60s', m:'Shoulders', done:false },
-            ].map((e, i) => (
-              <div key={i}
-                className={`flex items-center gap-2 border rounded-xl px-2 py-1.5 transition-all ${e.done ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-white/[0.03] border-white/8'}`}
-                style={{ opacity: p > 0.35 + i * 0.06 ? 1 : 0, transform:`translateY(${p > 0.35 + i * 0.06 ? 0 : 4}px)`, transition:'all 0.35s' }}>
-                <span className={`text-[9px] ${e.done ? 'text-emerald-400' : 'text-white/15'}`}>{e.done ? '✓' : '○'}</span>
-                <div className="flex-1">
-                  <p className="text-white font-black" style={{ fontSize: '8px' }} dir="ltr">{e.n}</p>
-                  <p className="text-white/25" style={{ fontSize: '6px' }} dir="ltr">{e.m}</p>
-                </div>
-                <p className="text-[#fbbf24] font-black" style={{ fontSize: '8px' }} dir="ltr">{e.sets}×{e.reps}</p>
-                <p className="text-white/30 font-mono" style={{ fontSize: '7px' }} dir="ltr">{e.rest}</p>
-              </div>
-            ))}
-            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 text-center"
-              style={{ opacity: p > 0.62 ? 1 : 0, transition: 'opacity 0.4s' }}>
-              <p className="text-white/20 text-[7px]" dir="ltr">COOL DOWN — 10 min stretching</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Progress tab ── */}
-        {tab === 2 && (
-          <div className="space-y-2">
-            <div className="bg-white/[0.03] border border-white/8 rounded-xl p-2.5">
-              <p className="text-white/30 font-bold mb-2" style={{ fontSize: '7px' }} dir="ltr">Weight (kg) — 4 Weeks</p>
-              <div className="flex items-end gap-1.5" style={{ height: '55px' }}>
-                {[{w:86.2,wk:'W1'},{w:84.8,wk:'W2'},{w:83.5,wk:'W3'},{w:82.5,wk:'W4'}].map(({w,wk}, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                    <span className="text-white font-black" style={{ fontSize: '7px' }}>{w}</span>
-                    <div className="w-full rounded-t"
-                      style={{ height:`${((w-80)/8)*36}px`, background:'linear-gradient(to top,#fbbf24,#fbbf24aa)', transition:`height 0.6s ease ${i*0.1}s` }} />
-                    <span className="text-white/20" style={{ fontSize: '6px' }}>{wk}</span>
+              <div className="space-y-1.5">
+                {[
+                  { pct: '90%', sets: '4×8',   name: 'Bench Press',      done: true  },
+                  { pct: '75%', sets: '3×10',  name: 'Incline DB Press',  done: true  },
+                  { pct: '70%', sets: '4×Max', name: 'Pull-Up',           done: false },
+                  { pct: '65%', sets: '3×10',  name: 'Barbell Row',       done: false },
+                  { pct: '60%', sets: '3×10',  name: 'Overhead Press',    done: false },
+                ].map((e, i) => (
+                  <div key={i}
+                    className={`flex items-center gap-1.5 rounded-xl px-2 py-1.5 border ${
+                      e.done ? 'bg-white/[0.05] border-white/12' : 'bg-white/[0.02] border-white/7'
+                    }`}
+                    style={{
+                      opacity: p > 0.06 + i * 0.06 ? 1 : 0,
+                      transform: `translateX(${p > 0.06 + i * 0.06 ? 0 : -4}px)`,
+                      transition: 'all 0.35s',
+                    }}>
+                    <span className="text-white/20 font-mono flex-shrink-0" style={{ fontSize: '6.5px' }} dir="ltr">{e.pct}</span>
+                    <span className="text-[#fbbf24] font-black flex-shrink-0" style={{ fontSize: '7.5px' }} dir="ltr">{e.sets}</span>
+                    <span className="text-white font-bold flex-1 text-right" style={{ fontSize: '8px' }} dir="ltr">{e.name}</span>
+                    <span className={`font-black flex-shrink-0 ${e.done ? 'text-white/80' : 'text-white/15'}`} style={{ fontSize: '10px' }}>
+                      {e.done ? '✓' : '○'}
+                    </span>
                   </div>
                 ))}
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-1.5 text-center"
+                  style={{ opacity: p > 0.34 ? 1 : 0, transition: 'opacity 0.4s' }}>
+                  <span className="text-white/20" style={{ fontSize: '6.5px' }} dir="ltr">COOL DOWN — 10 min stretching</span>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-1.5"
-              style={{ opacity: p > 0.80 ? 1 : 0, transition: 'opacity 0.5s' }}>
-              {[['−3.7 كغ','الوزن'],['−4.2 سم','الخصر'],['18.5%','الدهون']].map(([v,l]) => (
-                <div key={l} className="bg-white/[0.03] border border-white/8 rounded-xl p-1.5 text-center">
-                  <p className="text-emerald-400 font-black" style={{ fontSize: '9px' }}>{v}</p>
-                  <p className="text-white/25" style={{ fontSize: '6px' }}>{l}</p>
+          )}
+
+          {/* ── Nutrition tab ── */}
+          {tab === 0 && (
+            <div className="space-y-1.5">
+              <div className="bg-white/[0.03] border border-white/8 rounded-xl p-2 mb-1">
+                <div className="flex justify-between mb-1">
+                  <span className="text-blue-400 font-black" style={{ fontSize: '6.5px' }}>بروتين 35%</span>
+                  <span className="text-yellow-400 font-black" style={{ fontSize: '6.5px' }}>كارب 47%</span>
+                  <span className="text-rose-400 font-black" style={{ fontSize: '6.5px' }}>دهون 18%</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden flex">
+                  <div className="bg-blue-400" style={{ width: '35%' }} />
+                  <div className="bg-yellow-400" style={{ width: '47%' }} />
+                  <div className="bg-rose-400 flex-1" />
+                </div>
+                <p className="text-white/20 text-right mt-1" style={{ fontSize: '6px' }}>1,840 kcal / يوم • 161g بروتين</p>
+              </div>
+              {[
+                { ic: '🌅', n: 'الفطور',       t: '07:00', kcal: '420', d: 'شوفان + بيض + موز' },
+                { ic: '🍎', n: 'وجبة خفيفة',  t: '10:30', kcal: '180', d: 'تفاحة + مكسرات' },
+                { ic: '☀️', n: 'الغداء',       t: '13:00', kcal: '650', d: 'أرز + دجاج + خضار' },
+                { ic: '🌙', n: 'العشاء',       t: '19:30', kcal: '480', d: 'تونة + سلطة' },
+              ].map((m, i) => (
+                <div key={i} className="flex items-center gap-1.5 bg-white/[0.03] border border-white/8 rounded-xl px-2 py-1.5"
+                  style={{ opacity: p > 0.38 + i * 0.07 ? 1 : 0, transition: 'opacity 0.4s' }}>
+                  <span style={{ fontSize: '11px' }}>{m.ic}</span>
+                  <div className="flex-1 text-right">
+                    <p className="text-white font-black" style={{ fontSize: '7.5px' }}>
+                      {m.n} <span className="text-white/20 font-normal" style={{ fontSize: '6.5px' }}>{m.t}</span>
+                    </p>
+                    <p className="text-white/25" style={{ fontSize: '6px' }}>{m.d}</p>
+                  </div>
+                  <span className="text-emerald-400 font-black" style={{ fontSize: '7.5px' }}>{m.kcal}</span>
                 </div>
               ))}
             </div>
-            <div className="bg-[#fbbf24]/8 border border-[#fbbf24]/20 rounded-xl p-2"
-              style={{ opacity: p > 0.88 ? 1 : 0, transition: 'opacity 0.5s' }}>
-              <p className="text-[#fbbf24] font-black text-center" style={{ fontSize: '8px' }}>📸 أضف صورة تقدم أسبوعية</p>
+          )}
+
+          {/* ── Progress tab ── */}
+          {tab === 2 && (
+            <div className="space-y-2">
+              <div className="bg-white/[0.03] border border-white/8 rounded-xl p-2">
+                <p className="text-white/30 font-bold mb-2 text-right" style={{ fontSize: '7px' }} dir="ltr">
+                  Weight (kg) — 4 Weeks
+                </p>
+                <div className="flex items-end gap-1.5" style={{ height: '48px' }}>
+                  {[{ w: 86.2, wk: 'W1' }, { w: 84.8, wk: 'W2' }, { w: 83.5, wk: 'W3' }, { w: 82.5, wk: 'W4' }].map(({ w, wk }, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                      <span className="text-white font-black" style={{ fontSize: '6.5px' }}>{w}</span>
+                      <div className="w-full rounded-t"
+                        style={{ height: `${((w - 80) / 8) * 30}px`, background: 'linear-gradient(to top,#fbbf24,#fbbf24aa)' }} />
+                      <span className="text-white/20" style={{ fontSize: '5.5px' }}>{wk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[['−3.7 كغ', 'الوزن'], ['−4.2 سم', 'الخصر'], ['18.5%', 'الدهون']].map(([v, l]) => (
+                  <div key={l} className="bg-white/[0.03] border border-white/8 rounded-xl p-1.5 text-center">
+                    <p className="text-emerald-400 font-black" style={{ fontSize: '9px' }}>{v}</p>
+                    <p className="text-white/25" style={{ fontSize: '6px' }}>{l}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-[#fbbf24]/8 border border-[#fbbf24]/20 rounded-xl p-2 text-center"
+                style={{ opacity: p > 0.88 ? 1 : 0, transition: 'opacity 0.5s' }}>
+                <p className="text-[#fbbf24] font-black" style={{ fontSize: '7.5px' }}>📸 أضف صورة تقدم أسبوعية</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* ── Right icon column — matches real page ── */}
+        <div className="w-9 bg-[#0d0d0d] border-r border-white/5 flex flex-col items-center pt-2 gap-1.5 flex-shrink-0">
+          {rightIcons.map((icon, i) => (
+            <div key={i}
+              className={`w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer ${
+                (i === 1 && tab === 1) || (i === 2 && tab === 0) || (i === 0 && tab === 2)
+                  ? 'bg-[#fbbf24]/15 border border-[#fbbf24]/30'
+                  : ''
+              }`}>
+              <span style={{ fontSize: '12px', opacity: 0.35 }}>{icon}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -1068,19 +1144,19 @@ const SCENES = [
     render: (p) => <S5_Login p={p} />,
   },
   {
-    url:    'amine-fit.com/client/dashboard',
-    label:  '🏠 لوحة التحكم الرئيسية',
-    icon:   '🏠',
+    url:    'amine-fit.com/client/home',
+    label:  '📱 تطبيق Amine-Fit — الصفحة الرئيسية',
+    icon:   '📱',
     ms:     6000,
-    cursor: [[0,.72,.28],[.2,.75,.50],[.45,.75,.62],[.65,.30,.50],[.85,.30,.62],[1,.30,.65]],
+    cursor: [[0,.35,.28],[.20,.35,.45],[.45,.35,.60],[.65,.35,.72],[.85,.65,.72],[1,.65,.72]],
     render: (p) => <S6_Dashboard p={p} />,
   },
   {
     url:    'amine-fit.com/client/plan',
-    label:  '⚡ التغذية / التدريب / التقدم',
+    label:  '⚡ التطبيق — التغذية / التدريب / التقدم',
     icon:   '⚡',
     ms:     6500,
-    cursor: [[0,.35,.18],[.10,.35,.18],[.32,.35,.18],[.36,.55,.18],[.54,.55,.18],[.70,.75,.18],[.86,.75,.18],[1,.75,.18]],
+    cursor: [[0,.75,.18],[.12,.25,.18],[.34,.25,.18],[.38,.50,.18],[.55,.50,.18],[.70,.75,.18],[.86,.75,.18],[1,.75,.18]],
     render: (p) => <S7_Portal p={p} />,
   },
 ]
