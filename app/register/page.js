@@ -89,7 +89,7 @@ const INIT = {
   email:'', name:'', gender:'', age:'', height:'', weight:'',
   phone:'', workActivity:'', hasScale:'',
   goal:'', targetWeight:'', goalTimeline:'', trainingExperience:'',
-  hasInBody:'', inBodyNote:'', hasNFS:'', nfsNote:'',
+  hasInBody:'', inBodyNote:'', bodyFatPct:'', hasNFS:'', nfsNote:'',
   dailyMeals:'', foodAllergy:'', dislikedFoods:'', preferredFoods:'',
   appetite:'', currentDiet:'',
   waterIntake:'', hasChronicDisease:'', chronicDiseaseNote:'',
@@ -362,6 +362,18 @@ export default function RegisterPage() {
                   <Textarea field="inBodyNote" form={form} setForm={setForm} errors={errors} rows={3} />
                 </Inp>
               )}
+              <Inp label="نسبة الدهون في الجسم % (اختياري)"
+                hint="إذا أجريت قياس InBody أو DEXA — أدخل النسبة لدقة أعلى في حساباتك">
+                <input
+                  type="number"
+                  min="3"
+                  max="70"
+                  placeholder="مثال: 18"
+                  value={form.bodyFatPct ?? ''}
+                  onChange={e => setForm(f => ({ ...f, bodyFatPct: e.target.value }))}
+                  className={cls(errors.bodyFatPct)}
+                />
+              </Inp>
               <Inp label="هل قمت بإجراء تحاليل للدم (NFS)؟" required error={errors.hasNFS}>
                 <RadioGroup field="hasNFS" form={form} setForm={setForm}
                   options={[{value:'yes',label:'نعم'},{value:'no',label:'لا'}]} />

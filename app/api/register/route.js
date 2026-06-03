@@ -72,6 +72,7 @@ export async function POST(req) {
       hasScale:            ['yes','no'].includes(body.hasScale) ? body.hasScale : '',
       hasInBody:           ['yes','no'].includes(body.hasInBody) ? body.hasInBody : '',
       inBodyNote:          sanitizeStr(body.inBodyNote),
+      bodyFatPct: body.bodyFatPct ? Math.min(70, Math.max(3, parseFloat(body.bodyFatPct) || 0)) || null : null,
       hasNFS:              ['yes','no'].includes(body.hasNFS) ? body.hasNFS : '',
       nfsNote:             sanitizeStr(body.nfsNote),
       foodAllergy:         sanitizeStr(body.foodAllergy),
