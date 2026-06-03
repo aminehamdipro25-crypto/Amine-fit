@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
+import { sendEmail } from '@/lib/mailer'
 
 export async function POST(req, { params }) {
   const deny = await requireAdmin()
@@ -26,28 +27,26 @@ export async function POST(req, { params }) {
     approvedAt:     new Date().toISOString(),
   })
 
-  if (process.env.RESEND_API_KEY && client.email) {
-    sendActivationEmail(client, activationCode).catch(e => console.error('[approve email]', e.message))
+  let emailSent = false
+  let emailError = null
+
+  if (client.email) {
+    try {
+      await sendEmail({
+        to:      client.email,
+        subject: `تمت الموافقة على طلبك في Amine-Fit — كود التفعيل: ${activationCode}`,
+        html:    buildEmail(client, activationCode),
+        text:    `مرحباً ${client.name || ''}،\n\nتمت الموافقة على طلبك في Amine-Fit.\n\nكود التفعيل: ${activationCode}\n\nاذهب إلى: ${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/client/login\nاختر "تفعيل الحساب" وأدخل الكود.\n\nهذا الكود للاستخدام مرة واحدة فقط.\n\nأمين حمدي — Amine-Fit`,
+      })
+      emailSent = true
+    } catch (e) {
+      console.error('[approve email]', e.message)
+      emailError = e.message
+    }
   }
 
   // Return code to admin UI (admin-only endpoint, over HTTPS, for display in modal)
-  return NextResponse.json({ success: true, email: client.email, activationCode })
-}
-
-async function sendActivationEmail(client, activationCode) {
-  const res = await fetch('https://api.resend.com/emails', {
-    method:  'POST',
-    headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from:     'AmineFit <onboarding@resend.dev>',
-      reply_to: 'amine.hamdi.pro25@gmail.com',
-      to:       [client.email],
-      subject:  `تمت الموافقة على طلبك في Amine-Fit — كود التفعيل: ${activationCode}`,
-      html:     buildEmail(client, activationCode),
-      text:     `مرحباً ${client.name || ''}،\n\nتمت الموافقة على طلبك في Amine-Fit.\n\nكود التفعيل: ${activationCode}\n\nاذهب إلى: https://amine-fit.com/client/login\nاختر "تفعيل الحساب" وأدخل الكود.\n\nهذا الكود للاستخدام مرة واحدة فقط.\n\nأمين حمدي — Amine-Fit`,
-    }),
-  })
-  if (!res.ok) console.error('[approve email resend]', await res.text())
+  return NextResponse.json({ success: true, email: client.email, activationCode, emailSent, emailError })
 }
 
 function esc(s) {
@@ -73,12 +72,12 @@ function buildEmail(client, activationCode) {
     </p>
 
     <div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
-      <p style="margin:0 0 8px;font-weight:bold;color:#92400e;font-size:14px">🔑 كود التفعيل (استخدام واحد فقط)</p>
+      <p style="margin:0 0 8px;font-weight:bold;color:#92400e;font-size:14px">كود التفعيل (استخدام واحد فقط)</p>
       <p style="margin:0;font-family:monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#d97706;direction:ltr">${esc(activationCode)}</p>
     </div>
 
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:20px">
-      <p style="margin:0 0 8px;font-weight:bold;color:#166534;font-size:13px">📋 خطوات التفعيل:</p>
+      <p style="margin:0 0 8px;font-weight:bold;color:#166534;font-size:13px">خطوات التفعيل:</p>
       <ol style="margin:0;padding-right:20px;font-size:13px;color:#374151;line-height:2">
         <li>اذهب إلى بوابة العميل</li>
         <li>اختر تبويب "تفعيل الحساب"</li>
@@ -89,7 +88,7 @@ function buildEmail(client, activationCode) {
 
     <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/client/login"
        style="display:block;text-align:center;background:#f59e0b;color:#000;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;margin-bottom:16px">
-      ⚡ تفعيل الحساب الآن
+      تفعيل الحساب الآن
     </a>
 
     <p style="font-size:11px;color:#9ca3af;text-align:center;margin:0">

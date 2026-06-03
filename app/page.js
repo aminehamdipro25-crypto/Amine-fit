@@ -18,6 +18,7 @@ import WaitingList     from '@/components/landing/WaitingList'
 import ContactSection  from '@/components/landing/ContactSection'
 import Footer          from '@/components/landing/Footer'
 import WhatsAppButton  from '@/components/landing/WhatsAppButton'
+import ScrollToTop     from '@/components/landing/ScrollToTop'
 
 export default function Home() {
   return (
@@ -44,6 +45,7 @@ export default function Home() {
       </main>
       <Footer />
       <WhatsAppButton />
+      <ScrollToTop />
     </>
   )
 }

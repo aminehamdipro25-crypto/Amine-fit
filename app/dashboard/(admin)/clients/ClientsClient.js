@@ -518,7 +518,11 @@ function ClientAccessSection({ client, onUpdate }) {
       const data = await res.json()
       if (res.ok) {
         onUpdate(client.id, { status: 'active' })
-        setSentMsg(`✅ تم الإرسال — الكود: ${data.activationCode}`)
+        if (data.emailSent) {
+          setSentMsg(`✅ تم إرسال الإيميل — الكود: ${data.activationCode}`)
+        } else {
+          setSentMsg(`⚠️ الكود: ${data.activationCode} — فشل الإيميل، شارك الكود عبر واتساب`)
+        }
       } else {
         setSentMsg('❌ فشل الإرسال — حاول مرة أخرى')
       }
@@ -562,12 +566,14 @@ function ClientAccessSection({ client, onUpdate }) {
             </button>
             {sentMsg && (
               <div>
-                <p className="text-xs font-bold text-center text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                <p className="text-xs font-bold text-center text-slate-600 bg-white border border-slate-200 rounded-lg px-3 py-2 select-all">
                   {sentMsg}
                 </p>
-                <p className="text-[10px] text-amber-600 text-center mt-1.5 font-medium">
-                  ⚠️ إذا لم يصل العميل بريداً — اطلب منه التحقق من مجلد Spam، أو أرسل له الكود مباشرةً عبر واتساب
-                </p>
+                {sentMsg.startsWith('✅') && (
+                  <p className="text-[10px] text-amber-600 text-center mt-1.5 font-medium">
+                    إذا لم يصل الإيميل — اطلب من العميل التحقق من مجلد Spam
+                  </p>
+                )}
               </div>
             )}
             <p className="text-xs text-slate-400 text-center">
