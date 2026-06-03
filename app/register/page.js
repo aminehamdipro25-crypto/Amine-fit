@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star } from 'lucide-react'
+import { trackEvent } from '@/lib/gtag'
 
 // Map Arabic plan names from pricing page to subscription plan keys
 const PLAN_NAME_MAP = {
@@ -151,12 +152,14 @@ export default function RegisterPage() {
   useEffect(() => {
     const plan = new URLSearchParams(window.location.search).get('plan') || ''
     if (plan) setForm(f => ({ ...f, interestedPlan: plan }))
+    trackEvent('form_start', { form_name: 'registration', interested_plan: plan || 'none' })
   }, [])
 
   function next() {
     const errs = validate(step, form)
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
+    trackEvent('form_step_complete', { step_number: step + 1, step_name: STEPS[step].title })
     setStep(s => s + 1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -179,6 +182,12 @@ export default function RegisterPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'خطأ')
+      trackEvent('registration_complete', {
+        interested_plan: form.interestedPlan || 'none',
+        goal: form.goal,
+        gender: form.gender,
+        heard_from: form.heardFrom,
+      })
       const planParam = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''
       const emailParam = data.email ? `&email=${encodeURIComponent(data.email)}` : ''
       router.push(data.alreadyRegistered ? `/register/success?existing=1${planParam}${emailParam}` : `/register/success?${planParam}${emailParam}`)

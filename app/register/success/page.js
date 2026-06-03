@@ -1,8 +1,9 @@
 'use client'
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, Clock, Calendar } from 'lucide-react'
+import { trackEvent } from '@/lib/gtag'
 
 const WA         = '97430653759'
 const D17_NUMBER = 'XX XXX XXX' // ← يُحدَّث بعد التفعيل
@@ -46,6 +47,10 @@ function SuccessContent() {
   const email    = params.get('email') || ''
   const plan     = PLANS[planName]
 
+  useEffect(() => {
+    trackEvent('registration_success_page', { plan_name: planName || 'none' })
+  }, [planName])
+
   // 'none' | 'd17' | 'post' | 'later'
   const [method, setMethod]       = useState(null)
   const [laterDate, setLaterDate] = useState('')
@@ -61,6 +66,7 @@ function SuccessContent() {
 
   function handleMethodSelect(m) {
     setMethod(m)
+    trackEvent('payment_method_selected', { method: m, plan_name: planName, source: 'success_page' })
     if (m !== 'later') {
       confirmPayment(email, m)
     }
@@ -69,6 +75,7 @@ function SuccessContent() {
   function handleLaterConfirm() {
     if (!laterDate) return
     confirmPayment(email, 'later_' + 'post', laterDate)
+    trackEvent('pay_later_scheduled', { plan_name: planName, scheduled_date: laterDate })
     setConfirmed(true)
   }
 
@@ -256,7 +263,7 @@ function SuccessContent() {
         {/* ─── WhatsApp CTA ─── */}
         {(method === 'd17' || method === 'post') && !sent && (
           <a href={`https://wa.me/${WA}?text=${waMsg()}`} target="_blank" rel="noreferrer"
-            onClick={() => setSent(true)}
+            onClick={() => { setSent(true); trackEvent('whatsapp_payment_clicked', { method, plan_name: planName, source: 'success_page' }) }}
             className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4 shadow-lg shadow-green-900/30">
             <MessageCircle className="w-5 h-5" fill="white" />
             أرسلت الدفع — فعّل حسابي على واتساب
