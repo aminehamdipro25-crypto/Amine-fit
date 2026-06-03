@@ -2,7 +2,7 @@
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, Clock, Calendar } from 'lucide-react'
 
 const WA         = '97430653759'
 const D17_NUMBER = 'XX XXX XXX' // ← يُحدَّث بعد التفعيل
@@ -15,14 +15,43 @@ const PLANS = {
   'باقة 3 أشهر':   { price: '300', label: 'باقة 3 أشهر',    emoji: '🏆' },
 }
 
+// Get tomorrow's date as min for date picker
+function minDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
+// Max date: 7 days from now
+function maxDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().split('T')[0]
+}
+
+async function confirmPayment(email, method, payLaterDate = null) {
+  if (!email) return
+  try {
+    await fetch('/api/register/confirm-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, method, payLaterDate }),
+    })
+  } catch {}
+}
+
 function SuccessContent() {
   const params   = useSearchParams()
   const planName = params.get('plan') || ''
+  const email    = params.get('email') || ''
   const plan     = PLANS[planName]
 
-  const [method, setMethod]     = useState(null)   // 'd17' | 'post'
-  const [copied, setCopied]     = useState(false)
-  const [sent, setSent]         = useState(false)
+  // 'none' | 'd17' | 'post' | 'later'
+  const [method, setMethod]       = useState(null)
+  const [laterDate, setLaterDate] = useState('')
+  const [copied, setCopied]       = useState(false)
+  const [sent, setSent]           = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
 
   function copy(text) {
     navigator.clipboard.writeText(text.replace(/\s/g, '')).catch(() => {})
@@ -30,10 +59,23 @@ function SuccessContent() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  function handleMethodSelect(m) {
+    setMethod(m)
+    if (m !== 'later') {
+      confirmPayment(email, m)
+    }
+  }
+
+  function handleLaterConfirm() {
+    if (!laterDate) return
+    confirmPayment(email, 'later_' + 'post', laterDate)
+    setConfirmed(true)
+  }
+
   function waMsg() {
     const via = method === 'post' ? 'عبر البريد التونسي (إيداع)' : 'عبر D17'
     return encodeURIComponent(
-      `مرحباً أمين 👋\nلقد أكملت تسجيل الاستبيان وأرسلت الدفع ${via}.\n` +
+      `مرحباً أمين 👋\nلقد أكملت تسجيل الاستبيان وسأرسل الدفع ${via}.\n` +
       (plan ? `الباقة: ${plan.label} — ${plan.price} د.ت\n` : '') +
       `أرجو تفعيل حسابي. شكراً!`
     )
@@ -96,12 +138,12 @@ function SuccessContent() {
           </div>
         )}
 
-        {/* Method selector */}
+        {/* ─── Method selector ─── */}
         {!method && (
           <div>
             <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <button onClick={() => setMethod('d17')}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <button onClick={() => handleMethodSelect('d17')}
                 className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
                 <Smartphone className="w-7 h-7 text-[#fbbf24]" />
                 <div className="text-center">
@@ -109,7 +151,7 @@ function SuccessContent() {
                   <p className="text-white/30 text-xs mt-0.5">تحويل فوري</p>
                 </div>
               </button>
-              <button onClick={() => setMethod('post')}
+              <button onClick={() => handleMethodSelect('post')}
                 className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
                 <MapPin className="w-7 h-7 text-[#fbbf24]" />
                 <div className="text-center">
@@ -118,10 +160,15 @@ function SuccessContent() {
                 </div>
               </button>
             </div>
+            <button onClick={() => handleMethodSelect('later')}
+              className="w-full bg-white/3 hover:bg-white/5 border border-white/8 hover:border-white/15 rounded-2xl py-3 px-4 flex items-center justify-center gap-2 transition cursor-pointer">
+              <Clock className="w-4 h-4 text-white/40" />
+              <span className="text-white/40 text-sm font-bold">سأدفع لاحقاً — حدد موعداً</span>
+            </button>
           </div>
         )}
 
-        {/* D17 instructions */}
+        {/* ─── D17 instructions ─── */}
         {method === 'd17' && (
           <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 mb-5">
             <div className="flex items-center justify-between mb-5">
@@ -141,7 +188,7 @@ function SuccessContent() {
           </div>
         )}
 
-        {/* Post office instructions */}
+        {/* ─── Post office instructions ─── */}
         {method === 'post' && (
           <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 mb-5">
             <div className="flex items-center justify-between mb-5">
@@ -162,8 +209,52 @@ function SuccessContent() {
           </div>
         )}
 
-        {/* WhatsApp CTA */}
-        {method && !sent && (
+        {/* ─── Pay later ─── */}
+        {method === 'later' && !confirmed && (
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#fbbf24]" />
+                <p className="text-white font-extrabold text-sm">حدد موعد الدفع</p>
+              </div>
+              <button onClick={() => setMethod(null)} className="text-white/25 text-xs hover:text-white/50 underline">رجوع</button>
+            </div>
+            <p className="text-white/40 text-xs mb-4">اختر تاريخ الدفع (خلال 7 أيام كحد أقصى)</p>
+            <input
+              type="date"
+              min={minDate()}
+              max={maxDate()}
+              value={laterDate}
+              onChange={e => setLaterDate(e.target.value)}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm mb-4 outline-none focus:border-[#fbbf24]/40"
+              style={{ colorScheme: 'dark' }}
+            />
+            <button
+              onClick={handleLaterConfirm}
+              disabled={!laterDate}
+              className="w-full py-3 bg-[#fbbf24] text-black rounded-xl font-extrabold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition">
+              تأكيد الموعد
+            </button>
+          </div>
+        )}
+
+        {method === 'later' && confirmed && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 mb-5">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-amber-400 font-extrabold text-sm">تم تسجيل موعد الدفع</p>
+                <p className="text-white/40 text-xs mt-0.5">
+                  موعدك: {laterDate ? new Date(laterDate).toLocaleDateString('ar') : ''}
+                  {' '} — لا تنسَ إرسال وصل الإيداع بعد الدفع
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── WhatsApp CTA ─── */}
+        {(method === 'd17' || method === 'post') && !sent && (
           <a href={`https://wa.me/${WA}?text=${waMsg()}`} target="_blank" rel="noreferrer"
             onClick={() => setSent(true)}
             className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4 shadow-lg shadow-green-900/30">
@@ -179,7 +270,7 @@ function SuccessContent() {
           </div>
         )}
 
-        {/* No plan / fallback WA */}
+        {/* Fallback: no plan selected */}
         {!plan && !method && (
           <a href={`https://wa.me/${WA}?text=${encodeURIComponent('مرحباً أمين، أكملت التسجيل وأريد معرفة كيفية الدفع وتفعيل حسابي.')}`}
             target="_blank" rel="noreferrer"

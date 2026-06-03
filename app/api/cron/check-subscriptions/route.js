@@ -18,8 +18,10 @@ export async function GET(req) {
   const clients = await getSubmissions()
   const now = Date.now()
   let suspended = 0
+  let paymentExpired = 0
 
   for (const client of clients) {
+    // Expire active subscriptions past end date
     if (
       client.subscriptionEndDate &&
       new Date(client.subscriptionEndDate).getTime() < now &&
@@ -28,8 +30,25 @@ export async function GET(req) {
       await updateSubmission(client.id, { status: 'suspended', suspendedAt: new Date().toISOString() })
       await deleteClientSession(client.id).catch(() => {})
       suspended++
+      continue
+    }
+
+    // Expire pending clients who missed payment deadline
+    if (
+      client.status === 'pending' &&
+      client.paymentDeadline &&
+      new Date(client.paymentDeadline).getTime() < now
+    ) {
+      await updateSubmission(client.id, { status: 'payment_expired', paymentExpiredAt: new Date().toISOString() })
+      paymentExpired++
     }
   }
 
-  return NextResponse.json({ ok: true, suspended, checked: clients.length, ts: new Date().toISOString() })
+  return NextResponse.json({
+    ok: true,
+    suspended,
+    paymentExpired,
+    checked: clients.length,
+    ts: new Date().toISOString(),
+  })
 }

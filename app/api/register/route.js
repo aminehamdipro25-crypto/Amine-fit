@@ -96,13 +96,15 @@ export async function POST(req) {
       heardFrom:           sanitizeStr(body.heardFrom),
       notes:               sanitizeStr(body.notes),
       interestedPlan:      sanitizeStr(body.interestedPlan, 100),
-      status:             'pending',
+      status:              'pending',
+      paymentDeadline:     new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72h to pay
+      paymentMethodChosen: null,
     }
 
     const entry = await saveSubmission(safeEntry)
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
-    return NextResponse.json({ success: true, id: entry.id })
+    return NextResponse.json({ success: true, id: entry.id, email: safeEntry.email })
   } catch (err) {
     console.error('[register FAILED]', err.message)
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })

@@ -717,10 +717,12 @@ const goalMap = {
   performance: { label:'أداء رياضي',       color:'bg-purple-50 text-purple-700 border border-purple-200', icon:'🏃' },
 }
 const statusMap = {
-  new:       { label:'جديد',          color:'bg-amber-100 text-amber-700 border border-amber-200',     icon: Clock },
-  reviewed:  { label:'تمت المراجعة',  color:'bg-blue-100 text-blue-700 border border-blue-200',       icon: Eye },
-  active:    { label:'نشط',           color:'bg-emerald-100 text-emerald-700 border border-emerald-200', icon: CheckCircle2 },
-  suspended: { label:'معلق',          color:'bg-red-100 text-red-700 border border-red-200',           icon: AlertCircle },
+  new:             { label:'جديد',               color:'bg-amber-100 text-amber-700 border border-amber-200',     icon: Clock },
+  reviewed:        { label:'تمت المراجعة',       color:'bg-blue-100 text-blue-700 border border-blue-200',       icon: Eye },
+  pending:         { label:'انتظار الدفع',        color:'bg-yellow-100 text-yellow-700 border border-yellow-200', icon: CreditCard },
+  payment_expired: { label:'انتهت مهلة الدفع',   color:'bg-orange-100 text-orange-700 border border-orange-200', icon: AlertCircle },
+  active:          { label:'نشط',                color:'bg-emerald-100 text-emerald-700 border border-emerald-200', icon: CheckCircle2 },
+  suspended:       { label:'معلق',               color:'bg-red-100 text-red-700 border border-red-200',           icon: AlertCircle },
 }
 const actMap = {
   sedentary:'خامل', light:'خفيف', moderate:'متوسط', high:'عالي'
@@ -1069,6 +1071,32 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
             </div>
           </div>
 
+          {/* Payment status for pending clients */}
+          {(client.status === 'pending' || client.status === 'payment_expired') && (
+            <div>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">حالة الدفع</h3>
+              <div className={`rounded-2xl p-4 border ${client.status === 'payment_expired' ? 'bg-orange-50 border-orange-200' : 'bg-amber-50 border-amber-200'}`}>
+                {client.paymentMethodChosen && (
+                  <p className="text-sm font-bold text-slate-700 mb-1">
+                    طريقة الدفع المختارة: <span className="text-amber-700">{{
+                      d17: 'D17', post: 'مكتب البريد',
+                      later_d17: 'D17 — لاحقاً', later_post: 'مكتب البريد — لاحقاً'
+                    }[client.paymentMethodChosen] || client.paymentMethodChosen}</span>
+                  </p>
+                )}
+                {client.paymentDeadline && (
+                  <p className={`text-sm font-bold ${client.status === 'payment_expired' ? 'text-orange-700' : 'text-amber-700'}`}>
+                    {client.status === 'payment_expired' ? '⚠️ انتهت مهلة الدفع' : '⏰ موعد الدفع النهائي'}:
+                    {' '}{new Date(client.paymentDeadline).toLocaleString('ar')}
+                  </p>
+                )}
+                {!client.paymentMethodChosen && (
+                  <p className="text-sm text-slate-500">لم يختر طريقة الدفع بعد</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Plan status */}
           <div>
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">الخطة</h3>
@@ -1262,12 +1290,13 @@ export default function ClientsClient({ error }) {
   }
 
   const counts = {
-    all:       clients.length,
-    pending:   clients.filter(c => c.status === 'pending').length,
-    new:       clients.filter(c => c.status === 'new').length,
-    reviewed:  clients.filter(c => c.status === 'reviewed').length,
-    active:    clients.filter(c => c.status === 'active').length,
-    suspended: clients.filter(c => c.status === 'suspended').length,
+    all:             clients.length,
+    pending:         clients.filter(c => c.status === 'pending').length,
+    payment_expired: clients.filter(c => c.status === 'payment_expired').length,
+    new:             clients.filter(c => c.status === 'new').length,
+    reviewed:        clients.filter(c => c.status === 'reviewed').length,
+    active:          clients.filter(c => c.status === 'active').length,
+    suspended:       clients.filter(c => c.status === 'suspended').length,
   }
 
   return (
@@ -1481,7 +1510,7 @@ export default function ClientsClient({ error }) {
 
         {/* Status tabs */}
         <div className="flex gap-2 flex-wrap">
-          {[['all','الكل'],['pending','انتظار'],['new','جديد'],['reviewed','مراجعة'],['active','نشط'],['suspended','معلق']].map(([k,l]) => (
+          {[['all','الكل'],['pending','انتظار'],['payment_expired','منتهية'],['new','جديد'],['reviewed','مراجعة'],['active','نشط'],['suspended','معلق']].map(([k,l]) => (
             <button key={k} onClick={() => setFS(k)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border
                 ${filterStatus===k

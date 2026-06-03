@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react'
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 /* ══════════════════════════════════════════════════════════════
    WEB AUDIO MUSIC ENGINE
@@ -1157,7 +1157,7 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
 
       {/* Cursor */}
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 15 }}>
-        <Cursor x={cur.x} y={cur.y + 9} click={isClick} />
+        <Cursor x={cur.x * 100} y={cur.y * 91 + 9} click={isClick} />
       </div>
 
       {/* Page-change flash */}
@@ -1183,6 +1183,16 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
             <button onClick={() => jump(0)}
               className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0">
               <RotateCcw className="w-3 h-3 text-white" />
+            </button>
+            <button onClick={() => jump((si - 1 + SCENES.length) % SCENES.length)}
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
+              title="المشهد السابق">
+              <ChevronRight className="w-3.5 h-3.5 text-white" />
+            </button>
+            <button onClick={() => jump((si + 1) % SCENES.length)}
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
+              title="المشهد التالي">
+              <ChevronLeft className="w-3.5 h-3.5 text-white" />
             </button>
             {/* Music toggle */}
             <button onClick={toggleMute}
