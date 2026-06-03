@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { isRateLimited } from '@/lib/rateLimit'
 import {
-  calcBMR, calcTDEE, calcTarget, calcExchanges, generateMenu,
+  calcBMR, calcTDEE, calcTarget, calcExchanges, calcWaterGoal, generateMenu,
 } from '@/lib/nutritionEngine'
 
 const ACTIVITY_LABELS = {
@@ -64,12 +64,14 @@ function localPlan(form) {
   const bmr      = calcBMR(form.gender, form.weight, form.height, form.age)
   const tdee     = calcTDEE(bmr, form.activity)
   const target   = calcTarget(tdee, form.goal, form.gender)
-  const ex       = calcExchanges(target, form.goal, form.avoided)
+  const exOpts   = { age: form.age, bodyFatPct: form.bodyFatPct || null, weight: form.weight }
+  const ex       = calcExchanges(target, form.goal, form.avoided, exOpts)
+  const water    = calcWaterGoal(form.weight, form.activity)
   const duration = form.duration || 'day'
   const meals    = +form.meals
   const pref     = form.preferred
   const avoided  = form.avoided
-  const base     = { bmr: Math.round(bmr), tdee, target, ex, form, date: new Date().toISOString(), ai: false }
+  const base     = { bmr: Math.round(bmr), tdee, target, ex, water, form, date: new Date().toISOString(), ai: false }
 
   if (duration === 'week') {
     const days = DAY_NAMES.map((name, i) => ({ name, menu: generateMenu(ex, meals, pref, avoided, i) }))

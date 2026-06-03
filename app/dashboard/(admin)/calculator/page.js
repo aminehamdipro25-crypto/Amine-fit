@@ -43,7 +43,7 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', duration:'day', meals:5 }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5 }
 
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
@@ -140,6 +140,7 @@ export default function CalculatorPage() {
       weight:       c.weight       || '',
       height:       c.height       || '',
       targetWeight: c.targetWeight || '',
+      bodyFatPct:   c.bodyFatPct   || '',
       activity:     c.activityLevel || 'moderate',
       goal:         GOAL_MAP[c.goal] || 'maintain',
       preferred:    c.preferredFoods || '',
@@ -303,8 +304,8 @@ export default function CalculatorPage() {
             </div>
           </div>
 
-          {/* Row 2: Weight, Target Weight, Height */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Row 2: Weight, Target Weight, Height, Body Fat */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">الوزن الحالي (كغ) *</label>
               <input className={inp} type="number" placeholder="75" value={form.weight} onChange={e => set('weight', e.target.value)} />
@@ -316,6 +317,10 @@ export default function CalculatorPage() {
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">الطول (سم) *</label>
               <input className={inp} type="number" placeholder="175" value={form.height} onChange={e => set('height', e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">نسبة الدهون % <span className="text-slate-400 font-normal">(اختياري)</span></label>
+              <input className={inp} type="number" placeholder="20" min="3" max="70" value={form.bodyFatPct} onChange={e => set('bodyFatPct', e.target.value)} />
             </div>
           </div>
 
@@ -454,8 +459,13 @@ export default function CalculatorPage() {
               :               { label: 'سمنة',      color: 'text-red-700 bg-red-50 border-red-200' }
             const proteinG = result.ex.macros.protein
             const proteinPerKg = w > 0 ? (proteinG / w).toFixed(2) : null
-            const waterL = w > 0 ? (w * 0.035).toFixed(1) : null
-            const fiberTarget = form.gender === 'male' ? 38 : 25
+            // Use server-calculated water if available, else derive client-side
+            const waterData = result.water || (w > 0 ? { liters: (w * 0.035).toFixed(1), glasses: Math.round(w * 35 / 250) } : null)
+            // Fiber from exchanges (engine v4)
+            const fiberActual = result.ex.fiber?.g || result.ex.fiber
+            const fiberRecommended = result.ex.fiber?.recommended || (age > 50 ? 30 : 25)
+            // FFM protein target if body fat was provided
+            const proteinTarget = result.ex.proteinTarget
             const goalAdj = getGoal(form.goal).adj
             const weeklyChange = Math.abs(goalAdj) > 0 ? (Math.abs(goalAdj) * 7 / 7700).toFixed(2) : null
             const weightDiff = form.targetWeight ? Math.abs(+form.weight - +form.targetWeight) : null
@@ -469,24 +479,30 @@ export default function CalculatorPage() {
                     <p className="text-[10px] mt-0.5 font-semibold">{bmiCat.label}</p>
                   </div>
                 )}
-                {proteinPerKg && (
+                {proteinTarget ? (
+                  <div className="rounded-xl p-3 text-center border bg-red-50 border-red-200 text-red-800">
+                    <p className="text-xl font-extrabold">{Math.round(proteinTarget)} غ</p>
+                    <p className="text-xs font-bold mt-0.5">هدف البروتين (FFM)</p>
+                    <p className="text-[10px] mt-0.5 text-red-500">{proteinPerKg} غ/كغ · نسبة دهون {form.bodyFatPct}%</p>
+                  </div>
+                ) : proteinPerKg ? (
                   <div className="rounded-xl p-3 text-center border bg-red-50 border-red-100 text-red-800">
                     <p className="text-xl font-extrabold">{proteinPerKg}</p>
                     <p className="text-xs font-bold mt-0.5">غ بروتين / كغ</p>
                     <p className="text-[10px] mt-0.5 text-red-500">الموصى: 1.6–2.4</p>
                   </div>
-                )}
-                {waterL && (
+                ) : null}
+                {waterData && (
                   <div className="rounded-xl p-3 text-center border bg-cyan-50 border-cyan-100 text-cyan-800">
-                    <p className="text-xl font-extrabold">{waterL} L</p>
+                    <p className="text-xl font-extrabold">{waterData.liters} L</p>
                     <p className="text-xs font-bold mt-0.5">ماء موصى به</p>
-                    <p className="text-[10px] mt-0.5 text-cyan-500">35 مل × الوزن</p>
+                    <p className="text-[10px] mt-0.5 text-cyan-500">{waterData.glasses} كوب يومياً</p>
                   </div>
                 )}
                 <div className="rounded-xl p-3 text-center border bg-green-50 border-green-100 text-green-800">
-                  <p className="text-xl font-extrabold">{fiberTarget} غ</p>
-                  <p className="text-xs font-bold mt-0.5">هدف الألياف / يوم</p>
-                  <p className="text-[10px] mt-0.5 text-green-500">ADA/AND 2024</p>
+                  <p className="text-xl font-extrabold">{fiberActual || '—'} غ</p>
+                  <p className="text-xs font-bold mt-0.5">ألياف من الوجبات</p>
+                  <p className="text-[10px] mt-0.5 text-green-500">الموصى: {fiberRecommended} غ/يوم</p>
                 </div>
                 {weeksToGoal && goalAdj !== 0 && (
                   <div className="rounded-xl p-3 text-center border bg-violet-50 border-violet-100 text-violet-800 col-span-2 sm:col-span-4">
