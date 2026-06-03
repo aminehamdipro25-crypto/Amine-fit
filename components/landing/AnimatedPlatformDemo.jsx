@@ -6,10 +6,11 @@ import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2, Chevron
    WEB AUDIO MUSIC ENGINE
    Motivational 128-BPM beat with reverb + compression
 ══════════════════════════════════════════════════════════════ */
-const _BPM  = 128
+const _BPM  = 140
 const _B    = 60 / _BPM
 const _BAR  = _B * 4
-const _P5   = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25] // C4..C5 pentatonic
+// C5-C6 pentatonic — high-energy workout register
+const _P5   = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]
 
 function _makeReverb(ctx) {
   const len = Math.floor(ctx.sampleRate * 1.8)
@@ -21,14 +22,14 @@ function _makeReverb(ctx) {
   const conv = ctx.createConvolver(); conv.buffer = buf; return conv
 }
 
-function _kick(ctx, dest, t) {
+function _kick(ctx, dest, t, vol = 1.2) {
   const o = ctx.createOscillator(), g = ctx.createGain()
   o.connect(g); g.connect(dest); o.type = 'sine'
-  o.frequency.setValueAtTime(160, t)
-  o.frequency.exponentialRampToValueAtTime(28, t + 0.38)
-  g.gain.setValueAtTime(1.0, t)
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
-  o.start(t); o.stop(t + 0.4)
+  o.frequency.setValueAtTime(210, t)
+  o.frequency.exponentialRampToValueAtTime(30, t + 0.28)
+  g.gain.setValueAtTime(vol, t)
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.30)
+  o.start(t); o.stop(t + 0.30)
 }
 
 function _clap(ctx, dest, t) {
@@ -69,19 +70,24 @@ function _note(ctx, dest, t, freq, dur, vol = 0.11) {
   o.start(t); o.stop(t + dur + 0.05)
 }
 
-// Bass pattern: [beat_offset, freq_hz, dur_beats]
-const _BASS = [[0,65.41,0.9],[1,65.41,0.45],[2,87.31,0.5],[3,110.00,0.6]]
-
-// Melody A (2-bar) — uplifting ascending phrase
-const _MEL = [
-  [0,3,0.5],[0.75,4,0.4],[1.5,5,0.4],[2,5,0.5],[2.5,4,0.4],[3,3,0.7],
-  [4,2,0.45],[4.75,3,0.4],[5.5,4,0.4],[6,5,1.1],[7.5,3,0.45],[7.75,4,0.6]
+// Bass: driving 8th-note pump pattern [beat, freq_hz, dur_beats]
+const _BASS = [
+  [0,65.41,0.35],[0.5,65.41,0.22],[1,82.41,0.35],[1.5,65.41,0.22],
+  [2,65.41,0.35],[2.5,55.00,0.22],[3,65.41,0.35],[3.5,87.31,0.22]
 ]
 
-// Pad chords: quiet sustained chords for atmosphere [beat, freqs_array, dur_beats]
+// Melody A (2-bar) — aggressive ascending pump phrase in high register
+const _MEL = [
+  [0,2,0.20],[0.25,3,0.20],[0.5,4,0.22],[1,4,0.20],[1.5,5,0.25],[2,4,0.20],
+  [2.25,3,0.20],[2.5,4,0.25],[3,3,0.20],[3.5,2,0.35],
+  [4,4,0.20],[4.25,5,0.20],[4.75,5,0.25],[5,4,0.20],[5.5,5,0.30],
+  [6,5,0.20],[6.25,4,0.20],[6.5,5,0.25],[7,4,0.20],[7.5,5,0.55]
+]
+
+// Pad chords [beat, freqs_array, dur_beats]
 const _PADS = [
-  [0, [130.81, 164.81, 196.00], 4.0], // C3 E3 G3
-  [4, [110.00, 138.59, 164.81], 4.0], // A2 Db3 E3
+  [0, [130.81, 164.81, 196.00], 3.8],
+  [4, [110.00, 138.59, 164.81], 3.8],
 ]
 
 function _pad(ctx, dest, t, freqs, dur) {
@@ -89,27 +95,45 @@ function _pad(ctx, dest, t, freqs, dur) {
     const o = ctx.createOscillator(), g = ctx.createGain()
     o.connect(g); g.connect(dest); o.type = 'sine'; o.frequency.value = freq
     g.gain.setValueAtTime(0, t)
-    g.gain.linearRampToValueAtTime(0.055, t + 0.4)
-    g.gain.setValueAtTime(0.055, t + dur - 0.5)
+    g.gain.linearRampToValueAtTime(0.045, t + 0.3)
+    g.gain.setValueAtTime(0.045, t + dur - 0.4)
     g.gain.linearRampToValueAtTime(0, t + dur)
     o.start(t); o.stop(t + dur + 0.1)
   })
 }
 
+// Punchy synth stab for energy on beat 1
+function _stab(ctx, dest, t, freqs) {
+  freqs.forEach(freq => {
+    const o = ctx.createOscillator(), g = ctx.createGain()
+    o.connect(g); g.connect(dest); o.type = 'triangle'; o.frequency.value = freq
+    g.gain.setValueAtTime(0.10, t)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.09)
+    o.start(t); o.stop(t + 0.10)
+  })
+}
+
 function _scheduleBar(ctx, dest, t, idx) {
+  // 4-on-floor kick + extra drive on upbeats
   for (let b = 0; b < 4; b++) {
     const bt = t + b * _B
-    _kick(ctx, dest, bt)
-    _hat(ctx, dest, bt, 0.07)
-    _hat(ctx, dest, bt + _B * 0.5, 0.13)
+    _kick(ctx, dest, bt, 1.2)
+    if (b === 0 || b === 2) _kick(ctx, dest, bt + _B * 0.75, 0.45)
     if (b === 1 || b === 3) _clap(ctx, dest, bt)
   }
+  // Dense 16th-note hi-hats
+  for (let s = 0; s < 16; s++) {
+    const vol = s % 4 === 0 ? 0.18 : s % 2 === 0 ? 0.12 : 0.06
+    _hat(ctx, dest, t + s * _B * 0.25, vol)
+  }
   _BASS.forEach(([bo, freq, dur]) => _bass(ctx, dest, t + bo * _B, freq, dur * _B))
+  // Stab on beat 1 every bar; beat 3 every other bar
+  _stab(ctx, dest, t, [_P5[0], _P5[2]])
+  if (idx % 2 === 1) _stab(ctx, dest, t + 2 * _B, [_P5[2], _P5[4]])
   // Melody every 2 bars
   if (idx % 2 === 0) {
-    _MEL.forEach(([bo, ni, dur]) => _note(ctx, dest, t + bo * _B, _P5[ni], dur * _B))
+    _MEL.forEach(([bo, ni, dur]) => _note(ctx, dest, t + bo * _B, _P5[ni], dur * _B, 0.13))
   }
-  // Pad every 2 bars (offset from melody)
   if (idx % 2 === 0) {
     _PADS.forEach(([bo, freqs, dur]) => _pad(ctx, dest, t + bo * _B, freqs, dur * _B))
   }
@@ -152,7 +176,7 @@ function useMusicEngine() {
     reverb.connect(rvGain); rvGain.connect(ctx.destination)
 
     // Master → compressor (dry) + reverb (wet)
-    const master = ctx.createGain(); master.gain.value = 0.52
+    const master = ctx.createGain(); master.gain.value = 0.62
     master.connect(comp); master.connect(reverb)
 
     ctxRef.current = ctx
@@ -235,7 +259,7 @@ function Cursor({ x, y, click }) {
   return (
     <div className="absolute pointer-events-none"
       style={{ left: `${x}%`, top: `${y}%`, zIndex: 20, transform: 'translate(-3px,-2px)',
-        transition: 'left 0.5s cubic-bezier(.4,0,.2,1), top 0.5s cubic-bezier(.4,0,.2,1)' }}>
+        transition: 'left 0.18s linear, top 0.18s linear' }}>
       <svg width="16" height="20" viewBox="0 0 16 20" style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.7))' }}>
         <path d="M0 0L0 17L4.5 12.5L7.5 19.5L9.5 18.5L6.5 11.5L12 11.5Z" fill="white" stroke="rgba(0,0,0,.3)" strokeWidth="0.8" />
       </svg>
@@ -1215,14 +1239,14 @@ const SCENES = [
 /* ══════════════════════════════════════
    Main Component
 ══════════════════════════════════════ */
-const TICK = 60
-
 export default function AnimatedPlatformDemo({ autoPlay = true }) {
   const [si,      setSi]      = useState(0)
   const [pct,     setPct]     = useState(0)
   const [playing, setPlaying] = useState(autoPlay)
   const [fullscreen, setFullscreen] = useState(false)
   const containerRef = useRef(null)
+  const siRef = useRef(si)
+  siRef.current = si
 
   const { muted, toggle: toggleMute, start: startMusic, stop: stopMusic } = useMusicEngine()
 
@@ -1247,23 +1271,40 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
     }
   }
 
+  // requestAnimationFrame loop — buttery smooth at native screen refresh rate
   useEffect(() => {
     if (!playing) return
-    const step = TICK / SCENES[si].ms
-    const id = setInterval(() => {
+    let rafId
+    let last = performance.now()
+    const tick = (now) => {
+      const dt = Math.min(now - last, 100) // cap to avoid jump after tab switch
+      last = now
       setPct(prev => {
-        const next = prev + step
+        const next = prev + dt / SCENES[siRef.current].ms
         if (next >= 1) {
           setSi(s => (s + 1) % SCENES.length)
           return 0
         }
         return next
       })
-    }, TICK)
-    return () => clearInterval(id)
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
   }, [playing, si])
 
   function jump(i) { setSi(i); setPct(0); setPlaying(true) }
+
+  // Keyboard shortcuts: ← next scene, → prev scene, Space = pause
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); jump((siRef.current + 1) % SCENES.length) }
+      if (e.key === 'ArrowRight') { e.preventDefault(); jump((siRef.current - 1 + SCENES.length) % SCENES.length) }
+      if (e.key === ' ')          { e.preventDefault(); setPlaying(v => !v) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, []) // eslint-disable-line
 
   const cur      = getCursor(SCENES[si].cursor, pct)
   const totalPct = (si + pct) / SCENES.length
@@ -1294,58 +1335,70 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
       {/* Controls */}
       <div className="absolute bottom-0 inset-x-0" style={{ zIndex: 20 }}>
         <div className="bg-gradient-to-t from-black/95 via-black/55 to-transparent pt-10 pb-3 px-4">
-          {/* Progress bar */}
-          <div className="h-[2px] bg-white/10 rounded-full mb-3 overflow-hidden">
-            <div className="h-full bg-[#fbbf24] rounded-full"
-              style={{ width: `${totalPct * 100}%`, transition: `width ${TICK}ms linear` }} />
+          {/* Clickable progress bar — click to seek to any scene */}
+          <div className="h-[3px] bg-white/10 rounded-full mb-3 overflow-visible cursor-pointer relative"
+            onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              const t = (e.clientX - rect.left) / rect.width
+              const sceneIdx = Math.min(Math.floor(t * SCENES.length), SCENES.length - 1)
+              jump(sceneIdx)
+            }}>
+            <div className="h-full bg-[#fbbf24] rounded-full pointer-events-none"
+              style={{ width: `${totalPct * 100}%`, transition: 'width 60ms linear' }} />
           </div>
-          {/* Buttons + label + dots */}
-          <div className="flex items-center gap-2.5">
+          {/* Controls row */}
+          <div className="flex items-center gap-2">
+            {/* Play/Pause */}
             <button onClick={() => setPlaying(v => !v)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0">
+              className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/25 active:scale-90 transition flex items-center justify-center flex-shrink-0">
               {playing
-                ? <Pause className="w-3 h-3 text-white fill-white" />
-                : <Play  className="w-3 h-3 text-white fill-white ml-px" />}
+                ? <Pause className="w-3.5 h-3.5 text-white fill-white" />
+                : <Play  className="w-3.5 h-3.5 text-white fill-white ml-px" />}
             </button>
+            {/* Restart */}
             <button onClick={() => jump(0)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0">
-              <RotateCcw className="w-3 h-3 text-white" />
+              className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/25 active:scale-90 transition flex items-center justify-center flex-shrink-0">
+              <RotateCcw className="w-3.5 h-3.5 text-white" />
             </button>
+            {/* Prev scene (RTL: ChevronRight = backward) */}
             <button onClick={() => jump((si - 1 + SCENES.length) % SCENES.length)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
-              title="المشهد السابق">
-              <ChevronRight className="w-3.5 h-3.5 text-white" />
+              className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/25 active:scale-90 transition flex items-center justify-center flex-shrink-0">
+              <ChevronRight className="w-4 h-4 text-white" />
             </button>
+            {/* Next scene */}
             <button onClick={() => jump((si + 1) % SCENES.length)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
-              title="المشهد التالي">
-              <ChevronLeft className="w-3.5 h-3.5 text-white" />
+              className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/25 active:scale-90 transition flex items-center justify-center flex-shrink-0">
+              <ChevronLeft className="w-4 h-4 text-white" />
             </button>
+            {/* Scene counter */}
+            <span className="text-white/30 font-mono flex-shrink-0" style={{ fontSize: '8px' }}>
+              {si + 1}/{SCENES.length}
+            </span>
             {/* Music toggle */}
             <button onClick={toggleMute}
-              title={muted ? 'تشغيل الموسيقى' : 'كتم الموسيقى'}
-              className={`w-7 h-7 rounded-full transition flex items-center justify-center flex-shrink-0 ${muted ? 'bg-white/10 hover:bg-white/20' : 'bg-[#fbbf24]/20 border border-[#fbbf24]/40 hover:bg-[#fbbf24]/30'}`}>
+              className={`w-8 h-8 rounded-full transition active:scale-90 flex items-center justify-center flex-shrink-0 ${muted ? 'bg-white/12 hover:bg-white/25' : 'bg-[#fbbf24]/25 border border-[#fbbf24]/50 hover:bg-[#fbbf24]/35'}`}>
               {muted
-                ? <VolumeX className="w-3 h-3 text-white/50" />
-                : <Volume2 className="w-3 h-3 text-[#fbbf24]" />}
+                ? <VolumeX className="w-3.5 h-3.5 text-white/50" />
+                : <Volume2 className="w-3.5 h-3.5 text-[#fbbf24]" />}
             </button>
-            <span className="text-white/55 font-bold flex-1 truncate" style={{ fontSize: '9px' }}>
+            {/* Scene label */}
+            <span className="text-white/50 font-bold flex-1 truncate" style={{ fontSize: '9px' }}>
               {SCENES[si].label}
             </span>
-            <div className="flex items-center gap-1.5">
+            {/* Scene dots */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {SCENES.map((_, i) => (
                 <button key={i} onClick={() => jump(i)}
-                  className={`rounded-full transition-all duration-300 ${i === si ? 'bg-[#fbbf24]' : 'bg-white/20 hover:bg-white/40'}`}
+                  className={`rounded-full transition-all duration-300 ${i === si ? 'bg-[#fbbf24]' : 'bg-white/20 hover:bg-white/45'}`}
                   style={{ width: i === si ? '14px' : '6px', height: '6px' }} />
               ))}
             </div>
             {/* Fullscreen */}
             <button onClick={toggleFullscreen}
-              title={fullscreen ? 'خروج من ملء الشاشة' : 'ملء الشاشة'}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center flex-shrink-0">
+              className="w-8 h-8 rounded-full bg-white/12 hover:bg-white/25 active:scale-90 transition flex items-center justify-center flex-shrink-0">
               {fullscreen
-                ? <Minimize2 className="w-3 h-3 text-white" />
-                : <Maximize2 className="w-3 h-3 text-white" />}
+                ? <Minimize2 className="w-3.5 h-3.5 text-white" />
+                : <Maximize2 className="w-3.5 h-3.5 text-white" />}
             </button>
           </div>
         </div>
