@@ -1,8 +1,10 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { X, ChevronLeft, Send, Loader2, RotateCcw } from 'lucide-react'
+import { trackEvent } from '@/lib/gtag'
 
-const WA_NUMBER = '97430653759'
+const WA_NUMBER    = '97430653759'
+const TOOLTIP_KEY  = 'af_wa_tooltip_dismissed'
 
 const QUICK = [
   { q: 'ما هي الأسعار؟',               msg: 'ما هي الأسعار؟' },
@@ -21,12 +23,17 @@ function WaIcon({ cls = 'w-7 h-7 fill-white' }) {
 
 export default function WhatsAppButton() {
   const [open, setOpen]         = useState(false)
-  const [tooltip, setTooltip]   = useState(true)
+  const [tooltip, setTooltip]   = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [started, setStarted]   = useState(false)
   const bottomRef               = useRef(null)
+
+  // Show tooltip only once per browser (persist dismissal in localStorage)
+  useEffect(() => {
+    if (!localStorage.getItem(TOOLTIP_KEY)) setTooltip(true)
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -37,6 +44,7 @@ export default function WhatsAppButton() {
     if (!userText || loading) return
     setInput('')
     setStarted(true)
+    trackEvent('chat_message_sent', { question: userText.slice(0, 50) })
 
     const newMessages = [...messages, { role: 'user', content: userText }]
     setMessages(newMessages)
@@ -58,7 +66,13 @@ export default function WhatsAppButton() {
   }
 
   function openWA(msg = 'مرحباً أمين، أريد الاستفسار عن برامج التدريب والتغذية') {
+    trackEvent('whatsapp_chat_clicked', { source: 'chat_widget' })
     window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  function dismissTooltip() {
+    setTooltip(false)
+    localStorage.setItem(TOOLTIP_KEY, '1')
   }
 
   return (
@@ -106,7 +120,7 @@ export default function WhatsAppButton() {
               <div className="w-7 h-7 rounded-full bg-emerald-600/20 flex items-center justify-center text-xs font-bold text-emerald-400 flex-shrink-0 mt-0.5">أح</div>
               <div className="bg-white/6 border border-white/8 rounded-2xl rounded-tl-sm px-3 py-2.5 max-w-[85%]">
                 <p className="text-white/80 text-xs leading-relaxed">
-                  مرحباً 👋 أنا المساعد الذكي لـ Amine-Fit.<br />
+                  مرحباً 👋 أنا مساعد أمين.<br />
                   اسألني عن الأسعار، البرامج، أو طريقة التسجيل.
                 </p>
               </div>
@@ -189,7 +203,7 @@ export default function WhatsAppButton() {
       {!open && tooltip && (
         <div className="hidden sm:flex items-center gap-2 bg-white text-gray-800 text-sm font-bold px-4 py-2.5 rounded-2xl shadow-xl shadow-black/20 whitespace-nowrap animate-bounce-slow">
           <span>💬 اسألني أي سؤال</span>
-          <button onClick={e => { e.stopPropagation(); setTooltip(false) }}
+          <button onClick={e => { e.stopPropagation(); dismissTooltip() }}
             className="text-gray-400 hover:text-gray-600 transition ml-1">
             <X className="w-3.5 h-3.5" />
           </button>
@@ -198,7 +212,7 @@ export default function WhatsAppButton() {
 
       {/* ── Main button ── */}
       <button
-        onClick={() => { setOpen(o => !o); setTooltip(false) }}
+        onClick={() => { setOpen(o => !o); dismissTooltip(); if (!open) trackEvent('chat_widget_opened') }}
         aria-label="تواصل عبر واتساب"
         className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 hover:scale-110 transition-transform"
         style={{ background: 'linear-gradient(135deg,#25d366,#128c7e)' }}>
