@@ -4,7 +4,7 @@ export default function Cancellation() {
   return (
     <div className="prose prose-invert max-w-none">
       <h1 className="text-3xl font-extrabold text-white mb-2">سياسة الإلغاء والاسترداد</h1>
-      <p className="text-white/40 text-sm mb-8">آخر تحديث: يناير 2025</p>
+      <p className="text-white/40 text-sm mb-8">آخر تحديث: يونيو 2026</p>
       {[
         { title: '1. إلغاء الاشتراك', body: 'يمكنك إلغاء اشتراكك في أي وقت عبر التواصل المباشر مع المدرب. سيستمر وصولك للخدمة حتى نهاية الفترة المدفوعة.' },
         { title: '2. سياسة الاسترداد', body: 'نقدم ضمان استرداد كامل خلال أول 7 أيام من الاشتراك إذا لم تكن راضياً عن الخدمة لأي سبب. بعد 7 أيام لا يتم الاسترداد للفترة المتبقية.' },

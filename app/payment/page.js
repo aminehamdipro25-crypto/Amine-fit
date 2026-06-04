@@ -6,6 +6,7 @@ import { trackEvent } from '@/lib/gtag'
 
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
+const D17_READY   = D17_NUMBER !== 'XX XXX XXX'
 const CCP_IBAN    = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME    = 'HAMDI AMINE B JALOUL'
 
@@ -277,8 +278,13 @@ export default function PaymentPage() {
             <>
               <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <button onClick={() => { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) }}
-                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-5 flex flex-col items-center gap-3 transition">
+                <button
+                  onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
+                  disabled={!D17_READY}
+                  className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-5 flex flex-col items-center gap-3 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                  {!D17_READY && (
+                    <span className="absolute top-3 left-3 text-[10px] font-extrabold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">قريباً</span>
+                  )}
                   <Smartphone className="w-8 h-8 text-[#fbbf24]" />
                   <div className="text-center">
                     <p className="text-white font-extrabold text-sm">تطبيق D17</p>

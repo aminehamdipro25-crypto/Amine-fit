@@ -4,7 +4,7 @@ export default function Privacy() {
   return (
     <div className="prose prose-invert max-w-none">
       <h1 className="text-3xl font-extrabold text-white mb-2">سياسة الخصوصية</h1>
-      <p className="text-white/40 text-sm mb-8">آخر تحديث: يناير 2025</p>
+      <p className="text-white/40 text-sm mb-8">آخر تحديث: يونيو 2026</p>
 
       {[
         { title: '1. المعلومات التي نجمعها', body: 'نجمع المعلومات التي تقدمها عند التسجيل أو ملء الاستبيان، بما يشمل: الاسم، البريد الإلكتروني، رقم الهاتف، والبيانات الصحية (الوزن، الطول، العمر، الأهداف). لا نجمع أي بيانات دون موافقتك الصريحة.' },
