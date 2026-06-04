@@ -141,7 +141,7 @@ export default function PaymentPage() {
           <div className="max-w-4xl mx-auto px-4 pb-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
             {PLANS.map(p => (
               <div key={p.id}
-                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: p.price }) }}
+                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: Number(p.price) }) }}
                 className={`rounded-3xl p-6 border cursor-pointer transition-all ${
                   p.highlight
                     ? selected === p.id
@@ -339,7 +339,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
-                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'd17', plan_name: plan?.name, plan_price: plan?.price })}
+                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'd17', plan_name: plan?.name, plan_price: Number(plan?.price) })}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب
@@ -390,7 +390,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
-                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'post', plan_name: plan?.name, plan_price: plan?.price })}
+                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'post', plan_name: plan?.name, plan_price: Number(plan?.price) })}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب

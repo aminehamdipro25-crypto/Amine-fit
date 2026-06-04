@@ -264,7 +264,7 @@ export default function PlanReport() {
               {ex.fiber && (
                 <div style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
                   <div style={{ fontSize: 22, marginBottom: 4 }}>🌿</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#166534' }}>{ex.fiber.g || ex.fiber} غ</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#166534' }}>{ex.fiber?.g ?? ex.fiber} غ</div>
                   <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>الألياف الغذائية</div>
                   <div style={{ fontSize: 10, color: '#4ade80' }}>الموصى: {ex.fiber?.recommended || 25} غ/يوم</div>
                 </div>

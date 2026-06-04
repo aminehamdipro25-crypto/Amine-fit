@@ -22,7 +22,7 @@ const PLAN_LABELS  = { basic: 'برنامج التدريب', standard: 'البا
 function guessPriceFromText(text) {
   if (!text) return null
   const t = text.toLowerCase()
-  if (t.includes('premium') || t.includes('3') || t.includes('ثلاث') || t.includes('ثلث')) return 100
+  if (t.includes('premium') || t.includes('3') || t.includes('ثلاث') || t.includes('ثلث')) return 300
   if (t.includes('standard') || t.includes('شهري') || t.includes('شهرية')) return 125
   if (t.includes('basic') || t.includes('تدريب')) return 50
   return 50 // default guess
@@ -103,7 +103,8 @@ export default function AnalyticsClient({ submissions }) {
   const pendingClients     = submissions.filter(s => s.status === 'pending')
   const expiredClients     = submissions.filter(s => s.status === 'payment_expired')
   const newClients         = submissions.filter(s => s.status === 'new')
-  const paidClients        = [...activeClients, ...suspendedClients] // ever paid
+  const cancelledClients   = submissions.filter(s => s.status === 'cancelled')
+  const paidClients        = [...activeClients, ...suspendedClients, ...cancelledClients] // ever paid
 
   // ── Revenue calculations ────────────────────────────────────────────────────
   const totalRevenue = paidClients.reduce((sum, s) => {
@@ -476,8 +477,8 @@ export default function AnalyticsClient({ submissions }) {
               </thead>
               <tbody>
                 {abandonedClients.map(client => {
-                  const days     = daysSince(client.paymentExpiredAt || client.createdAt)
-                  const reminded = !!client.reminderSentAt
+                  const days         = daysSince(client.paymentExpiredAt || client.createdAt)
+                  const reminderCount = client.reminderCount || (client.reminderSentAt ? 1 : 0)
                   return (
                     <tr key={client.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                       <td className="py-2.5 font-bold text-slate-700">{client.name || '—'}</td>
@@ -492,9 +493,9 @@ export default function AnalyticsClient({ submissions }) {
                         {days !== null ? `${days} يوم` : '—'}
                       </td>
                       <td className="py-2.5">
-                        {reminded ? (
+                        {reminderCount > 0 ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-bold text-[10px]">
-                            تم الإرسال ✓
+                            {reminderCount}/5 رسائل ✓
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-500 font-bold text-[10px]">

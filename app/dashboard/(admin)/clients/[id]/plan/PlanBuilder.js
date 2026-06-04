@@ -1253,8 +1253,8 @@ export default function PlanBuilder({ client }) {
     const plan = {
       nutrition: {
         calories, protein, carbs, fats,
-        ...(waterGoal ? { waterGoal } : {}),
-        ...(fiberG    ? { fiberG }    : {}),
+        waterGoal: waterGoal || null,
+        fiberG:    fiberG    || null,
         note: nutritionNote,
         tips: nutritionTips.split('\n').map(t => t.trim()).filter(Boolean),
         meals,

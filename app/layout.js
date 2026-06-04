@@ -96,10 +96,10 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-cairo antialiased">
         {GA_ID && <>
+          {/* Define gtag synchronously so trackEvent() calls in useEffect are never dropped */}
+          <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` }} />
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
           <Script id="ga-init" strategy="afterInteractive">{`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${GA_ID}');
           `}</Script>
