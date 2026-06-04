@@ -2,20 +2,33 @@
 import { useState, useEffect } from 'react'
 import { X, Check, ArrowLeft, Zap, Shield, Clock, Headphones, Flame, Tag, Star, Trophy, Target, Brain, ChartLine, MessageCircle, Calendar, Dumbbell, Apple, RefreshCw } from 'lucide-react'
 
-/* ── Countdown to fixed deadline: 2026-07-01 ── */
-const DEADLINE = new Date('2026-07-01T00:00:00+03:00').getTime()
+/* ── Rolling 5-day countdown per visitor (stored in localStorage) ── */
+const OFFER_DURATION = 5 * 24 * 60 * 60 * 1000  // 5 days in ms
+const LS_KEY = 'af_offer_expiry'
 
 function useCountdown() {
-  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0, expired: false })
 
   useEffect(() => {
+    // Get or create per-visitor deadline
+    let expiry = parseInt(localStorage.getItem(LS_KEY) || '0', 10)
+    if (!expiry || expiry < Date.now()) {
+      expiry = Date.now() + OFFER_DURATION
+      localStorage.setItem(LS_KEY, String(expiry))
+    }
+
     function calc() {
-      const diff = Math.max(0, DEADLINE - Date.now())
+      const diff = expiry - Date.now()
+      if (diff <= 0) {
+        setTime({ d: 0, h: 0, m: 0, s: 0, expired: true })
+        return
+      }
       setTime({
         d: Math.floor(diff / 86400000),
         h: Math.floor((diff % 86400000) / 3600000),
         m: Math.floor((diff % 3600000) / 60000),
         s: Math.floor((diff % 60000) / 1000),
+        expired: false,
       })
     }
     calc()
@@ -260,7 +273,7 @@ function PlanModal({ plan, onClose }) {
 
 export default function Pricing() {
   const [activePlan, setActivePlan] = useState(null)
-  const { d, h, m, s } = useCountdown()
+  const { d, h, m, s, expired } = useCountdown()
 
   return (
     <section id="pricing" className="py-24 bg-[#0f0f0f]">
@@ -279,18 +292,27 @@ export default function Pricing() {
             خصم <span className="text-red-400">50%</span> على جميع الباقات
           </p>
           <p className="text-white/40 text-sm mb-6">
-            أسعار الإطلاق الخاصة لن تبقى للأبد — العرض ينتهي بعد:
+            {expired
+              ? 'انتهى العرض — تواصل معنا لمعرفة الأسعار الحالية'
+              : 'أسعار الإطلاق الخاصة لن تبقى للأبد — العرض ينتهي بعد:'}
           </p>
           {/* Countdown — days / hours / minutes / seconds */}
-          <div className="flex items-end justify-center gap-2">
-            <Digit val={d} label="يوم" />
-            <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
-            <Digit val={h} label="ساعة" />
-            <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
-            <Digit val={m} label="دقيقة" />
-            <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
-            <Digit val={s} label="ثانية" />
-          </div>
+          {expired ? (
+            <div className="flex items-center justify-center gap-2 text-red-400 font-extrabold text-lg mb-2">
+              <span>⏰</span>
+              <span>انتهى عرض الإطلاق</span>
+            </div>
+          ) : (
+            <div className="flex items-end justify-center gap-2">
+              <Digit val={d} label="يوم" />
+              <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
+              <Digit val={h} label="ساعة" />
+              <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
+              <Digit val={m} label="دقيقة" />
+              <span className="text-white/30 font-extrabold text-2xl mb-6">:</span>
+              <Digit val={s} label="ثانية" />
+            </div>
+          )}
         </div>
 
         <p className="text-gold-400 font-bold text-center text-xs uppercase tracking-widest mb-3">الأسعار</p>
