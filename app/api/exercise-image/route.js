@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isRateLimited } from '@/lib/rateLimit'
 
 // All paths verified with HTTP HEAD against yuhonas/free-exercise-db main branch
 const BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'
@@ -226,6 +227,11 @@ function lookup(name) {
 const cache = new Map()
 
 export async function GET(req) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (await isRateLimited(`ex_img:${ip}`, 60, 60)) {
+    return NextResponse.json({ url: null }, { status: 429 })
+  }
+
   const { searchParams } = new URL(req.url)
   const name = searchParams.get('name')?.trim()
   if (!name) return NextResponse.json({ url: null })

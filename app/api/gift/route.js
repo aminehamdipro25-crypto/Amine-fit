@@ -37,14 +37,14 @@ export async function GET(req) {
   if (!cfg) return NextResponse.json({ valid: false, reason: 'unavailable' })
 
   const raw = await redisCmd(cfg, 'GET', GIFT_PREFIX + code)
-  if (!raw) return NextResponse.json({ valid: false, reason: 'not_found' })
+  if (!raw) return NextResponse.json({ valid: false, reason: 'invalid' })
 
   let gift
   try { gift = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw)) } catch {
     return NextResponse.json({ valid: false, reason: 'invalid' })
   }
 
-  if (gift.used) return NextResponse.json({ valid: false, reason: 'used' })
+  if (gift.used) return NextResponse.json({ valid: false, reason: 'invalid' })
 
   return NextResponse.json({
     valid: true,

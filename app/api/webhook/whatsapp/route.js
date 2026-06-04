@@ -122,6 +122,7 @@ export async function POST(req) {
   const from = message.from        // sender's WhatsApp number
   const text = message.text?.body?.trim()
   if (!text || !from) return new Response('OK', { status: 200 })
+  if (text.length > 1000) return new Response('OK', { status: 200 })
 
   // Deduplicate: Meta can send same event multiple times
   if (await isDuplicate(message.id)) return new Response('OK', { status: 200 })

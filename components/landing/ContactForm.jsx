@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { Send, CheckCircle, Loader2 } from 'lucide-react'
+import { trackEvent } from '@/lib/gtag'
 
 const goals = ['خسارة الوزن', 'بناء العضلات', 'الحفاظ على الوزن', 'تحسين اللياقة العامة', 'أخرى']
-const packages = ['الباقة الأساسية (500 ر.ق)', 'الباقة المتقدمة (900 ر.ق)', 'الباقة الاحترافية (1,500 ر.ق)', 'لم أقرر بعد']
+const packages = ['برنامج التدريب (50 د.ت)', 'الباقة الشهرية (125 د.ت)', 'باقة 3 أشهر (300 د.ت)', 'لم أقرر بعد']
 
 const init = { name: '', phone: '', email: '', goal: '', pkg: '', message: '' }
 
@@ -26,6 +27,7 @@ export default function ContactForm() {
         body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error()
+      trackEvent('contact_form_submitted', { goal: form.goal, pkg: form.pkg })
       setOk(true); setForm(init)
     } catch {
       setError('حدث خطأ، يرجى المحاولة مرة أخرى أو التواصل مباشرة عبر الهاتف.')

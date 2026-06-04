@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { X, Check, ArrowLeft, Zap, Shield, Clock, Headphones, Flame, Tag, Star, Trophy, Target, Brain, ChartLine, MessageCircle, Calendar, Dumbbell, Apple, RefreshCw } from 'lucide-react'
+import { trackEvent } from '@/lib/gtag'
 
 /* ── Rolling 5-day countdown per visitor (stored in localStorage) ── */
 const OFFER_DURATION = 5 * 24 * 60 * 60 * 1000  // 5 days in ms
@@ -257,6 +258,7 @@ function PlanModal({ plan, onClose }) {
               إغلاق
             </button>
             <a href={`/register?plan=${encodeURIComponent(plan.name)}`}
+              onClick={() => trackEvent('plan_cta_clicked', { plan: plan.name, price: plan.salePrice })}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-extrabold text-sm transition-all shadow-lg
                 ${isGold
                   ? 'bg-black text-gold-400 hover:bg-black/80 shadow-black/20'
@@ -345,7 +347,7 @@ export default function Pricing() {
             const isGold = p.color === 'gold'
             return (
               <div key={p.name}
-                onClick={() => setActivePlan(p)}
+                onClick={() => { setActivePlan(p); trackEvent('plan_modal_opened', { plan: p.name }) }}
                 className={`relative rounded-2xl p-7 border cursor-pointer transition-all duration-300 hover:-translate-y-1.5 group
                   ${isGold
                     ? 'bg-gold-400 border-gold-400 scale-[1.04] shadow-2xl shadow-gold-400/25 hover:shadow-gold-400/40'

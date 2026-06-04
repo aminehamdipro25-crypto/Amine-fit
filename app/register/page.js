@@ -292,17 +292,17 @@ export default function RegisterPage() {
                 <RadioGroup field="gender" form={form} setForm={setForm}
                   options={[{value:'male',label:'ذكر'},{value:'female',label:'أنثى'}]} />
               </Inp>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Inp label="العمر" required error={errors.age}>
                   <TextInput field="age" type="number" placeholder="25" min="10" max="80"
                     form={form} setForm={setForm} errors={errors} />
                 </Inp>
                 <Inp label="الطول (سم)" required error={errors.height}>
-                  <TextInput field="height" type="number" placeholder="175"
+                  <TextInput field="height" type="number" placeholder="175" min="100" max="250"
                     form={form} setForm={setForm} errors={errors} />
                 </Inp>
                 <Inp label="الوزن (كغ)" required error={errors.weight}>
-                  <TextInput field="weight" type="number" placeholder="70"
+                  <TextInput field="weight" type="number" placeholder="70" min="30" max="300"
                     form={form} setForm={setForm} errors={errors} />
                 </Inp>
               </div>
@@ -344,7 +344,7 @@ export default function RegisterPage() {
                 ]} />
               </Inp>
               <Inp label="الوزن المثالي الذي تطمح للوصول إليه (كغ)" required error={errors.targetWeight}>
-                <TextInput field="targetWeight" type="number" placeholder="65"
+                <TextInput field="targetWeight" type="number" placeholder="65" min="30" max="250"
                   form={form} setForm={setForm} errors={errors} />
               </Inp>
               <Inp label="في كم من الوقت تتوقع الوصول لهدفك؟" error={errors.goalTimeline}>

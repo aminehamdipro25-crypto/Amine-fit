@@ -17,7 +17,7 @@ const ACT_LABELS   = { sedentary: 'خامل', light: 'خفيف', moderate: 'مع
 const MONTHS       = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
 
 // Plan prices in TND
-const PLAN_PRICE   = { basic: 50, standard: 125, premium: 100 }
+const PLAN_PRICE   = { basic: 50, standard: 125, premium: 300 }
 const PLAN_LABELS  = { basic: 'برنامج التدريب', standard: 'الباقة الشهرية', premium: 'باقة 3 أشهر' }
 
 // Guess plan from free-text interestedPlan field
