@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -6,6 +7,7 @@ import {
 import {
   Users, TrendingUp, Target, Activity, Calendar,
   DollarSign, AlertTriangle, TrendingDown, Percent, RefreshCw,
+  Download, Printer, X, FileSpreadsheet,
 } from 'lucide-react'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -92,8 +94,215 @@ function FunnelBar({ label, count, pct, color }) {
   )
 }
 
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+function buildCSV(submissions, stats) {
+  const now    = new Date()
+  const dateStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
+  const STATUS_AR = {
+    active: 'نشيط', suspended: 'موقوف', pending: 'بانتظار الدفع',
+    payment_expired: 'انتهت المهلة', new: 'جديد', cancelled: 'ملغي',
+  }
+  const PLAN_AR = { basic: 'برنامج التدريب (50 د.ت)', standard: 'الباقة الشهرية (125 د.ت)', premium: 'باقة 3 أشهر (300 د.ت)' }
+
+  const rows = []
+  // Header info
+  rows.push(['تقرير Amine-Fit الشهري', dateStr])
+  rows.push([])
+  // KPIs
+  rows.push(['📊 الملخص المالي'])
+  rows.push(['إجمالي الإيرادات', `${stats.totalRevenue} د.ت`])
+  rows.push(['إيرادات هذا الشهر', `${stats.thisMonthRevenue} د.ت`])
+  rows.push(['MRR (إيراد شهري متكرر)', `${stats.mrr} د.ت`])
+  rows.push(['الإيراد الضائع (متخلون)', `${stats.lostRevenue} د.ت`])
+  rows.push([])
+  rows.push(['👥 الملخص التشغيلي'])
+  rows.push(['إجمالي المسجلين', stats.total])
+  rows.push(['عملاء نشطون', stats.active])
+  rows.push(['بانتظار الدفع', stats.pending])
+  rows.push(['انتهت مهلتهم', stats.expired])
+  rows.push(['معدل التحويل', `${stats.conversionRate}%`])
+  rows.push([])
+  // Client roster
+  rows.push(['📋 قائمة العملاء المدفوعين'])
+  rows.push(['الاسم', 'الإيميل', 'الهاتف', 'الباقة', 'السعر المدفوع (د.ت)', 'تاريخ التسجيل', 'تاريخ تأكيد الدفع', 'الحالة'])
+  const paid = submissions.filter(s => ['active','suspended','cancelled'].includes(s.status))
+  for (const s of paid) {
+    const price = (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
+    rows.push([
+      s.name || '—',
+      s.email || '—',
+      s.phone || '—',
+      PLAN_AR[s.subscriptionPlan] || s.subscriptionPlan || '—',
+      price,
+      s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN') : '—',
+      s.paymentConfirmedAt ? new Date(s.paymentConfirmedAt).toLocaleDateString('ar-TN') : '—',
+      STATUS_AR[s.status] || s.status,
+    ])
+  }
+  rows.push([])
+  // Abandoned
+  rows.push(['⚠️ قائمة المتخلين عن الدفع'])
+  rows.push(['الاسم', 'الإيميل', 'الباقة المهتمة', 'تاريخ التسجيل', 'الإيراد الضائع (د.ت)', 'عدد رسائل التذكير'])
+  const expired = submissions.filter(s => s.status === 'payment_expired')
+  for (const s of expired) {
+    rows.push([
+      s.name || '—',
+      s.email || '—',
+      s.interestedPlan || '—',
+      s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN') : '—',
+      guessPriceFromText(s.interestedPlan) || 0,
+      s.reminderCount || (s.reminderSentAt ? 1 : 0),
+    ])
+  }
+
+  // Encode as CSV with BOM for Arabic Excel compatibility
+  const csv  = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  const month = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit' }).replace('/','-')
+  a.href     = url
+  a.download = `amine-fit-report-${month}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── Print Report Modal ──────────────────────────────────────────────────────────
+function PrintReport({ submissions, stats, onClose }) {
+  const now     = new Date()
+  const dateStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
+  const monthStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long' })
+  const PLAN_AR = { basic: 'التدريب (50 د.ت)', standard: 'الشهرية (125 د.ت)', premium: '3 أشهر (300 د.ت)' }
+  const STATUS_AR = { active: 'نشيط', suspended: 'موقوف', cancelled: 'ملغي' }
+  const STATUS_COLOR = { active: '#10b981', suspended: '#f59e0b', cancelled: '#ef4444' }
+  const paid = submissions.filter(s => ['active','suspended','cancelled'].includes(s.status))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+  return (
+    <div className="print-visible fixed inset-0 bg-black/60 z-50 overflow-y-auto print:bg-white print:relative print:overflow-visible">
+      {/* Close / Print buttons — hidden when printing */}
+      <div className="sticky top-0 z-10 flex justify-between items-center px-6 py-3 bg-white border-b border-slate-200 print:hidden">
+        <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+          <X className="w-5 h-5" />
+        </button>
+        <span className="font-bold text-slate-700">معاينة التقرير الشهري</span>
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition">
+          <Printer className="w-4 h-4" />
+          طباعة / PDF
+        </button>
+      </div>
+
+      {/* Report body */}
+      <div className="max-w-3xl mx-auto my-6 bg-white rounded-2xl shadow-xl p-10 print:my-0 print:shadow-none print:rounded-none" dir="rtl">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-amber-400">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900">AMINE-FIT</h1>
+            <p className="text-slate-400 text-sm mt-0.5">أمين حمدي — مدرب شخصي ومستشار تغذية</p>
+            <p className="text-slate-400 text-sm">الدوحة، قطر • +974 3065 3759</p>
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-slate-400 uppercase tracking-widest">تقرير شهري</p>
+            <p className="text-lg font-extrabold text-slate-800">{monthStr}</p>
+            <p className="text-xs text-slate-400 mt-0.5">تاريخ الإصدار: {dateStr}</p>
+          </div>
+        </div>
+
+        {/* ── KPI Grid ── */}
+        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">الملخص المالي</h2>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {[
+            { label: 'إجمالي الإيرادات',       value: `${stats.totalRevenue.toLocaleString()} د.ت`,  accent: '#f59e0b' },
+            { label: 'إيرادات هذا الشهر',      value: `${stats.thisMonthRevenue.toLocaleString()} د.ت`, accent: '#10b981' },
+            { label: 'MRR (إيراد شهري متكرر)', value: `${stats.mrr.toLocaleString()} د.ت`,          accent: '#6366f1' },
+            { label: 'الإيراد الضائع',          value: `${stats.lostRevenue.toLocaleString()} د.ت`,  accent: '#ef4444' },
+          ].map(k => (
+            <div key={k.label} style={{ borderRight: `3px solid ${k.accent}` }}
+              className="bg-slate-50 rounded-xl p-4 pr-4">
+              <p className="text-xs text-slate-400 mb-1">{k.label}</p>
+              <p className="text-xl font-black text-slate-900">{k.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">الملخص التشغيلي</h2>
+        <div className="grid grid-cols-4 gap-2 mb-8">
+          {[
+            { label: 'إجمالي المسجلين', value: stats.total },
+            { label: 'عملاء نشطون',    value: stats.active },
+            { label: 'بانتظار الدفع',   value: stats.pending },
+            { label: 'معدل التحويل',   value: `${stats.conversionRate}%` },
+          ].map(k => (
+            <div key={k.label} className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-lg font-black text-slate-900">{k.value}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{k.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Paid clients table ── */}
+        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
+          قائمة العملاء المدفوعين ({paid.length})
+        </h2>
+        <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ background: '#fbbf24', color: '#000' }}>
+              {['الاسم', 'الباقة', 'السعر', 'تاريخ الانضمام', 'الحالة'].map(h => (
+                <th key={h} className="text-right px-3 py-2 font-bold text-xs">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {paid.map((s, i) => {
+              const price = (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
+              return (
+                <tr key={s.id} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                  <td className="px-3 py-2 font-bold text-slate-800">{s.name || '—'}</td>
+                  <td className="px-3 py-2 text-slate-600 text-xs">{PLAN_AR[s.subscriptionPlan] || '—'}</td>
+                  <td className="px-3 py-2 font-bold" style={{ color: '#10b981' }}>{price} د.ت</td>
+                  <td className="px-3 py-2 text-slate-400 text-xs">
+                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span style={{ background: STATUS_COLOR[s.status] + '20', color: STATUS_COLOR[s.status] }}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      {STATUS_AR[s.status] || s.status}
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+            {paid.length === 0 && (
+              <tr><td colSpan={5} className="text-center py-4 text-slate-300 text-xs">لا يوجد عملاء مدفوعون بعد</td></tr>
+            )}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: '#0f172a', color: '#fff' }}>
+              <td className="px-3 py-2 font-black text-sm" colSpan={2}>الإجمالي</td>
+              <td className="px-3 py-2 font-black text-sm" style={{ color: '#fbbf24' }}>
+                {paid.reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} د.ت
+              </td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        </table>
+
+        {/* ── Footer ── */}
+        <div className="border-t border-slate-200 pt-4 text-center text-[10px] text-slate-300">
+          <p>Amine-Fit • الدوحة، قطر • amine.hamdi.pro25@gmail.com • تقرير {monthStr}</p>
+          <p className="mt-0.5">وثيقة سرية — للاستخدام الداخلي فقط</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function AnalyticsClient({ submissions }) {
+  const [showReport, setShowReport] = useState(false)
   const total = submissions.length
   const now   = new Date()
 
@@ -210,11 +419,40 @@ export default function AnalyticsClient({ submissions }) {
     new Date(b.paymentExpiredAt || b.createdAt) - new Date(a.paymentExpiredAt || a.createdAt)
   )
 
+  const reportStats = {
+    totalRevenue, thisMonthRevenue, mrr, lostRevenue,
+    total, active: currentlyActive, pending: pendingClients.length,
+    expired: expiredClients.length, conversionRate,
+  }
+
   return (
     <div className="space-y-5" dir="rtl">
-      <div>
-        <h1 className="text-xl font-extrabold text-slate-900">الإحصائيات والتحليلات</h1>
-        <p className="text-sm text-slate-400 mt-0.5">نظرة شاملة على أداء الأكاديمية</p>
+      {showReport && (
+        <PrintReport
+          submissions={submissions}
+          stats={reportStats}
+          onClose={() => setShowReport(false)}
+        />
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-extrabold text-slate-900">الإحصائيات والتحليلات</h1>
+          <p className="text-sm text-slate-400 mt-0.5">نظرة شاملة على أداء الأكاديمية</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => buildCSV(submissions, reportStats)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-bold transition">
+            <FileSpreadsheet className="w-4 h-4" />
+            Excel
+          </button>
+          <button
+            onClick={() => setShowReport(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 text-sm font-bold transition">
+            <Printer className="w-4 h-4" />
+            تقرير PDF
+          </button>
+        </div>
       </div>
 
       {/* ── Revenue KPIs ──────────────────────────────────────────────────────── */}

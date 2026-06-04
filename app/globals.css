@@ -38,4 +38,16 @@ html { scroll-behavior: smooth; }
 
 @media print {
   .no-print { display: none !important; }
+  /* Hide everything except the report modal */
+  body > * { visibility: hidden; }
+  .print-visible,
+  .print-visible * { visibility: visible; }
+  .print-visible {
+    position: fixed !important;
+    inset: 0 !important;
+    overflow: auto !important;
+    background: white !important;
+    z-index: 9999 !important;
+  }
+  @page { margin: 1cm; size: A4 portrait; }
 }
