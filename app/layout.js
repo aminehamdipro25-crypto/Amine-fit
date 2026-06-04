@@ -15,13 +15,13 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID
 export const metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'Amine-Fit | مدرب شخصي ومستشار تغذية — قطر والعالم العربي',
+    default: 'Amine-Fit | مدرب شخصي ومدرب تغذية — قطر والعالم العربي',
     template: '%s | Amine-Fit',
   },
-  description: 'أمين حمدي — مدرب لياقة بدنية ومستشار تغذية معتمد بخلفية عسكرية نخبوية. الدوحة، قطر. برامج تدريب وتغذية مخصصة أونلاين للعالم العربي. أكثر من 10 سنوات خبرة مع القوات الخاصة والغواصين البحريين.',
+  description: 'أمين حمدي — مدرب لياقة بدنية ومدرب تغذية معتمد بخلفية عسكرية نخبوية. الدوحة، قطر. برامج تدريب وتغذية مخصصة أونلاين للعالم العربي. أكثر من 10 سنوات خبرة مع القوات الخاصة والغواصين البحريين.',
   keywords: [
-    'مدرب شخصي قطر', 'كوتش لياقة قطر', 'مستشار تغذية قطر', 'مدرب شخصي الدوحة',
-    'مدرب شخصي تونس', 'كوتش لياقة تونس', 'مستشار تغذية تونس',
+    'مدرب شخصي قطر', 'كوتش لياقة قطر', 'مدرب تغذية قطر', 'مدرب شخصي الدوحة',
+    'مدرب شخصي تونس', 'كوتش لياقة تونس', 'مدرب تغذية تونس',
     'برنامج تغذية اونلاين', 'تخسيس وزن', 'بناء عضلات', 'كوتش اونلاين عربي',
     'personal trainer qatar', 'coach sportif doha', 'coach nutrition qatar',
     'coach sportif tunisie', 'coach nutrition tunisie', 'programme fitness',
@@ -36,13 +36,13 @@ export const metadata = {
     alternateLocale: 'ar_TN',
     url: BASE_URL,
     siteName: 'Amine-Fit',
-    title: 'Amine-Fit | مدرب شخصي ومستشار تغذية — الدوحة، قطر',
+    title: 'Amine-Fit | مدرب شخصي ومدرب تغذية — الدوحة، قطر',
     description: 'أمين حمدي — خبرة عسكرية نخبوية + 10 سنوات تدريب. برامج تدريب وتغذية مخصصة أونلاين للعالم العربي من الدوحة.',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Amine-Fit — مدرب شخصي ومستشار تغذية، الدوحة قطر' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Amine-Fit — مدرب شخصي ومدرب تغذية، الدوحة قطر' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Amine-Fit | مدرب شخصي ومستشار تغذية — الدوحة، قطر',
+    title: 'Amine-Fit | مدرب شخصي ومدرب تغذية — الدوحة، قطر',
     description: 'أمين حمدي — خبرة عسكرية نخبوية. برامج تدريب وتغذية مخصصة أونلاين للعالم العربي من الدوحة.',
     images: ['/og-image.png'],
     creator: '@aminefit',
@@ -61,7 +61,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: 'Amine-Fit',
-  description: 'أمين حمدي — مدرب لياقة بدنية ومستشار تغذية معتمد بخلفية عسكرية نخبوية. برامج تدريب وتغذية مخصصة أونلاين.',
+  description: 'أمين حمدي — مدرب لياقة بدنية ومدرب تغذية معتمد بخلفية عسكرية نخبوية. برامج تدريب وتغذية مخصصة أونلاين.',
   url: 'https://amine-fit.com',
   telephone: '+97430653759',
   address: { '@type': 'PostalAddress', addressLocality: 'الدوحة', addressCountry: 'QA' },
@@ -70,7 +70,7 @@ const jsonLd = {
   founder: {
     '@type': 'Person',
     name: 'أمين حمدي',
-    jobTitle: 'مدرب شخصي ومستشار تغذية معتمد',
+    jobTitle: 'مدرب شخصي ومدرب تغذية معتمد',
     sameAs: ['https://amine-fit.com'],
   },
   offers: [

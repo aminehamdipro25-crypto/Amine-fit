@@ -167,20 +167,31 @@ function buildCSV(submissions, stats) {
   URL.revokeObjectURL(url)
 }
 
-// ── Print Report Modal ──────────────────────────────────────────────────────────
+// ── Print Report Modal — A4 single page, RTL-safe numbers ─────────────────────
+function N({ v }) {
+  // Wraps any number/phone in LTR context so bidi doesn't reverse it
+  return <span style={{ direction: 'ltr', unicodeBidi: 'embed', display: 'inline-block' }}>{v}</span>
+}
+
 function PrintReport({ submissions, stats, onClose }) {
-  const now     = new Date()
-  const dateStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
+  const now      = new Date()
+  const dateStr  = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
   const monthStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long' })
-  const PLAN_AR = { basic: 'التدريب (50 د.ت)', standard: 'الشهرية (125 د.ت)', premium: '3 أشهر (300 د.ت)' }
-  const STATUS_AR = { active: 'نشيط', suspended: 'موقوف', cancelled: 'ملغي' }
+  const PLAN_AR  = { basic: 'التدريب', standard: 'الشهرية', premium: '3 أشهر' }
+  const PLAN_PRICE_DISPLAY = { basic: 50, standard: 125, premium: 300 }
+  const STATUS_AR    = { active: 'نشيط', suspended: 'موقوف', cancelled: 'ملغي' }
   const STATUS_COLOR = { active: '#10b981', suspended: '#f59e0b', cancelled: '#ef4444' }
   const paid = submissions.filter(s => ['active','suspended','cancelled'].includes(s.status))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
+  // A4 is ~297mm tall × 210mm wide. With 10mm margins = 277mm usable height ≈ 1050px at 96dpi.
+  // We clamp the table to at most 15 rows to guarantee single page.
+  const tableRows = paid.slice(0, 15)
+  const hasMore   = paid.length > 15
+
   return (
-    <div className="print-visible fixed inset-0 bg-black/60 z-50 overflow-y-auto print:bg-white print:relative print:overflow-visible">
-      {/* Close / Print buttons — hidden when printing */}
+    <div className="print-visible fixed inset-0 bg-black/60 z-50 overflow-y-auto">
+      {/* Toolbar — hidden when printing */}
       <div className="sticky top-0 z-10 flex justify-between items-center px-6 py-3 bg-white border-b border-slate-200 print:hidden">
         <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
           <X className="w-5 h-5" />
@@ -194,106 +205,186 @@ function PrintReport({ submissions, stats, onClose }) {
         </button>
       </div>
 
-      {/* Report body */}
-      <div className="max-w-3xl mx-auto my-6 bg-white rounded-2xl shadow-xl p-10 print:my-0 print:shadow-none print:rounded-none" dir="rtl">
-
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-amber-400">
+      {/* ═══ A4 REPORT BODY ═══ */}
+      <div
+        id="report-page"
+        dir="rtl"
+        style={{
+          width: '210mm',
+          minHeight: '297mm',
+          maxHeight: '297mm',
+          overflow: 'hidden',
+          background: '#fff',
+          margin: '24px auto',
+          padding: '12mm 14mm',
+          boxSizing: 'border-box',
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '10pt',
+          color: '#1e293b',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10pt',
+          boxShadow: '0 4px 32px rgba(0,0,0,.18)',
+        }}
+        className="print:margin-0 print:shadow-none"
+      >
+        {/* ── HEADER BAND ── */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          borderBottom: '3px solid #fbbf24', paddingBottom: '8pt',
+        }}>
           <div>
-            <h1 className="text-2xl font-black text-slate-900">AMINE-FIT</h1>
-            <p className="text-slate-400 text-sm mt-0.5">أمين حمدي — مدرب شخصي ومستشار تغذية</p>
-            <p className="text-slate-400 text-sm">الدوحة، قطر • +974 3065 3759</p>
-          </div>
-          <div className="text-left">
-            <p className="text-xs text-slate-400 uppercase tracking-widest">تقرير شهري</p>
-            <p className="text-lg font-extrabold text-slate-800">{monthStr}</p>
-            <p className="text-xs text-slate-400 mt-0.5">تاريخ الإصدار: {dateStr}</p>
-          </div>
-        </div>
-
-        {/* ── KPI Grid ── */}
-        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">الملخص المالي</h2>
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {[
-            { label: 'إجمالي الإيرادات',       value: `${stats.totalRevenue.toLocaleString()} د.ت`,  accent: '#f59e0b' },
-            { label: 'إيرادات هذا الشهر',      value: `${stats.thisMonthRevenue.toLocaleString()} د.ت`, accent: '#10b981' },
-            { label: 'MRR (إيراد شهري متكرر)', value: `${stats.mrr.toLocaleString()} د.ت`,          accent: '#6366f1' },
-            { label: 'الإيراد الضائع',          value: `${stats.lostRevenue.toLocaleString()} د.ت`,  accent: '#ef4444' },
-          ].map(k => (
-            <div key={k.label} style={{ borderRight: `3px solid ${k.accent}` }}
-              className="bg-slate-50 rounded-xl p-4 pr-4">
-              <p className="text-xs text-slate-400 mb-1">{k.label}</p>
-              <p className="text-xl font-black text-slate-900">{k.value}</p>
+            <div style={{ fontSize: '18pt', fontWeight: 900, letterSpacing: '-0.5px', color: '#0f172a' }}>AMINE-FIT</div>
+            <div style={{ fontSize: '9pt', color: '#64748b', marginTop: '2pt' }}>أمين حمدي — مدرب شخصي ومدرب تغذية معتمد</div>
+            <div style={{ fontSize: '9pt', color: '#64748b' }}>
+              الدوحة، قطر &nbsp;•&nbsp; <N v="+974 3065 3759" />
             </div>
-          ))}
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '8pt', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>تقرير شهري</div>
+            <div style={{ fontSize: '14pt', fontWeight: 900, color: '#0f172a' }}>{monthStr}</div>
+            <div style={{ fontSize: '8pt', color: '#94a3b8', marginTop: '2pt' }}>تاريخ الإصدار: {dateStr}</div>
+          </div>
         </div>
 
-        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">الملخص التشغيلي</h2>
-        <div className="grid grid-cols-4 gap-2 mb-8">
-          {[
-            { label: 'إجمالي المسجلين', value: stats.total },
-            { label: 'عملاء نشطون',    value: stats.active },
-            { label: 'بانتظار الدفع',   value: stats.pending },
-            { label: 'معدل التحويل',   value: `${stats.conversionRate}%` },
-          ].map(k => (
-            <div key={k.label} className="bg-slate-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-slate-900">{k.value}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{k.label}</p>
-            </div>
-          ))}
+        {/* ── FINANCIAL KPIs (4 cards in 1 row) ── */}
+        <div>
+          <div style={{ fontSize: '7pt', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5pt' }}>
+            الملخص المالي
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6pt' }}>
+            {[
+              { label: 'إجمالي الإيرادات',  value: stats.totalRevenue,      accent: '#f59e0b' },
+              { label: 'إيرادات هذا الشهر', value: stats.thisMonthRevenue,   accent: '#10b981' },
+              { label: 'MRR',               value: stats.mrr,               accent: '#6366f1' },
+              { label: 'الإيراد الضائع',    value: stats.lostRevenue,       accent: '#ef4444' },
+            ].map(k => (
+              <div key={k.label} style={{
+                borderTop: `3px solid ${k.accent}`,
+                background: '#f8fafc', borderRadius: '6pt',
+                padding: '7pt 8pt',
+              }}>
+                <div style={{ fontSize: '7.5pt', color: '#64748b', marginBottom: '3pt' }}>{k.label}</div>
+                <div style={{ fontSize: '13pt', fontWeight: 900, color: '#0f172a' }}>
+                  <N v={k.value.toLocaleString()} /> <span style={{ fontSize: '8pt', color: '#64748b' }}>د.ت</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ── Paid clients table ── */}
-        <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
-          قائمة العملاء المدفوعين ({paid.length})
-        </h2>
-        <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#fbbf24', color: '#000' }}>
-              {['الاسم', 'الباقة', 'السعر', 'تاريخ الانضمام', 'الحالة'].map(h => (
-                <th key={h} className="text-right px-3 py-2 font-bold text-xs">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paid.map((s, i) => {
-              const price = (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
+        {/* ── OPERATIONAL KPIs (4 cells) ── */}
+        <div>
+          <div style={{ fontSize: '7pt', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5pt' }}>
+            الملخص التشغيلي
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6pt' }}>
+            {[
+              { label: 'إجمالي المسجلين', value: stats.total },
+              { label: 'نشطاء حالياً',   value: stats.active },
+              { label: 'بانتظار الدفع',   value: stats.pending },
+              { label: 'معدل التحويل',   value: `${stats.conversionRate}%` },
+            ].map(k => (
+              <div key={k.label} style={{
+                background: '#f8fafc', borderRadius: '6pt',
+                padding: '7pt 8pt', textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '14pt', fontWeight: 900, color: '#0f172a' }}><N v={k.value} /></div>
+                <div style={{ fontSize: '7.5pt', color: '#64748b', marginTop: '2pt' }}>{k.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PLAN BREAKDOWN (3 mini cards) ── */}
+        <div>
+          <div style={{ fontSize: '7pt', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5pt' }}>
+            توزيع الباقات
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6pt' }}>
+            {['basic','standard','premium'].map(key => {
+              const clients = paid.filter(s => s.subscriptionPlan === key)
+              const rev = clients.reduce((sum, s) => sum + PLAN_PRICE_DISPLAY[key], 0)
               return (
-                <tr key={s.id} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
-                  <td className="px-3 py-2 font-bold text-slate-800">{s.name || '—'}</td>
-                  <td className="px-3 py-2 text-slate-600 text-xs">{PLAN_AR[s.subscriptionPlan] || '—'}</td>
-                  <td className="px-3 py-2 font-bold" style={{ color: '#10b981' }}>{price} د.ت</td>
-                  <td className="px-3 py-2 text-slate-400 text-xs">
-                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span style={{ background: STATUS_COLOR[s.status] + '20', color: STATUS_COLOR[s.status] }}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-bold">
-                      {STATUS_AR[s.status] || s.status}
-                    </span>
-                  </td>
-                </tr>
+                <div key={key} style={{ background: '#f8fafc', borderRadius: '6pt', padding: '7pt 8pt' }}>
+                  <div style={{ fontWeight: 700, fontSize: '8.5pt', marginBottom: '3pt' }}>{PLAN_LABELS[key]}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', color: '#64748b' }}>
+                    <span><N v={clients.length} /> عميل</span>
+                    <span style={{ color: '#10b981', fontWeight: 700 }}><N v={rev} /> د.ت</span>
+                  </div>
+                </div>
               )
             })}
-            {paid.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-4 text-slate-300 text-xs">لا يوجد عملاء مدفوعون بعد</td></tr>
-            )}
-          </tbody>
-          <tfoot>
-            <tr style={{ background: '#0f172a', color: '#fff' }}>
-              <td className="px-3 py-2 font-black text-sm" colSpan={2}>الإجمالي</td>
-              <td className="px-3 py-2 font-black text-sm" style={{ color: '#fbbf24' }}>
-                {paid.reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} د.ت
-              </td>
-              <td colSpan={2} />
-            </tr>
-          </tfoot>
-        </table>
+          </div>
+        </div>
 
-        {/* ── Footer ── */}
-        <div className="border-t border-slate-200 pt-4 text-center text-[10px] text-slate-300">
-          <p>Amine-Fit • الدوحة، قطر • amine.hamdi.pro25@gmail.com • تقرير {monthStr}</p>
-          <p className="mt-0.5">وثيقة سرية — للاستخدام الداخلي فقط</p>
+        {/* ── PAID CLIENT TABLE ── */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '7pt', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5pt' }}>
+            قائمة العملاء المدفوعين ({paid.length}){hasMore ? ` — يُعرض أحدث 15` : ''}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt' }}>
+            <thead>
+              <tr style={{ background: '#fbbf24' }}>
+                {['#', 'الاسم', 'الباقة', 'المبلغ', 'تاريخ الانضمام', 'الحالة'].map(h => (
+                  <th key={h} style={{ textAlign: 'right', padding: '5pt 6pt', fontWeight: 700, fontSize: '8pt' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map((s, i) => {
+                const price = PLAN_PRICE_DISPLAY[s.subscriptionPlan] ?? 0
+                const finalPrice = price * (s.subscriptionPlan === 'premium' ? 3 : 1)
+                return (
+                  <tr key={s.id} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                    <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}><N v={i + 1} /></td>
+                    <td style={{ padding: '4pt 6pt', fontWeight: 700 }}>{s.name || '—'}</td>
+                    <td style={{ padding: '4pt 6pt', color: '#64748b' }}>{PLAN_AR[s.subscriptionPlan] || '—'}</td>
+                    <td style={{ padding: '4pt 6pt', fontWeight: 700, color: '#10b981' }}><N v={finalPrice} /> د.ت</td>
+                    <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}>
+                      {s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    </td>
+                    <td style={{ padding: '4pt 6pt' }}>
+                      <span style={{
+                        background: (STATUS_COLOR[s.status] || '#64748b') + '22',
+                        color: STATUS_COLOR[s.status] || '#64748b',
+                        borderRadius: '4pt', padding: '2pt 5pt', fontSize: '7.5pt', fontWeight: 700,
+                      }}>
+                        {STATUS_AR[s.status] || s.status}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+              {paid.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '12pt', color: '#cbd5e1', fontSize: '8pt' }}>
+                    لا يوجد عملاء مدفوعون بعد
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: '#0f172a', color: '#fff' }}>
+                <td colSpan={3} style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt' }}>الإجمالي المحصّل</td>
+                <td style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt', color: '#fbbf24' }}>
+                  <N v={paid.reduce((sum, s) => sum + (PLAN_PRICE_DISPLAY[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} /> د.ت
+                </td>
+                <td colSpan={2} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* ── FOOTER ── */}
+        <div style={{
+          borderTop: '1px solid #e2e8f0', paddingTop: '6pt',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontSize: '7.5pt', color: '#94a3b8',
+        }}>
+          <span>Amine-Fit &nbsp;•&nbsp; الدوحة، قطر &nbsp;•&nbsp; amine.hamdi.pro25@gmail.com</span>
+          <span>وثيقة سرية — للاستخدام الداخلي فقط</span>
+          <span>تقرير {monthStr}</span>
         </div>
       </div>
     </div>

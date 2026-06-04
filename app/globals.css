@@ -38,16 +38,12 @@ html { scroll-behavior: smooth; }
 
 @media print {
   .no-print { display: none !important; }
-  /* Hide everything except the report modal */
-  body > * { visibility: hidden; }
-  .print-visible,
-  .print-visible * { visibility: visible; }
-  .print-visible {
-    position: fixed !important;
-    inset: 0 !important;
-    overflow: auto !important;
-    background: white !important;
-    z-index: 9999 !important;
-  }
-  @page { margin: 1cm; size: A4 portrait; }
+  /* Show only the report — hide everything else */
+  body > * { display: none !important; }
+  .print-visible { display: block !important; }
+  .print-visible > * { display: none !important; }
+  /* Show only the A4 report page, hide toolbar */
+  #report-page { display: flex !important; }
+  .print-visible { position: fixed !important; inset: 0 !important; background: white !important; overflow: hidden !important; }
+  @page { margin: 0; size: A4 portrait; }
 }
