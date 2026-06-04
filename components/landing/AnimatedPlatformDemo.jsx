@@ -441,7 +441,97 @@ function S1_Landing({ p }) {
 }
 
 /* ══════════════════════════════════════
-   SCENE 2 — Pricing + Click a plan
+   SCENE 2 — Plan Quiz (3 questions)
+══════════════════════════════════════ */
+function S2_Quiz({ p }) {
+  const q1show = p > 0.04
+  const q2show = p > 0.38
+  const q3show = p > 0.62
+  const result = p > 0.82
+
+  return (
+    <div className="h-full overflow-hidden relative" style={{ background: '#0a0a0a' }}>
+      <div className="px-3 pt-3">
+        <p className="text-[#fbbf24] text-[7px] font-black uppercase tracking-widest text-center mb-1">اكتشف باقتك</p>
+        <p className="text-white font-black text-center mb-3" style={{ fontSize: 'clamp(10px,2vw,13px)' }}>أي باقة تناسبك؟</p>
+        <p className="text-white/30 text-[7px] text-center mb-3">3 أسئلة فقط</p>
+
+        {/* Q1 */}
+        <div style={{ opacity: q1show ? 1 : 0, transform: `translateY(${q1show ? 0 : 8}px)`, transition: 'all 0.4s' }}>
+          <p className="text-white/60 text-[8px] font-bold mb-1.5">١ — ما هدفك الأساسي؟</p>
+          <div className="grid grid-cols-2 gap-1 mb-3">
+            {[
+              { label: 'خسارة الوزن', icon: '🔥', sel: true },
+              { label: 'بناء العضلات', icon: '💪', sel: false },
+              { label: 'تحسين الأداء', icon: '⚡', sel: false },
+              { label: 'صحة عامة',    icon: '🌿', sel: false },
+            ].map(({ label, icon, sel }) => (
+              <div key={label} className={`rounded-xl border px-2 py-1.5 flex items-center gap-1 ${
+                sel ? 'bg-[#fbbf24]/15 border-[#fbbf24]/50' : 'bg-white/[0.03] border-white/8'}`}>
+                <span style={{ fontSize: '9px' }}>{icon}</span>
+                <span className={`text-[7px] font-bold ${sel ? 'text-[#fbbf24]' : 'text-white/35'}`}>{label}</span>
+                {sel && <span className="text-[#fbbf24] text-[7px] mr-auto">✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Q2 */}
+        <div style={{ opacity: q2show ? 1 : 0, transform: `translateY(${q2show ? 0 : 8}px)`, transition: 'all 0.4s' }}>
+          <p className="text-white/60 text-[8px] font-bold mb-1.5">٢ — ما مستواك الحالي؟</p>
+          <div className="flex gap-1 mb-3">
+            {[
+              { label: 'مبتدئ',  sel: false },
+              { label: 'متوسط', sel: true  },
+              { label: 'متقدم',  sel: false },
+            ].map(({ label, sel }) => (
+              <div key={label} className={`flex-1 rounded-xl border py-1.5 text-center ${
+                sel ? 'bg-[#fbbf24]/15 border-[#fbbf24]/50' : 'bg-white/[0.03] border-white/8'}`}>
+                <span className={`text-[7.5px] font-black ${sel ? 'text-[#fbbf24]' : 'text-white/35'}`}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Q3 */}
+        <div style={{ opacity: q3show ? 1 : 0, transform: `translateY(${q3show ? 0 : 8}px)`, transition: 'all 0.4s' }}>
+          <p className="text-white/60 text-[8px] font-bold mb-1.5">٣ — ما ميزانيتك الشهرية؟</p>
+          <div className="flex gap-1 mb-3">
+            {[
+              { label: '50 د.ت',  sel: false },
+              { label: '125 د.ت', sel: true  },
+              { label: '300 د.ت', sel: false },
+            ].map(({ label, sel }) => (
+              <div key={label} className={`flex-1 rounded-xl border py-1.5 text-center ${
+                sel ? 'bg-[#fbbf24]/15 border-[#fbbf24]/50' : 'bg-white/[0.03] border-white/8'}`}>
+                <span className={`text-[7.5px] font-black ${sel ? 'text-[#fbbf24]' : 'text-white/35'}`}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Result overlay */}
+      {result && (
+        <div className="absolute inset-0 bg-black/90 flex items-center justify-center px-4"
+          style={{ opacity: Math.min((p - 0.82) / 0.08, 1) }}>
+          <div className="bg-[#161616] border border-[#fbbf24]/40 rounded-2xl p-4 w-full max-w-[200px] text-center">
+            <div className="text-2xl mb-1">⭐</div>
+            <p className="text-[#fbbf24] font-black text-[9px] mb-0.5">توصيتنا لك</p>
+            <p className="text-white font-black text-[13px] mb-1">الباقة الشهرية</p>
+            <p className="text-white/35 text-[7px] mb-3">تدريب + تغذية + متابعة أسبوعية</p>
+            <div className="bg-[#fbbf24] rounded-xl py-2 text-center">
+              <span className="text-black font-black text-[9px]">ابدأ بـ 125 د.ت ⚡</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════
+   SCENE 3 — Pricing + Click a plan
 ══════════════════════════════════════ */
 function S2_Pricing({ p }) {
   const showModal = p > 0.65
@@ -507,8 +597,8 @@ function S2_Pricing({ p }) {
    SCENE 3 — Registration Form (5 steps)
 ══════════════════════════════════════ */
 function S3_Register({ p }) {
-  const name  = typed('أحمد محمد الرياضي', p, 0.14, 0.40)
-  const email = typed('ahmed.sport@gmail.com', p, 0.46, 0.72)
+  const name  = typed('أمين حمدي', p, 0.14, 0.40)
+  const email = typed('amine.hamdi.pro25@gmail.com', p, 0.46, 0.72)
   const phone = typed('50123456', p, 0.72, 0.88)
   return (
     <div className="h-full overflow-auto bg-white">
@@ -619,7 +709,7 @@ function S4_Pending({ p }) {
           </div>
           <p className="text-white/15 text-[6.5px] text-center mt-3"
             style={{ opacity: pb > 0.85 ? 1 : 0, transition: 'opacity 0.4s' }}>
-            ستصلك رسالة على ahmed.sport@gmail.com ✉️
+            ستصلك رسالة على amine.hamdi.pro25@gmail.com ✉️
           </p>
         </div>
       </div>
@@ -721,9 +811,9 @@ function S4_Pending({ p }) {
 ══════════════════════════════════════ */
 function S5_Login({ p }) {
   const tab        = p < 0.50 ? 'activate' : 'login'
-  const actEmail   = typed('ahmed.sport@gmail.com', p, 0.12, 0.36)
+  const actEmail   = typed('amine.hamdi.pro25@gmail.com', p, 0.12, 0.36)
   const actCode    = typed('AF-8X2K', p, 0.38, 0.48)
-  const loginEmail = typed('ahmed.sport@gmail.com', p, 0.54, 0.72)
+  const loginEmail = typed('amine.hamdi.pro25@gmail.com', p, 0.54, 0.72)
   const dotCount   = Math.floor(typed('••••••••', p, 0.74, 0.88).length)
 
   // Left food emojis (scaled down for the mini browser)
@@ -1151,13 +1241,14 @@ function S7_Portal({ p }) {
    Scene Registry  (7 scenes)
 ══════════════════════════════════════ */
 const SCENES = [
-  { url: 'amine-fit.com',                             label: '🌐 صفحة الهبوط — الميزات والأسعار',      ms: 11000, render: (p) => <S1_Landing p={p} /> },
-  { url: 'amine-fit.com/#pricing',                    label: '💰 اختيار الباقة الشهرية',              ms:  8000, render: (p) => <S2_Pricing p={p} /> },
-  { url: 'amine-fit.com/register?plan=monthly',       label: '📋 نموذج التسجيل (5 خطوات)',            ms:  9000, render: (p) => <S3_Register p={p} /> },
+  { url: 'amine-fit.com',                              label: '🌐 صفحة الهبوط — الميزات والأسعار',      ms: 11000, render: (p) => <S1_Landing p={p} /> },
+  { url: 'amine-fit.com/#quiz',                        label: '🎯 اكتشف الباقة المناسبة (3 أسئلة)',     ms:  8000, render: (p) => <S2_Quiz p={p} /> },
+  { url: 'amine-fit.com/#pricing',                     label: '💰 اختيار الباقة الشهرية',              ms:  8000, render: (p) => <S2_Pricing p={p} /> },
+  { url: 'amine-fit.com/register?plan=monthly',        label: '📋 نموذج التسجيل (5 خطوات)',            ms:  9000, render: (p) => <S3_Register p={p} /> },
   { url: 'amine-fit.com/register/success?plan=monthly',label: '💳 إتمام الدفع عبر D17',               ms:  9000, render: (p) => <S4_Pending p={p} /> },
-  { url: 'amine-fit.com/client/login',                label: '🔑 تفعيل الحساب ثم الدخول',             ms:  9000, render: (p) => <S5_Login p={p} /> },
-  { url: 'amine-fit.com/client/home',                 label: '📱 تطبيق Amine-Fit — الصفحة الرئيسية', ms:  9000, render: (p) => <S6_Dashboard p={p} /> },
-  { url: 'amine-fit.com/client/plan',                 label: '⚡ التطبيق — التغذية / التدريب / التقدم',ms:  9000, render: (p) => <S7_Portal p={p} /> },
+  { url: 'amine-fit.com/client/login',                 label: '🔑 تفعيل الحساب ثم الدخول',             ms:  9000, render: (p) => <S5_Login p={p} /> },
+  { url: 'amine-fit.com/client/home',                  label: '📱 تطبيق Amine-Fit — الصفحة الرئيسية', ms:  9000, render: (p) => <S6_Dashboard p={p} /> },
+  { url: 'amine-fit.com/client/plan',                  label: '⚡ التطبيق — التغذية / التدريب / التقدم',ms:  9000, render: (p) => <S7_Portal p={p} /> },
 ]
 
 /* ══════════════════════════════════════
