@@ -56,6 +56,96 @@ const ChartTip = ({ active, payload, label }) => {
   )
 }
 
+/* ── Pricing Manager ──────────────────────────────────────────────────────── */
+const PLAN_LABELS = {
+  basic:    { name: 'برنامج التدريب 🏋️',  period: '/ شهر' },
+  standard: { name: 'الباقة الشهرية ⚡',   period: '/ شهر' },
+  premium:  { name: 'باقة 3 أشهر 🏆',     period: '/ 3 أشهر' },
+}
+const PRICING_DEFAULT = {
+  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
+  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
+  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+}
+
+function PricingManager() {
+  const [prices, setPrices] = useState(PRICING_DEFAULT)
+  const [saving, setSaving] = useState(false)
+  const [msg,    setMsg]    = useState('')
+
+  useEffect(() => {
+    fetch('/api/admin/pricing')
+      .then(r => r.ok ? r.json() : PRICING_DEFAULT)
+      .then(d => setPrices({ ...PRICING_DEFAULT, ...d }))
+      .catch(() => {})
+  }, [])
+
+  function update(plan, field, val) {
+    setPrices(prev => ({ ...prev, [plan]: { ...prev[plan], [field]: Number(val) || 0 } }))
+  }
+
+  async function save(e) {
+    e.preventDefault()
+    setSaving(true); setMsg('')
+    const res = await fetch('/api/admin/pricing', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(prices),
+    })
+    setMsg(res.ok ? '✅ تم حفظ الأسعار' : '❌ خطأ في الحفظ')
+    setSaving(false)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
+          <Tag className="w-4 h-4 text-emerald-500" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">إدارة الأسعار</p>
+          <p className="text-[10px] text-slate-400 font-medium">بالدينار التونسي (د.ت) والريال القطري (ر.ق)</p>
+        </div>
+      </div>
+
+      <form onSubmit={save} className="space-y-4">
+        {Object.entries(PLAN_LABELS).map(([key, meta]) => (
+          <div key={key} className="bg-slate-50 rounded-2xl p-4">
+            <p className="text-sm font-extrabold text-slate-700 mb-3">{meta.name} <span className="text-slate-400 font-medium text-xs">{meta.period}</span></p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">سعر البيع (د.ت)</label>
+                <input type="number" min={1} value={prices[key].tnd} onChange={e => update(key, 'tnd', e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-300" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">السعر الأصلي (د.ت)</label>
+                <input type="number" min={1} value={prices[key].origTnd} onChange={e => update(key, 'origTnd', e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-300" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">سعر البيع (ر.ق)</label>
+                <input type="number" min={1} value={prices[key].qar} onChange={e => update(key, 'qar', e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-300" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">السعر الأصلي (ر.ق)</label>
+                <input type="number" min={1} value={prices[key].origQar} onChange={e => update(key, 'origQar', e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-300" />
+              </div>
+            </div>
+          </div>
+        ))}
+        <button type="submit" disabled={saving}
+          className="w-full py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-sm hover:bg-emerald-600 transition disabled:opacity-50">
+          {saving ? 'جاري الحفظ...' : '💾 حفظ الأسعار'}
+        </button>
+        {msg && <p className="text-xs text-center font-medium text-slate-600">{msg}</p>}
+      </form>
+    </div>
+  )
+}
+
 /* ── Offer / Discount Manager ──────────────────────────────────────────────── */
 function OfferManager() {
   const [offer,   setOffer]   = useState(null)   // null=loading
@@ -289,6 +379,9 @@ export default function DashboardClient({ submissions }) {
           </div>
         </div>
       </div>
+
+      {/* Pricing Manager */}
+      <PricingManager />
 
       {/* Offer Manager */}
       <OfferManager />

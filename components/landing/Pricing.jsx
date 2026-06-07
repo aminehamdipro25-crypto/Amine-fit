@@ -44,91 +44,121 @@ function useCountdown() {
   return { time, label }
 }
 
-const plans = [
-  {
-    name: 'برنامج التدريب',
-    tag: 'البداية الصحيحة',
-    salePrice: '50',
-    origPrice: '100',
-    currency: 'د.ت',
-    period: '/ شهر',
-    emoji: '🏋️',
-    badge: null,
-    color: 'dark',
-    forWho: 'لمن يريد بناء عادة تدريبية احترافية والبدء بخطوة واضحة ومدروسة دون الدخول في تعقيدات التغذية بعد.',
-    highlights: [
-      { icon: Target,         text: 'برنامج تدريب مخصص 100% حسب مستواك وهدفك' },
-      { icon: Dumbbell,       text: 'شرح كامل لكل تمرين — أوزان، تكرارات، راحة' },
-      { icon: RefreshCw,      text: 'تعديل البرنامج كل أسبوعين حسب تقدمك الفعلي' },
-      { icon: MessageCircle,  text: 'دعم واتساب مع رد خلال 24 ساعة' },
-      { icon: ChartLine,      text: 'بوابة عميل شخصية — تتابع خطتك في أي وقت' },
-    ],
-    notIncluded: ['خطة غذائية مفصلة', 'قياسات جسم دورية', 'متابعة أسبوعية مفصلة'],
-    results: 'تحسن ملحوظ في القوة والأداء خلال 3–4 أسابيع',
-    guarantee: null,
-    cta: 'ابدأ التدريب',
-    duration: 'شهر واحد',
-    sessions: '3–5 أيام / أسبوع',
-    support: 'واتساب خلال 24 ساعة',
-  },
-  {
-    name: 'الباقة الشهرية',
-    tag: 'تدريب + تغذية متكاملة',
-    salePrice: '125',
-    origPrice: '250',
-    currency: 'د.ت',
-    period: '/ شهر',
-    emoji: '⚡',
-    badge: '⭐ الأكثر طلباً',
-    color: 'gold',
-    forWho: 'للجادين الذين يريدون تحولاً حقيقياً في شهر واحد — لا تخمين في التغذية ولا عشوائية في التدريب.',
-    highlights: [
-      { icon: Dumbbell,       text: 'برنامج تدريب أسبوعي مخصص + تعديلات فورية' },
-      { icon: Apple,          text: 'خطة غذائية كاملة بنظام التبادل الغذائي ADA 2019' },
-      { icon: Brain,          text: 'توزيع دقيق للسعرات والماكرو مع قائمة وجبات يومية' },
-      { icon: ChartLine,      text: 'متابعة أسبوعية مفصلة + ضبط الخطط حسب التقدم' },
-      { icon: MessageCircle,  text: 'استشارات غذائية مفتوحة عبر واتساب طوال الشهر' },
-      { icon: Calendar,       text: 'بوابة عميل متكاملة — تدريب + غذاء + تتبع التقدم' },
-      { icon: Star,           text: 'تقرير تقدم شامل في نهاية الشهر بالأرقام والنسب' },
-    ],
-    notIncluded: ['قياسات InBody (تُضاف عند الطلب)'],
-    results: 'تغيير ملموس في التركيب الجسدي خلال 4 أسابيع',
-    guarantee: '7 أيام ضمان استرداد كامل',
-    cta: 'احصل على خطتك',
-    duration: 'شهر واحد',
-    sessions: '3–5 أيام / أسبوع',
-    support: 'واتساب + متابعة أسبوعية',
-  },
-  {
-    name: 'باقة 3 أشهر',
-    tag: 'التحول الجذري — 90 يوماً',
-    salePrice: '300',
-    origPrice: '600',
-    currency: 'د.ت',
-    period: '/ 3 أشهر',
-    emoji: '🏆',
-    badge: '💎 الأوفر',
-    color: 'dark',
-    forWho: 'للمحترفين الجادين — 3 أشهر من الالتزام الكامل تُحدث التحول الحقيقي الذي تبحث عنه.',
-    highlights: [
-      { icon: Dumbbell,       text: 'برنامج تدريب + تغذية كاملة متجددة كل شهر' },
-      { icon: Calendar,       text: 'مكالمة تقييم شهرية (15–20 دقيقة) لمراجعة التقدم' },
-      { icon: ChartLine,      text: 'قياسات جسم دورية + تحليل مفصل للنسب والتركيب' },
-      { icon: MessageCircle,  text: 'استشارات غير محدودة — رد خلال ساعات طوال الأسبوع' },
-      { icon: Brain,          text: 'إعادة تصميم البرامج كل شهر حسب نتائجك الفعلية' },
-      { icon: Star,           text: 'تقارير تقدم شهرية مفصلة بالأرقام والصور' },
-      { icon: Trophy,         text: 'أولوية قصوى في الرد والمتابعة الشخصية' },
-      { icon: Shield,         text: '✅ ضمان النتيجة — تقدم ملموس أو تمديد مجاناً' },
-    ],
-    notIncluded: [],
-    results: 'تحول جسدي كامل وعادات صحية مدى الحياة',
-    guarantee: 'نتيجة ملموسة أو نمدد مجاناً',
-    cta: 'احجز مكانك',
-    duration: '3 أشهر كاملة',
-    sessions: '4–5 أيام / أسبوع',
-    support: 'مباشر + مكالمة شهرية',
-  },
-]
+/* ── Dynamic pricing hook ─────────────────────────────────────────────────── */
+const PRICING_DEFAULT = {
+  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
+  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
+  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+}
+
+function usePricing() {
+  const [pricing, setPricing] = useState(PRICING_DEFAULT)
+  useEffect(() => {
+    fetch('/api/pricing')
+      .then(r => r.ok ? r.json() : PRICING_DEFAULT)
+      .then(d => setPricing({ ...PRICING_DEFAULT, ...d }))
+      .catch(() => {})
+  }, [])
+  return pricing
+}
+
+function buildPlans(pricing) {
+  const p = { ...PRICING_DEFAULT, ...pricing }
+  return [
+    {
+      key: 'basic',
+      name: 'برنامج التدريب',
+      tag: 'البداية الصحيحة',
+      salePrice: String(p.basic.tnd),
+      origPrice: String(p.basic.origTnd),
+      salePriceQar: String(p.basic.qar),
+      origPriceQar: String(p.basic.origQar),
+      currency: 'د.ت',
+      period: '/ شهر',
+      emoji: '🏋️',
+      badge: null,
+      color: 'dark',
+      forWho: 'لمن يريد بناء عادة تدريبية احترافية والبدء بخطوة واضحة ومدروسة دون الدخول في تعقيدات التغذية بعد.',
+      highlights: [
+        { icon: Target,         text: 'برنامج تدريب مخصص 100% حسب مستواك وهدفك' },
+        { icon: Dumbbell,       text: 'شرح كامل لكل تمرين — أوزان، تكرارات، راحة' },
+        { icon: RefreshCw,      text: 'تعديل البرنامج كل أسبوعين حسب تقدمك الفعلي' },
+        { icon: MessageCircle,  text: 'دعم واتساب مع رد خلال 24 ساعة' },
+        { icon: ChartLine,      text: 'بوابة عميل شخصية — تتابع خطتك في أي وقت' },
+      ],
+      notIncluded: ['خطة غذائية مفصلة', 'قياسات جسم دورية', 'متابعة أسبوعية مفصلة'],
+      results: 'تحسن ملحوظ في القوة والأداء خلال 3–4 أسابيع',
+      guarantee: null,
+      cta: 'ابدأ التدريب',
+      duration: 'شهر واحد',
+      sessions: '3–5 أيام / أسبوع',
+      support: 'واتساب خلال 24 ساعة',
+    },
+    {
+      key: 'standard',
+      name: 'الباقة الشهرية',
+      tag: 'تدريب + تغذية متكاملة',
+      salePrice: String(p.standard.tnd),
+      origPrice: String(p.standard.origTnd),
+      salePriceQar: String(p.standard.qar),
+      origPriceQar: String(p.standard.origQar),
+      currency: 'د.ت',
+      period: '/ شهر',
+      emoji: '⚡',
+      badge: '⭐ الأكثر طلباً',
+      color: 'gold',
+      forWho: 'للجادين الذين يريدون تحولاً حقيقياً في شهر واحد — لا تخمين في التغذية ولا عشوائية في التدريب.',
+      highlights: [
+        { icon: Dumbbell,       text: 'برنامج تدريب أسبوعي مخصص + تعديلات فورية' },
+        { icon: Apple,          text: 'خطة غذائية كاملة بنظام التبادل الغذائي ADA 2019' },
+        { icon: Brain,          text: 'توزيع دقيق للسعرات والماكرو مع قائمة وجبات يومية' },
+        { icon: ChartLine,      text: 'متابعة أسبوعية مفصلة + ضبط الخطط حسب التقدم' },
+        { icon: MessageCircle,  text: 'استشارات غذائية مفتوحة عبر واتساب طوال الشهر' },
+        { icon: Calendar,       text: 'بوابة عميل متكاملة — تدريب + غذاء + تتبع التقدم' },
+        { icon: Star,           text: 'تقرير تقدم شامل في نهاية الشهر بالأرقام والنسب' },
+      ],
+      notIncluded: ['قياسات InBody (تُضاف عند الطلب)'],
+      results: 'تغيير ملموس في التركيب الجسدي خلال 4 أسابيع',
+      guarantee: '7 أيام ضمان استرداد كامل',
+      cta: 'احصل على خطتك',
+      duration: 'شهر واحد',
+      sessions: '3–5 أيام / أسبوع',
+      support: 'واتساب + متابعة أسبوعية',
+    },
+    {
+      key: 'premium',
+      name: 'باقة 3 أشهر',
+      tag: 'التحول الجذري — 90 يوماً',
+      salePrice: String(p.premium.tnd),
+      origPrice: String(p.premium.origTnd),
+      salePriceQar: String(p.premium.qar),
+      origPriceQar: String(p.premium.origQar),
+      currency: 'د.ت',
+      period: '/ 3 أشهر',
+      emoji: '🏆',
+      badge: '💎 الأوفر',
+      color: 'dark',
+      forWho: 'للمحترفين الجادين — 3 أشهر من الالتزام الكامل تُحدث التحول الحقيقي الذي تبحث عنه.',
+      highlights: [
+        { icon: Dumbbell,       text: 'برنامج تدريب + تغذية كاملة متجددة كل شهر' },
+        { icon: Calendar,       text: 'مكالمة تقييم شهرية (15–20 دقيقة) لمراجعة التقدم' },
+        { icon: ChartLine,      text: 'قياسات جسم دورية + تحليل مفصل للنسب والتركيب' },
+        { icon: MessageCircle,  text: 'استشارات غير محدودة — رد خلال ساعات طوال الأسبوع' },
+        { icon: Brain,          text: 'إعادة تصميم البرامج كل شهر حسب نتائجك الفعلية' },
+        { icon: Star,           text: 'تقارير تقدم شهرية مفصلة بالأرقام والصور' },
+        { icon: Trophy,         text: 'أولوية قصوى في الرد والمتابعة الشخصية' },
+        { icon: Shield,         text: '✅ ضمان النتيجة — تقدم ملموس أو تمديد مجاناً' },
+      ],
+      notIncluded: [],
+      results: 'تحول جسدي كامل وعادات صحية مدى الحياة',
+      guarantee: 'نتيجة ملموسة أو نمدد مجاناً',
+      cta: 'احجز مكانك',
+      duration: '3 أشهر كاملة',
+      sessions: '4–5 أيام / أسبوع',
+      support: 'مباشر + مكالمة شهرية',
+    },
+  ]
+}
 
 function Digit({ val, label }) {
   return (
@@ -173,14 +203,22 @@ function PlanModal({ plan, onClose }) {
               <p className={`text-sm font-medium mt-0.5 ${isGold ? 'text-black/50' : 'text-white/40'}`}>{plan.tag}</p>
             </div>
           </div>
-          <div className="flex items-end gap-2 mt-4">
+          <div className="flex items-end gap-2 mt-4 flex-wrap">
             <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.salePrice}</span>
             <div className="mb-1">
               <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{plan.origPrice} {plan.currency}</span>
               <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>{plan.currency} {plan.period}</span>
             </div>
-            <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">-50%</span>
+            <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">
+              -{Math.round((1 - Number(plan.salePrice)/Number(plan.origPrice))*100)}%
+            </span>
           </div>
+          {plan.salePriceQar && (
+            <p className={`text-sm font-bold mt-1 ${isGold ? 'text-black/40' : 'text-white/35'}`}>
+              ≈ {plan.salePriceQar} ر.ق
+              <span className={`line-through mr-1 text-xs ${isGold ? 'text-black/20' : 'text-white/20'}`}>{plan.origPriceQar} ر.ق</span>
+            </p>
+          )}
         </div>
 
         <div className="px-7 py-6 space-y-5">
@@ -280,6 +318,8 @@ function PlanModal({ plan, onClose }) {
 export default function Pricing() {
   const [activePlan, setActivePlan] = useState(null)
   const { time: { d, h, m, s, expired, loaded }, label: offerLabel } = useCountdown()
+  const pricing = usePricing()
+  const plans   = buildPlans(pricing)
 
   return (
     <section id="pricing" className="py-24 bg-[#0f0f0f]">
@@ -379,6 +419,11 @@ export default function Pricing() {
                     <span className={`text-xs font-medium ${isGold ? 'text-black/50' : 'text-white/30'}`}>{p.currency} {p.period}</span>
                   </div>
                 </div>
+                {/* QAR equivalent */}
+                <p className={`text-xs font-bold mb-2 ${isGold ? 'text-black/40' : 'text-white/30'}`}>
+                  ≈ {p.salePriceQar} ر.ق
+                  <span className={`line-through mr-1 ${isGold ? 'text-black/20' : 'text-white/15'}`}>{p.origPriceQar}</span>
+                </p>
                 <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full mb-5
                   ${isGold ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                   💰 توفير {Number(p.origPrice) - Number(p.salePrice)} {p.currency}

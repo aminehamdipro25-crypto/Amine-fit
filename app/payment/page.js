@@ -1,67 +1,90 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2 } from 'lucide-react'
+import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/gtag'
 
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
 const D17_READY   = D17_NUMBER !== 'XX XXX XXX'
+const FAWRA_NUMBER = '30653759'
 const CCP_IBAN    = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME    = 'HAMDI AMINE B JALOUL'
 
-const PLANS = [
-  {
-    id: 'training',
-    name: 'برنامج التدريب',
-    price: '50',
-    origPrice: '100',
-    currency: 'د.ت',
-    period: '/ شهر',
-    emoji: '🏋️',
-    desc: 'البداية الصحيحة',
-    features: ['برنامج تدريب مخصص 100%', 'شرح كامل لكل تمرين', 'تعديل كل أسبوعين', 'دعم واتساب 24 ساعة', 'بوابة عميل شخصية'],
-    highlight: false,
-  },
-  {
-    id: 'monthly',
-    name: 'الباقة الشهرية',
-    price: '125',
-    origPrice: '250',
-    currency: 'د.ت',
-    period: '/ شهر',
-    emoji: '⚡',
-    desc: 'الأكثر طلباً',
-    features: ['تدريب + تغذية متكاملة', 'خطة غذائية بنظام ADA 2019', 'متابعة أسبوعية مفصلة', 'استشارات واتساب مفتوحة', 'تقرير تقدم شهري'],
-    highlight: true,
-  },
-  {
-    id: '3months',
-    name: 'باقة 3 أشهر',
-    price: '300',
-    origPrice: '600',
-    currency: 'د.ت',
-    period: '/ 3 أشهر',
-    emoji: '🏆',
-    desc: '💎 الأوفر — توفير 300 د.ت',
-    features: ['كل ما في الباقة الشهرية', 'مكالمة تقييم شهرية', 'قياسات جسم دورية', 'ضمان النتيجة أو تمديد مجاناً', 'أولوية قصوى في الرد'],
-    highlight: false,
-  },
-]
+const PRICING_DEFAULT = {
+  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
+  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
+  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+}
+
+function buildPlans(pr) {
+  return [
+    {
+      id: 'training',
+      name: 'برنامج التدريب',
+      price: String(pr.basic.tnd),
+      origPrice: String(pr.basic.origTnd),
+      priceQar: String(pr.basic.qar),
+      origPriceQar: String(pr.basic.origQar),
+      currency: 'د.ت',
+      period: '/ شهر',
+      emoji: '🏋️',
+      desc: 'البداية الصحيحة',
+      features: ['برنامج تدريب مخصص 100%', 'شرح كامل لكل تمرين', 'تعديل كل أسبوعين', 'دعم واتساب 24 ساعة', 'بوابة عميل شخصية'],
+      highlight: false,
+    },
+    {
+      id: 'monthly',
+      name: 'الباقة الشهرية',
+      price: String(pr.standard.tnd),
+      origPrice: String(pr.standard.origTnd),
+      priceQar: String(pr.standard.qar),
+      origPriceQar: String(pr.standard.origQar),
+      currency: 'د.ت',
+      period: '/ شهر',
+      emoji: '⚡',
+      desc: 'الأكثر طلباً',
+      features: ['تدريب + تغذية متكاملة', 'خطة غذائية بنظام ADA 2019', 'متابعة أسبوعية مفصلة', 'استشارات واتساب مفتوحة', 'تقرير تقدم شهري'],
+      highlight: true,
+    },
+    {
+      id: '3months',
+      name: 'باقة 3 أشهر',
+      price: String(pr.premium.tnd),
+      origPrice: String(pr.premium.origTnd),
+      priceQar: String(pr.premium.qar),
+      origPriceQar: String(pr.premium.origQar),
+      currency: 'د.ت',
+      period: '/ 3 أشهر',
+      emoji: '🏆',
+      desc: `💎 الأوفر — توفير ${pr.premium.origTnd - pr.premium.tnd} د.ت`,
+      features: ['كل ما في الباقة الشهرية', 'مكالمة تقييم شهرية', 'قياسات جسم دورية', 'ضمان النتيجة أو تمديد مجاناً', 'أولوية قصوى في الرد'],
+      highlight: false,
+    },
+  ]
+}
 
 export default function PaymentPage() {
   const [selected, setSelected]     = useState(null)
   const [copied, setCopied]         = useState(false)
   const [copiedCCP, setCopiedCCP]   = useState(false)
+  const [copiedFawra, setCopiedFawra] = useState(false)
   const [step, setStep]             = useState(1)
   const [method, setMethod]         = useState(null)
   const [giftCode, setGiftCode]     = useState('')
-  const [giftStatus, setGiftStatus] = useState(null) // null | 'checking' | 'valid' | 'invalid'
+  const [giftStatus, setGiftStatus] = useState(null)
   const [giftData, setGiftData]     = useState(null)
   const [showGift, setShowGift]     = useState(false)
+  const [pricing, setPricing]       = useState(PRICING_DEFAULT)
 
-  // Read gift code from URL if present
+  const PLANS = buildPlans(pricing)
+
   useEffect(() => {
+    fetch('/api/pricing')
+      .then(r => r.ok ? r.json() : PRICING_DEFAULT)
+      .then(d => setPricing({ ...PRICING_DEFAULT, ...d }))
+      .catch(() => {})
+
     const params = new URLSearchParams(window.location.search)
     const g = params.get('gift')
     if (g) { setGiftCode(g.toUpperCase()); validateGift(g.toUpperCase()) }
@@ -104,11 +127,19 @@ export default function PaymentPage() {
     setTimeout(() => setCopiedCCP(false), 2000)
   }
 
+  function copyFawra() {
+    navigator.clipboard.writeText(FAWRA_NUMBER).catch(() => {})
+    setCopiedFawra(true)
+    setTimeout(() => setCopiedFawra(false), 2000)
+  }
+
   function waMessage() {
     if (!plan) return ''
     if (isGift) return encodeURIComponent(`مرحباً أمين 👋\nلديّ كود هدية: ${giftCode}\nأريد تفعيل باقة ${plan.name}. شكراً!`)
-    const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : 'عبر D17'
-    return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${plan.price} ${plan.currency} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
+    const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : method === 'fawra' ? 'عبر فورا' : 'عبر D17'
+    const currency = method === 'fawra' ? 'ر.ق' : plan.currency
+    const price    = method === 'fawra' ? plan.priceQar : plan.price
+    return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${price} ${currency} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
   }
 
   return (
@@ -120,7 +151,7 @@ export default function PaymentPage() {
           <Zap className="w-7 h-7 text-black" fill="black" />
         </div>
         <h1 className="text-4xl font-extrabold text-white mb-3">اختر خطتك</h1>
-        <p className="text-white/40 text-base font-medium">الدفع عبر تطبيق D17 — البريد التونسي</p>
+        <p className="text-white/40 text-base font-medium">الدفع عبر D17 أو البريد التونسي أو فورا (قطر)</p>
 
         {/* Steps indicator */}
         <div className="flex items-center justify-center gap-3 mt-6">
@@ -164,14 +195,17 @@ export default function PaymentPage() {
                 <p className={`text-xs font-medium mb-3 ${p.highlight ? 'text-black/60' : 'text-white/30'}`}>
                   {p.desc}
                 </p>
-                <div className={`mb-1 ${p.highlight ? 'text-black' : 'text-white'}`}>
+                <div className={`mb-0.5 ${p.highlight ? 'text-black' : 'text-white'}`}>
                   <span className="text-3xl font-extrabold">{p.price}</span>
                   <span className={`text-sm font-semibold mr-1 ${p.highlight ? 'text-black/60' : 'text-white/40'}`}>
                     {p.currency}{p.period}
                   </span>
                 </div>
-                <p className={`text-xs mb-5 ${p.highlight ? 'text-black/40' : 'text-white/20'}`}>
-                  عوضاً عن {p.origPrice} {p.currency}
+                <p className={`text-xs font-bold mb-0.5 ${p.highlight ? 'text-black/50' : 'text-white/35'}`}>
+                  ≈ {p.priceQar} ر.ق
+                </p>
+                <p className={`text-xs mb-5 ${p.highlight ? 'text-black/30' : 'text-white/20'}`}>
+                  عوضاً عن {p.origPrice} {p.currency} / {p.origPriceQar} ر.ق
                 </p>
                 <ul className="space-y-2.5">
                   {p.features.map(f => (
@@ -277,26 +311,34 @@ export default function PaymentPage() {
           {!method && (
             <>
               <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-3 mb-6">
                 <button
                   onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
                   disabled={!D17_READY}
-                  className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-5 flex flex-col items-center gap-3 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                  className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                   {!D17_READY && (
-                    <span className="absolute top-3 left-3 text-[10px] font-extrabold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">قريباً</span>
+                    <span className="absolute top-2 left-2 text-[9px] font-extrabold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">قريباً</span>
                   )}
-                  <Smartphone className="w-8 h-8 text-[#fbbf24]" />
+                  <Smartphone className="w-7 h-7 text-[#fbbf24]" />
                   <div className="text-center">
-                    <p className="text-white font-extrabold text-sm">تطبيق D17</p>
-                    <p className="text-white/30 text-xs mt-0.5">أسرع — من هاتفك</p>
+                    <p className="text-white font-extrabold text-xs">تطبيق D17</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                   </div>
                 </button>
                 <button onClick={() => { setMethod('post'); trackEvent('payment_method_selected', { method: 'post', plan_name: plan?.name }) }}
-                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-5 flex flex-col items-center gap-3 transition">
-                  <MapPin className="w-8 h-8 text-[#fbbf24]" />
+                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
+                  <MapPin className="w-7 h-7 text-[#fbbf24]" />
                   <div className="text-center">
-                    <p className="text-white font-extrabold text-sm">مكتب البريد</p>
-                    <p className="text-white/30 text-xs mt-0.5">إيداع نقدي مباشر</p>
+                    <p className="text-white font-extrabold text-xs">البريد</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
+                  </div>
+                </button>
+                <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }) }}
+                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
+                  <Wallet className="w-7 h-7 text-[#fbbf24]" />
+                  <div className="text-center">
+                    <p className="text-white font-extrabold text-xs">فورا</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">قطر</p>
                   </div>
                 </button>
               </div>
@@ -397,6 +439,58 @@ export default function PaymentPage() {
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
                 onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'post', plan_name: plan?.name, plan_price: Number(plan?.price) })}
+                className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
+                <MessageCircle className="w-5 h-5" fill="white" />
+                أرسل إثبات الدفع على واتساب
+              </a>
+            </>
+          )}
+
+          {/* Fawra instructions */}
+          {method === 'fawra' && (
+            <>
+              <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 mb-4">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-[#fbbf24]" />
+                    <h2 className="text-white font-extrabold text-base">الدفع عبر فورا</h2>
+                  </div>
+                  <button onClick={() => setMethod(null)} className="text-xs text-white/25 hover:text-white/50 underline transition">تغيير</button>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
+                    <div>
+                      <p className="text-white font-bold text-sm mb-1">افتح تطبيق فورا على هاتفك</p>
+                      <p className="text-white/40 text-xs">تحويل فوري داخل قطر</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
+                    <div className="flex-1">
+                      <p className="text-white font-bold text-sm mb-2">
+                        أرسل <span className="text-[#fbbf24]">{plan.priceQar} ر.ق</span> إلى:
+                      </p>
+                      <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
+                        <span className="text-white font-extrabold text-xl tracking-widest flex-1 text-center" dir="ltr">{FAWRA_NUMBER}</span>
+                        <button onClick={copyFawra} className="text-white/40 hover:text-[#fbbf24] transition flex-shrink-0">
+                          {copiedFawra ? <CheckCheck className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {copiedFawra && <p className="text-emerald-400 text-xs mt-1.5 font-medium text-center">تم النسخ ✓</p>}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
+                    <div>
+                      <p className="text-white font-bold text-sm mb-1">أرسل إثبات التحويل على واتساب</p>
+                      <p className="text-white/40 text-xs">صورة من فورا تؤكد إتمام التحويل</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
+                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'fawra', plan_name: plan?.name, plan_price: Number(plan?.priceQar) })}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب
