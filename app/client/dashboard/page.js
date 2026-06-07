@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell } from 'lucide-react'
 
 const PLAN_DISPLAY = {
   basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -533,6 +533,351 @@ function WeeklyCheckin() {
   )
 }
 
+/* ── Daily Tasks widget ─────────────────────────────────────────────────── */
+function DailyTasksWidget() {
+  const [tasks, setTasks]   = useState([])
+  const [done,  setDone]    = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/client/tasks')
+      .then(r => r.ok ? r.json() : { tasks: [], done: [] })
+      .then(d => { setTasks(d.tasks || []); setDone(d.done || []) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function toggleTask(taskId) {
+    const newDone = done.includes(taskId) ? done.filter(id => id !== taskId) : [...done, taskId]
+    setDone(newDone)
+    await fetch('/api/client/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId }),
+    }).catch(() => {})
+  }
+
+  if (loading || !tasks.length) return null
+
+  const allDone = tasks.every(t => done.includes(t.id))
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-violet-500" />
+          </div>
+          <div>
+            <p className="font-extrabold text-slate-800 text-sm">مهام اليوم</p>
+            <p className="text-[10px] text-slate-400 font-medium">{done.length} / {tasks.length} مكتملة</p>
+          </div>
+        </div>
+        {allDone && (
+          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+            🎉 أحسنت!
+          </span>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden">
+        <div
+          className="h-full bg-violet-500 rounded-full transition-all duration-500"
+          style={{ width: `${tasks.length ? (done.length / tasks.length) * 100 : 0}%` }}
+        />
+      </div>
+
+      <div className="space-y-2">
+        {tasks.map(task => {
+          const isDone = done.includes(task.id)
+          return (
+            <button key={task.id} onClick={() => toggleTask(task.id)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-right transition-all
+                ${isDone ? 'bg-violet-50 border-violet-200' : 'bg-slate-50 border-slate-100 hover:border-violet-200'}`}>
+              <span className={`text-xl flex-shrink-0 ${isDone ? '' : 'grayscale opacity-50'}`}>{task.emoji}</span>
+              <span className={`flex-1 text-sm font-bold ${isDone ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                {task.text}
+              </span>
+              <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center
+                ${isDone ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
+                {isDone && <CheckCircle2 className="w-3 h-3 text-white" />}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Training Attendance widget ──────────────────────────────────────────── */
+function TrainingAttendanceWidget({ trainingDaysPerWeek }) {
+  const [log,     setLog]     = useState({})
+  const [toggling, setToggling] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/client/training-log')
+      .then(r => r.ok ? r.json() : {})
+      .then(setLog)
+      .catch(() => {})
+  }, [])
+
+  // Build last 14 days grid
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(Date.now() - (13 - i) * 86400000)
+    return {
+      date:    d.toISOString().slice(0, 10),
+      dayName: d.toLocaleDateString('ar', { weekday: 'short', timeZone: 'Asia/Qatar' }),
+      dayNum:  d.getDate(),
+      isToday: i === 13,
+    }
+  })
+
+  const streak = (() => {
+    let s = 0
+    for (let i = 0; i < 60; i++) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+      if (log[d]) s++
+      else if (i > 0) break
+    }
+    return s
+  })()
+
+  async function toggleDay(date) {
+    setToggling(date)
+    const res = await fetch('/api/client/training-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date }),
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setLog(d.log || {})
+    }
+    setToggling(null)
+  }
+
+  const totalLogged = Object.keys(log).filter(d => log[d]).length
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+            <Dumbbell className="w-4 h-4 text-amber-500" />
+          </div>
+          <div>
+            <p className="font-extrabold text-slate-800 text-sm">حضور التدريب</p>
+            <p className="text-[10px] text-slate-400 font-medium">
+              {trainingDaysPerWeek ? `${trainingDaysPerWeek} أيام/أسبوع في خطتك` : 'سجّل أيام تدريبك'}
+            </p>
+          </div>
+        </div>
+        {streak > 0 && (
+          <span className="text-xs font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">
+            🔥 {streak} يوم متتالي
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5 mb-3">
+        {days.map(d => {
+          const trained = !!log[d.date]
+          const isToggling = toggling === d.date
+          const isFuture = d.date > new Date().toISOString().slice(0, 10)
+          return (
+            <button key={d.date}
+              onClick={() => !isFuture && !isToggling && toggleDay(d.date)}
+              disabled={isFuture}
+              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all
+                ${isFuture   ? 'opacity-20 cursor-not-allowed border-transparent' :
+                  isToggling ? 'opacity-50 border-amber-200' :
+                  trained    ? 'bg-amber-400 border-amber-400 shadow-sm' :
+                  d.isToday  ? 'bg-slate-50 border-amber-200 border-dashed' :
+                  'bg-slate-50 border-slate-100 hover:border-amber-200'}`}>
+              <span className={`text-[9px] font-bold ${trained ? 'text-black/70' : 'text-slate-400'}`}>{d.dayName}</span>
+              <span className={`text-xs font-extrabold ${trained ? 'text-black' : d.isToday ? 'text-amber-500' : 'text-slate-600'}`}>{d.dayNum}</span>
+              {isToggling && <div className="w-2 h-2 rounded-full border border-amber-500 border-t-transparent animate-spin" />}
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="text-xs text-slate-400 text-center font-medium">
+        إجمالي الأيام المسجلة: <strong className="text-slate-600">{totalLogged} يوم</strong>
+      </p>
+    </div>
+  )
+}
+
+/* ── Testimonial prompt widget ───────────────────────────────────────────── */
+function TestimonialWidget() {
+  const [existing, setExisting]   = useState(undefined)
+  const [open, setOpen]           = useState(false)
+  const [rating, setRating]       = useState(5)
+  const [result, setResult]       = useState('')
+  const [text, setText]           = useState('')
+  const [shareName, setShareName] = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
+
+  useEffect(() => {
+    fetch('/api/client/testimonial')
+      .then(r => r.ok ? r.json() : null)
+      .then(setExisting)
+      .catch(() => setExisting(null))
+  }, [])
+
+  async function submit() {
+    if (text.trim().length < 20) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/client/testimonial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, rating, result, shareName }),
+      })
+      if (res.ok) { setSaved(true); setOpen(false); setExisting({ text, rating, result, shareName, approved: false }) }
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  if (existing === undefined) return null
+  if (existing && !open) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+        <span className="text-2xl flex-shrink-0">⭐</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-extrabold text-amber-800">شكراً على تقييمك!</p>
+          <p className="text-xs text-amber-600 font-medium mt-0.5">
+            {existing.approved ? 'تقييمك ظاهر الآن في الموقع ✅' : 'سيراجعه المدرب ويضيفه للموقع قريباً'}
+          </p>
+          <p className="text-xs text-slate-500 mt-1 italic">"{existing.text?.slice(0, 80)}..."</p>
+        </div>
+        <button onClick={() => setOpen(true)} className="text-xs text-amber-600 font-bold hover:text-amber-700 transition flex-shrink-0">
+          تعديل
+        </button>
+      </div>
+    )
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        className="w-full bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 hover:border-amber-300 transition text-right">
+        <span className="text-2xl flex-shrink-0">⭐</span>
+        <div className="flex-1">
+          <p className="text-sm font-extrabold text-amber-800">شارك تجربتك مع أمين!</p>
+          <p className="text-xs text-amber-600 font-medium mt-0.5">تقييمك يساعد المدربين والعملاء الجدد</p>
+        </div>
+        <span className="text-amber-500 text-lg">←</span>
+      </button>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="font-extrabold text-slate-800">شارك تجربتك</p>
+        <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+      </div>
+
+      {/* Stars */}
+      <div>
+        <p className="text-xs font-bold text-slate-500 mb-2">التقييم</p>
+        <div className="flex gap-2">
+          {[1,2,3,4,5].map(s => (
+            <button key={s} onClick={() => setRating(s)} className="text-3xl transition-transform hover:scale-110">
+              <span className={s <= rating ? 'text-amber-400' : 'text-slate-200'}>★</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Result */}
+      <div>
+        <label className="text-xs font-bold text-slate-500 block mb-1.5">نتيجتك (اختياري) — مثال: فقدت 10 كغ</label>
+        <input value={result} onChange={e => setResult(e.target.value)} maxLength={80}
+          placeholder="مثال: فقدت 12 كغ في 3 أشهر"
+          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 transition" />
+      </div>
+
+      {/* Text */}
+      <div>
+        <label className="text-xs font-bold text-slate-500 block mb-1.5">تجربتك * (20 حرف على الأقل)</label>
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={500}
+          placeholder="اكتب تجربتك مع المدرب أمين..."
+          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 transition resize-none" />
+        <p className="text-[10px] text-slate-300 text-left mt-0.5">{text.length}/500</p>
+      </div>
+
+      {/* Share name */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={shareName} onChange={e => setShareName(e.target.checked)}
+          className="w-4 h-4 rounded accent-amber-500" />
+        <span className="text-xs font-medium text-slate-600">الموافقة على ذكر اسمي الكامل (وإلا الحرف الأول فقط)</span>
+      </label>
+
+      {saved && <p className="text-emerald-600 text-sm font-bold text-center">✅ شكراً! تقييمك قيد المراجعة</p>}
+
+      <button onClick={submit} disabled={saving || text.trim().length < 20}
+        className="w-full py-3 bg-amber-400 text-black font-extrabold text-sm rounded-xl hover:bg-amber-300 transition disabled:opacity-40">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'إرسال التقييم'}
+      </button>
+    </div>
+  )
+}
+
+/* ── Leaderboard widget ──────────────────────────────────────────────────── */
+function LeaderboardWidget() {
+  const [board, setBoard] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/leaderboard')
+      .then(r => r.ok ? r.json() : [])
+      .then(setBoard)
+      .catch(() => setBoard([]))
+  }, [])
+
+  if (!board || board.length < 2) return null
+
+  const goalEmoji = { loss: '📉', gain: '💪', maintain: '⚖️', performance: '🏃' }
+  const medals    = ['🥇', '🥈', '🥉']
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+          <Trophy className="w-4 h-4 text-amber-500" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">لوحة المتصدرين</p>
+          <p className="text-[10px] text-slate-400 font-medium">أكثر العملاء التزاماً بالتدريب (آخر 60 يوم)</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {board.slice(0, 5).map((entry, i) => (
+          <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl ${i === 0 ? 'bg-amber-50 border border-amber-100' : 'bg-slate-50'}`}>
+            <span className="text-lg flex-shrink-0 w-6 text-center">{medals[i] || `${i + 1}`}</span>
+            <span className="text-sm font-extrabold text-slate-700 flex-1" dir="ltr">{entry.displayName}</span>
+            <span className="text-[10px] text-slate-400">{goalEmoji[entry.goal]}</span>
+            <div className="text-right flex-shrink-0">
+              {entry.streak > 0 ? (
+                <span className="text-xs font-extrabold text-amber-600">🔥 {entry.streak} يوم</span>
+              ) : (
+                <span className="text-xs text-slate-400">{entry.days} يوم</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-slate-300 text-center mt-3 font-medium">الأسماء مختصرة للخصوصية</p>
+    </div>
+  )
+}
+
 /* ── Payment receipt upload (shown when waiting for payment confirmation) ── */
 function ReceiptUpload() {
   const [receipt,   setReceipt]   = useState(undefined) // undefined=loading, null=none
@@ -905,6 +1250,18 @@ export default function ClientDashboard() {
 
       {/* Weekly check-in */}
       <WeeklyCheckin />
+
+      {/* Daily tasks from coach */}
+      <DailyTasksWidget />
+
+      {/* Training attendance calendar */}
+      <TrainingAttendanceWidget trainingDaysPerWeek={client.plan?.training?.daysPerWeek} />
+
+      {/* Leaderboard */}
+      <LeaderboardWidget />
+
+      {/* Share experience — only for subscribed clients */}
+      {client.subscriptionPlan && <TestimonialWidget />}
 
       {/* Goal + status */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">

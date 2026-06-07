@@ -1,5 +1,6 @@
 import { Cairo } from 'next/font/google'
 import Script from 'next/script'
+import SwRegister from '@/components/SwRegister'
 import './globals.css'
 
 const cairo = Cairo({
@@ -104,6 +105,7 @@ export default function RootLayout({ children }) {
             gtag('config', '${GA_ID}');
           `}</Script>
         </>}
+        <SwRegister />
         {children}
       </body>
     </html>
