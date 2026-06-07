@@ -404,7 +404,16 @@ export default function AnalyticsClient({ submissions }) {
   const expiredClients     = submissions.filter(s => s.status === 'payment_expired')
   const newClients         = submissions.filter(s => s.status === 'new')
   const cancelledClients   = submissions.filter(s => s.status === 'cancelled')
-  const paidClients        = [...activeClients, ...suspendedClients, ...cancelledClients] // ever paid
+  // "paid" requires a subscription plan — active-without-plan means approved but not yet paid
+  const paidClients        = submissions.filter(s =>
+    s.subscriptionPlan && ['active', 'suspended', 'cancelled'].includes(s.status)
+  )
+  // Awaiting payment = pending + payment_expired + active-without-subscription (approved but unpaid)
+  const awaitingPaymentClients = [
+    ...pendingClients,
+    ...expiredClients,
+    ...activeClients.filter(s => !s.subscriptionPlan),
+  ]
 
   // ── Revenue calculations ────────────────────────────────────────────────────
   const totalRevenue = paidClients.reduce((sum, s) => {
@@ -427,15 +436,13 @@ export default function AnalyticsClient({ submissions }) {
   // MRR: active clients, normalized to monthly (premium = 100/month)
   const mrr = activeClients.reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0), 0)
 
-  // Lost revenue: payment_expired who had an interested plan
-  const lostRevenue = expiredClients.reduce((sum, s) => {
-    const price = guessPriceFromText(s.interestedPlan)
-    return sum + (price ?? 0)
-  }, 0)
+  // Lost revenue: expired + awaiting payment who have an interested plan
+  const lostRevenue = [...expiredClients, ...pendingClients, ...activeClients.filter(s => !s.subscriptionPlan)]
+    .reduce((sum, s) => sum + (guessPriceFromText(s.interestedPlan) ?? 0), 0)
 
   // ── Conversion funnel ───────────────────────────────────────────────────────
-  const reachedPayment = pendingClients.length + expiredClients.length + paidClients.length
-  const paid           = paidClients.length
+  const reachedPayment  = awaitingPaymentClients.length + paidClients.length
+  const paid            = paidClients.length
   const currentlyActive = activeClients.length
 
   const pct = n => (total ? Math.round((n / total) * 100) : 0)
@@ -506,7 +513,7 @@ export default function AnalyticsClient({ submissions }) {
   const progressEntries = submissions.reduce((acc, s) => acc + (s.progress?.length || 0), 0)
 
   // ── Abandoned clients table ──────────────────────────────────────────────────
-  const abandonedClients = expiredClients.sort((a, b) =>
+  const abandonedClients = [...expiredClients, ...pendingClients].sort((a, b) =>
     new Date(b.paymentExpiredAt || b.createdAt) - new Date(a.paymentExpiredAt || a.createdAt)
   )
 

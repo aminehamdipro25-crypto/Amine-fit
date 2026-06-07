@@ -49,6 +49,22 @@ export async function GET() {
   } catch { return NextResponse.json(null) }
 }
 
+export async function DELETE() {
+  const token = cookies().get('client_token')?.value
+  const payload = await verifyToken(token)
+  if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
+
+  const cfg = redisCfg()
+  if (!cfg) return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
+  await fetch(`${cfg.url}/pipeline`, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify([['DEL', `payment_receipt:${payload.id}`]]),
+    cache:   'no-store',
+  })
+  return NextResponse.json({ success: true })
+}
+
 export async function POST(req) {
   const token = cookies().get('client_token')?.value
   const payload = await verifyToken(token)

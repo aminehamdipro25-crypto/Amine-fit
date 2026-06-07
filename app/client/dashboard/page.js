@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2 } from 'lucide-react'
 
 const PLAN_DISPLAY = {
   basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -537,6 +537,7 @@ function WeeklyCheckin() {
 function ReceiptUpload() {
   const [receipt,   setReceipt]   = useState(undefined) // undefined=loading, null=none
   const [uploading, setUploading] = useState(false)
+  const [deleting,  setDeleting]  = useState(false)
   const [uploaded,  setUploaded]  = useState(false)
   const [error,     setError]     = useState('')
 
@@ -612,11 +613,27 @@ function ReceiptUpload() {
           <p className="text-[10px] text-slate-400 text-center font-medium">
             رُفع في: {new Date(receipt.uploadedAt).toLocaleString('ar', { timeZone: 'Asia/Qatar', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
-          <label className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-slate-500 text-sm font-bold cursor-pointer hover:bg-slate-50 transition">
-            <Upload className="w-4 h-4" /> استبدال الإيصال
-            <input type="file" accept="image/*" className="hidden"
-              onChange={e => e.target.files?.[0] && compressAndUpload(e.target.files[0])} />
-          </label>
+          <div className="flex gap-2">
+            <label className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-slate-500 text-sm font-bold cursor-pointer hover:bg-slate-50 transition">
+              <Upload className="w-4 h-4" /> استبدال
+              <input type="file" accept="image/*" className="hidden"
+                onChange={e => e.target.files?.[0] && compressAndUpload(e.target.files[0])} />
+            </label>
+            <button
+              onClick={async () => {
+                if (!confirm('حذف الإيصال؟')) return
+                setDeleting(true)
+                try {
+                  await fetch('/api/client/receipt', { method: 'DELETE' })
+                  setReceipt(null)
+                } catch { setError('فشل الحذف') }
+                finally { setDeleting(false) }
+              }}
+              disabled={deleting}
+              className="px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition disabled:opacity-40">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

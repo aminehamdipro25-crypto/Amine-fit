@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 const STR_MAX = 500  // max length for text fields
 
@@ -105,6 +106,19 @@ export async function POST(req) {
     const entry = await saveSubmission(safeEntry)
     console.log('[register] saved OK:', entry.id)
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
+
+    // Telegram push notification to admin
+    const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+    const goalAr = { loss: 'خسارة وزن', gain: 'بناء عضلات', maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي' }
+    sendTelegramMessage(
+      `🏋️ <b>طلب تسجيل جديد!</b>\n\n` +
+      `👤 <b>${entry.name}</b>\n` +
+      `📧 ${entry.email}\n` +
+      `📱 ${entry.phone || '—'}\n` +
+      `🎯 ${goalAr[entry.goal] || entry.goal || '—'}\n` +
+      `📦 ${entry.interestedPlan || '—'}\n\n` +
+      `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
+    ).catch(() => {})
 
     // Mark gift code as used if one was supplied (fire-and-forget, non-blocking)
     const giftCode = sanitizeStr(body.giftCode, 12)
