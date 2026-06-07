@@ -44,22 +44,31 @@ function useCountdown() {
   return { time, label }
 }
 
-/* ── Dynamic pricing hook ─────────────────────────────────────────────────── */
+/* ── Dynamic pricing + geo hook ───────────────────────────────────────────── */
 const PRICING_DEFAULT = {
-  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
-  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
-  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+  basic:    { tnd: 50,  origTnd: 100, qar: 199,  origQar: 399  },
+  standard: { tnd: 125, origTnd: 250, qar: 449,  origQar: 899  },
+  premium:  { tnd: 300, origTnd: 600, qar: 999,  origQar: 1999 },
 }
 
-function usePricing() {
+const GULF = new Set(['QA', 'AE', 'SA', 'KW', 'BH', 'OM'])
+
+function usePricingAndGeo() {
   const [pricing, setPricing] = useState(PRICING_DEFAULT)
+  const [zone,    setZone]    = useState('maghreb') // 'gulf' | 'maghreb'
+
   useEffect(() => {
-    fetch('/api/pricing')
-      .then(r => r.ok ? r.json() : PRICING_DEFAULT)
-      .then(d => setPricing({ ...PRICING_DEFAULT, ...d }))
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/pricing').then(r => r.ok ? r.json() : PRICING_DEFAULT).catch(() => PRICING_DEFAULT),
+      fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([p, geo]) => {
+      setPricing({ ...PRICING_DEFAULT, ...p })
+      if (geo.country && GULF.has(geo.country)) setZone('gulf')
+      else setZone('maghreb')
+    })
   }, [])
-  return pricing
+
+  return { pricing, zone }
 }
 
 function buildPlans(pricing) {
@@ -173,8 +182,13 @@ function Digit({ val, label }) {
   )
 }
 
-function PlanModal({ plan, onClose }) {
-  const isGold = plan.color === 'gold'
+function PlanModal({ plan, onClose, zone }) {
+  const isGold   = plan.color === 'gold'
+  const isGulf   = zone === 'gulf'
+  const dispPrice = isGulf ? plan.salePriceQar : plan.salePrice
+  const dispOrig  = isGulf ? plan.origPriceQar  : plan.origPrice
+  const dispCur   = isGulf ? 'ر.ق'              : plan.currency
+  const discPct   = Math.round((1 - Number(dispPrice) / Number(dispOrig)) * 100)
 
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
@@ -204,21 +218,15 @@ function PlanModal({ plan, onClose }) {
             </div>
           </div>
           <div className="flex items-end gap-2 mt-4 flex-wrap">
-            <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.salePrice}</span>
+            <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{dispPrice}</span>
             <div className="mb-1">
-              <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{plan.origPrice} {plan.currency}</span>
-              <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>{plan.currency} {plan.period}</span>
+              <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{dispOrig} {dispCur}</span>
+              <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>{dispCur} {plan.period}</span>
             </div>
             <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">
-              -{Math.round((1 - Number(plan.salePrice)/Number(plan.origPrice))*100)}%
+              -{discPct}%
             </span>
           </div>
-          {plan.salePriceQar && (
-            <p className={`text-sm font-bold mt-1 ${isGold ? 'text-black/40' : 'text-white/35'}`}>
-              ≈ {plan.salePriceQar} ر.ق
-              <span className={`line-through mr-1 text-xs ${isGold ? 'text-black/20' : 'text-white/20'}`}>{plan.origPriceQar} ر.ق</span>
-            </p>
-          )}
         </div>
 
         <div className="px-7 py-6 space-y-5">
@@ -300,13 +308,13 @@ function PlanModal({ plan, onClose }) {
               إغلاق
             </button>
             <a href={`/register?plan=${encodeURIComponent(plan.name)}`}
-              onClick={() => trackEvent('plan_cta_clicked', { plan: plan.name, price: plan.salePrice })}
+              onClick={() => trackEvent('plan_cta_clicked', { plan: plan.name, price: dispPrice })}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-extrabold text-sm transition-all shadow-lg
                 ${isGold
                   ? 'bg-black text-gold-400 hover:bg-black/80 shadow-black/20'
                   : 'bg-gold-400 text-black hover:bg-gold-300 shadow-gold-400/20'}`}>
               <Zap className="w-4 h-4" fill="currentColor" />
-              {plan.cta} — {plan.salePrice} {plan.currency}
+              {plan.cta} — {dispPrice} {dispCur}
             </a>
           </div>
         </div>
@@ -318,12 +326,18 @@ function PlanModal({ plan, onClose }) {
 export default function Pricing() {
   const [activePlan, setActivePlan] = useState(null)
   const { time: { d, h, m, s, expired, loaded }, label: offerLabel } = useCountdown()
-  const pricing = usePricing()
-  const plans   = buildPlans(pricing)
+  const { pricing, zone } = usePricingAndGeo()
+  const plans = buildPlans(pricing)
+
+  // Per-plan price helper based on visitor zone
+  function pPrice(p)     { return zone === 'gulf' ? p.salePriceQar  : p.salePrice }
+  function pOrig(p)      { return zone === 'gulf' ? p.origPriceQar  : p.origPrice }
+  function pCurrency(p)  { return zone === 'gulf' ? 'ر.ق'           : p.currency }
+  function pPeriod(p)    { return p.period }
 
   return (
     <section id="pricing" className="py-24 bg-[#0f0f0f]">
-      {activePlan && <PlanModal plan={activePlan} onClose={() => setActivePlan(null)} />}
+      {activePlan && <PlanModal plan={activePlan} onClose={() => setActivePlan(null)} zone={zone} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -358,7 +372,7 @@ export default function Pricing() {
           اختر الباقة المناسبة لك
         </h2>
         <p className="text-white/30 text-center max-w-xl mx-auto font-medium text-sm mb-10">
-          باقات بالدينار التونسي — اضغط على أي باقة لتعرف كل التفاصيل
+          {zone === 'gulf' ? 'الأسعار بالريال القطري' : 'الأسعار بالدينار التونسي'} — اضغط على أي باقة لتعرف كل التفاصيل
         </p>
 
         {/* Social proof */}
@@ -413,20 +427,15 @@ export default function Pricing() {
 
                 {/* Price */}
                 <div className="flex items-end gap-2 mb-1">
-                  <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{p.salePrice}</span>
+                  <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{pPrice(p)}</span>
                   <div className="mb-1">
-                    <span className={`line-through text-xs block font-bold ${isGold ? 'text-black/30' : 'text-white/25'}`}>{p.origPrice} {p.currency}</span>
-                    <span className={`text-xs font-medium ${isGold ? 'text-black/50' : 'text-white/30'}`}>{p.currency} {p.period}</span>
+                    <span className={`line-through text-xs block font-bold ${isGold ? 'text-black/30' : 'text-white/25'}`}>{pOrig(p)} {pCurrency(p)}</span>
+                    <span className={`text-xs font-medium ${isGold ? 'text-black/50' : 'text-white/30'}`}>{pCurrency(p)} {pPeriod(p)}</span>
                   </div>
                 </div>
-                {/* QAR equivalent */}
-                <p className={`text-xs font-bold mb-2 ${isGold ? 'text-black/40' : 'text-white/30'}`}>
-                  ≈ {p.salePriceQar} ر.ق
-                  <span className={`line-through mr-1 ${isGold ? 'text-black/20' : 'text-white/15'}`}>{p.origPriceQar}</span>
-                </p>
                 <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full mb-5
                   ${isGold ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                  💰 توفير {Number(p.origPrice) - Number(p.salePrice)} {p.currency}
+                  💰 توفير {Number(pOrig(p)) - Number(pPrice(p))} {pCurrency(p)}
                 </div>
 
                 {/* Highlights preview */}

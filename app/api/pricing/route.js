@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-const DEFAULT = {
-  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
-  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
-  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+// TND = Tunisia/North Africa prices
+// QAR = Qatar/Gulf prices (independent, higher purchasing power)
+export const DEFAULT = {
+  basic:    { tnd: 50,  origTnd: 100, qar: 199,  origQar: 399  },
+  standard: { tnd: 125, origTnd: 250, qar: 449,  origQar: 899  },
+  premium:  { tnd: 300, origTnd: 600, qar: 999,  origQar: 1999 },
 }
 
 function redisCfg() {

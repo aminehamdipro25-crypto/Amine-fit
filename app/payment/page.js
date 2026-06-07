@@ -12,10 +12,12 @@ const CCP_IBAN    = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME    = 'HAMDI AMINE B JALOUL'
 
 const PRICING_DEFAULT = {
-  basic:    { tnd: 50,  origTnd: 100, qar: 55,  origQar: 110 },
-  standard: { tnd: 125, origTnd: 250, qar: 135, origQar: 270 },
-  premium:  { tnd: 300, origTnd: 600, qar: 325, origQar: 650 },
+  basic:    { tnd: 50,  origTnd: 100, qar: 199,  origQar: 399  },
+  standard: { tnd: 125, origTnd: 250, qar: 449,  origQar: 899  },
+  premium:  { tnd: 300, origTnd: 600, qar: 999,  origQar: 1999 },
 }
+
+const GULF_COUNTRIES = new Set(['QA', 'AE', 'SA', 'KW', 'BH', 'OM'])
 
 function buildPlans(pr) {
   return [
@@ -57,7 +59,7 @@ function buildPlans(pr) {
       currency: 'د.ت',
       period: '/ 3 أشهر',
       emoji: '🏆',
-      desc: `💎 الأوفر — توفير ${pr.premium.origTnd - pr.premium.tnd} د.ت`,
+      desc: '💎 الأوفر',
       features: ['كل ما في الباقة الشهرية', 'مكالمة تقييم شهرية', 'قياسات جسم دورية', 'ضمان النتيجة أو تمديد مجاناً', 'أولوية قصوى في الرد'],
       highlight: false,
     },
@@ -76,14 +78,24 @@ export default function PaymentPage() {
   const [giftData, setGiftData]     = useState(null)
   const [showGift, setShowGift]     = useState(false)
   const [pricing, setPricing]       = useState(PRICING_DEFAULT)
+  const [zone, setZone]             = useState('maghreb') // 'gulf' | 'maghreb'
 
   const PLANS = buildPlans(pricing)
+  const isGulf = zone === 'gulf'
+
+  // Zone-aware price helpers
+  function pPrice(p)    { return isGulf ? p.priceQar    : p.price }
+  function pOrig(p)     { return isGulf ? p.origPriceQar : p.origPrice }
+  function pCur(p)      { return isGulf ? 'ر.ق'          : p.currency }
 
   useEffect(() => {
-    fetch('/api/pricing')
-      .then(r => r.ok ? r.json() : PRICING_DEFAULT)
-      .then(d => setPricing({ ...PRICING_DEFAULT, ...d }))
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/pricing').then(r => r.ok ? r.json() : PRICING_DEFAULT).catch(() => PRICING_DEFAULT),
+      fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([d, geo]) => {
+      setPricing({ ...PRICING_DEFAULT, ...d })
+      if (geo.country && GULF_COUNTRIES.has(geo.country)) setZone('gulf')
+    })
 
     const params = new URLSearchParams(window.location.search)
     const g = params.get('gift')
@@ -137,9 +149,7 @@ export default function PaymentPage() {
     if (!plan) return ''
     if (isGift) return encodeURIComponent(`مرحباً أمين 👋\nلديّ كود هدية: ${giftCode}\nأريد تفعيل باقة ${plan.name}. شكراً!`)
     const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : method === 'fawra' ? 'عبر فورا' : 'عبر D17'
-    const currency = method === 'fawra' ? 'ر.ق' : plan.currency
-    const price    = method === 'fawra' ? plan.priceQar : plan.price
-    return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${price} ${currency} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
+    return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${pPrice(plan)} ${pCur(plan)} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
   }
 
   return (
@@ -151,7 +161,9 @@ export default function PaymentPage() {
           <Zap className="w-7 h-7 text-black" fill="black" />
         </div>
         <h1 className="text-4xl font-extrabold text-white mb-3">اختر خطتك</h1>
-        <p className="text-white/40 text-base font-medium">الدفع عبر D17 أو البريد التونسي أو فورا (قطر)</p>
+        <p className="text-white/40 text-base font-medium">
+          {zone === 'gulf' ? 'الدفع عبر فورا (قطر)' : 'الدفع عبر D17 أو البريد التونسي'}
+        </p>
 
         {/* Steps indicator */}
         <div className="flex items-center justify-center gap-3 mt-6">
@@ -196,16 +208,13 @@ export default function PaymentPage() {
                   {p.desc}
                 </p>
                 <div className={`mb-0.5 ${p.highlight ? 'text-black' : 'text-white'}`}>
-                  <span className="text-3xl font-extrabold">{p.price}</span>
+                  <span className="text-3xl font-extrabold">{pPrice(p)}</span>
                   <span className={`text-sm font-semibold mr-1 ${p.highlight ? 'text-black/60' : 'text-white/40'}`}>
-                    {p.currency}{p.period}
+                    {pCur(p)}{p.period}
                   </span>
                 </div>
-                <p className={`text-xs font-bold mb-0.5 ${p.highlight ? 'text-black/50' : 'text-white/35'}`}>
-                  ≈ {p.priceQar} ر.ق
-                </p>
                 <p className={`text-xs mb-5 ${p.highlight ? 'text-black/30' : 'text-white/20'}`}>
-                  عوضاً عن {p.origPrice} {p.currency} / {p.origPriceQar} ر.ق
+                  عوضاً عن <span className="line-through">{pOrig(p)} {pCur(p)}</span>
                 </p>
                 <ul className="space-y-2.5">
                   {p.features.map(f => (
@@ -271,7 +280,7 @@ export default function PaymentPage() {
                     : 'bg-white/5 text-white/20 cursor-not-allowed'
                 }`}>
                 <Zap className="w-5 h-5" fill={selected ? 'black' : 'none'} />
-                {selected ? `متابعة — ${plan?.price} ${plan?.currency}` : 'اختر باقة أولاً'}
+                {selected ? `متابعة — ${plan ? pPrice(plan) : ''} ${plan ? pCur(plan) : ''}` : 'اختر باقة أولاً'}
               </button>
             )}
 
@@ -302,7 +311,7 @@ export default function PaymentPage() {
             <div className="text-4xl">{plan.emoji}</div>
             <div>
               <div className="text-white font-extrabold text-lg">{plan.name}</div>
-              <div className="text-[#fbbf24] font-extrabold text-2xl">{plan.price} <span className="text-base">{plan.currency}</span></div>
+              <div className="text-[#fbbf24] font-extrabold text-2xl">{pPrice(plan)} <span className="text-base">{pCur(plan)}</span></div>
             </div>
             <button onClick={() => { setStep(1); setMethod(null) }} className="mr-auto text-xs text-white/30 hover:text-white/60 underline transition">تغيير</button>
           </div>
@@ -311,37 +320,44 @@ export default function PaymentPage() {
           {!method && (
             <>
               <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <button
-                  onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
-                  disabled={!D17_READY}
-                  className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
-                  {!D17_READY && (
-                    <span className="absolute top-2 left-2 text-[9px] font-extrabold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">قريباً</span>
-                  )}
-                  <Smartphone className="w-7 h-7 text-[#fbbf24]" />
-                  <div className="text-center">
-                    <p className="text-white font-extrabold text-xs">تطبيق D17</p>
-                    <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
-                  </div>
-                </button>
-                <button onClick={() => { setMethod('post'); trackEvent('payment_method_selected', { method: 'post', plan_name: plan?.name }) }}
-                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
-                  <MapPin className="w-7 h-7 text-[#fbbf24]" />
-                  <div className="text-center">
-                    <p className="text-white font-extrabold text-xs">البريد</p>
-                    <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
-                  </div>
-                </button>
-                <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }) }}
-                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
-                  <Wallet className="w-7 h-7 text-[#fbbf24]" />
-                  <div className="text-center">
-                    <p className="text-white font-extrabold text-xs">فورا</p>
-                    <p className="text-white/30 text-[10px] mt-0.5">قطر</p>
-                  </div>
-                </button>
-              </div>
+              {isGulf ? (
+                /* Gulf: Fawra only */
+                <div className="flex justify-center mb-6">
+                  <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }) }}
+                    className="bg-[#1a1a1a] hover:bg-white/5 border border-[#fbbf24]/40 rounded-3xl p-6 flex flex-col items-center gap-2 transition w-44">
+                    <Wallet className="w-8 h-8 text-[#fbbf24]" />
+                    <div className="text-center">
+                      <p className="text-white font-extrabold text-sm">فورا</p>
+                      <p className="text-white/40 text-xs mt-0.5">تحويل فوري — قطر</p>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                /* Maghreb: D17 + Post */
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <button
+                    onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
+                    disabled={!D17_READY}
+                    className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                    {!D17_READY && (
+                      <span className="absolute top-2 left-2 text-[9px] font-extrabold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">قريباً</span>
+                    )}
+                    <Smartphone className="w-7 h-7 text-[#fbbf24]" />
+                    <div className="text-center">
+                      <p className="text-white font-extrabold text-xs">تطبيق D17</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setMethod('post'); trackEvent('payment_method_selected', { method: 'post', plan_name: plan?.name }) }}
+                    className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
+                    <MapPin className="w-7 h-7 text-[#fbbf24]" />
+                    <div className="text-center">
+                      <p className="text-white font-extrabold text-xs">البريد</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
+                    </div>
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -367,7 +383,7 @@ export default function PaymentPage() {
                   <div className="flex gap-3">
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
                     <div className="flex-1">
-                      <p className="text-white font-bold text-sm mb-2">أرسل <span className="text-[#fbbf24]">{plan.price} {plan.currency}</span> إلى:</p>
+                      <p className="text-white font-bold text-sm mb-2">أرسل <span className="text-[#fbbf24]">{pPrice(plan)} {pCur(plan)}</span> إلى:</p>
                       <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
                         <span className="text-white font-extrabold text-xl tracking-widest flex-1 text-center" dir="ltr">{D17_NUMBER}</span>
                         <button onClick={copyNumber} className="text-white/40 hover:text-[#fbbf24] transition flex-shrink-0">
@@ -417,7 +433,7 @@ export default function PaymentPage() {
                   <div className="flex gap-3">
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
                     <div className="flex-1">
-                      <p className="text-white font-bold text-sm mb-2">أودع <span className="text-[#fbbf24]">{plan.price} {plan.currency}</span> — IBAN:</p>
+                      <p className="text-white font-bold text-sm mb-2">أودع <span className="text-[#fbbf24]">{pPrice(plan)} {pCur(plan)}</span> — IBAN:</p>
                       <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
                         <span className="text-white font-bold text-sm tracking-wider flex-1 text-center" dir="ltr">{CCP_IBAN}</span>
                         <button onClick={copyCCP} className="text-white/40 hover:text-[#fbbf24] transition flex-shrink-0">
