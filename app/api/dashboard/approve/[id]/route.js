@@ -34,9 +34,9 @@ export async function POST(req, { params }) {
     try {
       await sendEmail({
         to:      client.email,
-        subject: `تمت الموافقة على طلبك في Amine-Fit — كود التفعيل: ${activationCode}`,
+        subject: `تمت الموافقة على طلبك في Amine-Fit`,
         html:    buildEmail(client, activationCode),
-        text:    `مرحباً ${client.name || ''}،\n\nتمت الموافقة على طلبك في Amine-Fit.\n\nكود التفعيل: ${activationCode}\n\nاذهب إلى: ${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/client/login\nاختر "تفعيل الحساب" وأدخل الكود.\n\nهذا الكود للاستخدام مرة واحدة فقط.\n\nأمين حمدي — Amine-Fit`,
+        text:    `مرحباً ${client.name || ''}،\n\nتمت الموافقة على طلبك في Amine-Fit.\n\nكود التفعيل الخاص بك:\n\n${activationCode}\n\nاذهب إلى: ${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/client/login\nاختر تبويب "تفعيل الحساب" وأدخل الكود.\n\nهذا الكود للاستخدام مرة واحدة فقط — لا تشاركه.\n\nأمين حمدي — Amine-Fit`,
       })
       emailSent = true
     } catch (e) {

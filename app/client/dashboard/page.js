@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2 } from 'lucide-react'
 
 const PLAN_DISPLAY = {
   basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -533,6 +533,118 @@ function WeeklyCheckin() {
   )
 }
 
+/* ── Payment receipt upload (shown when waiting for payment confirmation) ── */
+function ReceiptUpload() {
+  const [receipt,   setReceipt]   = useState(undefined) // undefined=loading, null=none
+  const [uploading, setUploading] = useState(false)
+  const [uploaded,  setUploaded]  = useState(false)
+  const [error,     setError]     = useState('')
+
+  useEffect(() => {
+    fetch('/api/client/receipt')
+      .then(r => r.ok ? r.json() : null)
+      .then(setReceipt)
+      .catch(() => setReceipt(null))
+  }, [])
+
+  function compressAndUpload(file) {
+    setError('')
+    const reader = new FileReader()
+    reader.onload = e => {
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1200
+        let w = img.width, h = img.height
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+          else       { w = Math.round(w * MAX / h); h = MAX }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.78)
+        saveReceipt(dataUrl, file.name)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function saveReceipt(data, filename) {
+    setUploading(true)
+    try {
+      const res = await fetch('/api/client/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data, filename, mimeType: 'image/jpeg' }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setError(d.error || 'فشل الرفع'); return }
+      setReceipt({ data, filename, uploadedAt: d.uploadedAt })
+      setUploaded(true)
+      setTimeout(() => setUploaded(false), 4000)
+    } catch { setError('حدث خطأ، حاول مرة أخرى') }
+    finally { setUploading(false) }
+  }
+
+  if (receipt === undefined) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+          <ImageIcon className="w-4 h-4 text-amber-500" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">إيصال الدفع</p>
+          <p className="text-xs text-slate-400 font-medium">صوّر إيصال الدفع وارفعه لتأكيد اشتراكك</p>
+        </div>
+      </div>
+
+      {receipt ? (
+        <div className="space-y-3">
+          <div className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-50" style={{ maxHeight: 220 }}>
+            <img src={receipt.data} alt="إيصال الدفع" className="w-full object-contain" style={{ maxHeight: 220 }} />
+          </div>
+          <p className="text-xs text-emerald-600 font-bold text-center bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-100">
+            ✅ تم رفع الإيصال — سيراجعه المدرب ويؤكد اشتراكك قريباً
+          </p>
+          <p className="text-[10px] text-slate-400 text-center font-medium">
+            رُفع في: {new Date(receipt.uploadedAt).toLocaleString('ar', { timeZone: 'Asia/Qatar', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </p>
+          <label className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-slate-500 text-sm font-bold cursor-pointer hover:bg-slate-50 transition">
+            <Upload className="w-4 h-4" /> استبدال الإيصال
+            <input type="file" accept="image/*" className="hidden"
+              onChange={e => e.target.files?.[0] && compressAndUpload(e.target.files[0])} />
+          </label>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <label className={`w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed cursor-pointer transition
+            ${uploading ? 'border-amber-200 bg-amber-50' : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50/50'}`}>
+            {uploading
+              ? <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+              : <>
+                  <Upload className="w-8 h-8 text-slate-300" />
+                  <span className="text-sm font-bold text-slate-500">اضغط لاختيار صورة الإيصال</span>
+                  <span className="text-xs text-slate-300">JPG / PNG — يضغط تلقائياً</span>
+                </>
+            }
+            <input type="file" accept="image/*" className="hidden" disabled={uploading}
+              onChange={e => e.target.files?.[0] && compressAndUpload(e.target.files[0])} />
+          </label>
+          {error && <p className="text-xs text-red-500 font-medium text-center">{error}</p>}
+          {uploaded && (
+            <p className="text-xs text-emerald-600 font-bold text-center bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-100">
+              ✅ تم رفع الإيصال بنجاح — سيراجعه المدرب قريباً
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const goalLabels = {
   loss: 'خسارة وزن', gain: 'بناء عضلات',
   maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي',
@@ -661,6 +773,9 @@ export default function ClientDashboard() {
 
       {/* Subscription card */}
       <SubscriptionCard client={client} />
+
+      {/* Receipt upload — only when waiting for payment confirmation */}
+      {client.interestedPlan && !client.subscriptionPlan && <ReceiptUpload />}
 
       {/* Plan cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
