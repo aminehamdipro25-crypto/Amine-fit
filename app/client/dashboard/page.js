@@ -1260,8 +1260,8 @@ export default function ClientDashboard() {
       {/* Leaderboard */}
       <LeaderboardWidget />
 
-      {/* Share experience — only for subscribed clients */}
-      {client.subscriptionPlan && <TestimonialWidget />}
+      {/* Share experience — visible for all logged-in clients */}
+      <TestimonialWidget />
 
       {/* Goal + status */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">

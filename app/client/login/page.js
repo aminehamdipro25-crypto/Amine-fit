@@ -140,6 +140,15 @@ function ClientLoginInner() {
             transform: `rotate(${item.deg}deg)`,
           }}>{item.e}</span>
         ))}
+        {/* Coach photo — centered between the emoji sides */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src="/coach-hero.jpg"
+            alt=""
+            className="h-full max-h-screen w-auto object-cover object-top opacity-[0.13]"
+            style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%), linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%), linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%)', WebkitMaskComposite: 'destination-in' }}
+          />
+        </div>
         <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)',
           backgroundSize: '60px 60px'
