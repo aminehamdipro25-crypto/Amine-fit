@@ -1,8 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star, RotateCcw } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
+
+const LS_FORM = 'af_reg_form'
+const LS_STEP = 'af_reg_step'
 
 // Map Arabic plan names from pricing page to subscription plan keys
 const PLAN_NAME_MAP = {
@@ -142,22 +145,87 @@ function validate(step, form) {
 /* ─── Main ─── */
 export default function RegisterPage() {
   const router = useRouter()
-  const [step, setStep]     = useState(0)
-  const [form, setForm]     = useState(INIT)
-  const [errors, setErrors] = useState({})
-  const [loading, setLoad]  = useState(false)
-  const [apiErr, setApiErr] = useState('')
+  const [step, setStep]         = useState(0)
+  const [form, setForm]         = useState(INIT)
+  const [errors, setErrors]     = useState({})
+  const [loading, setLoad]      = useState(false)
+  const [apiErr, setApiErr]     = useState('')
+  const [giftCode, setGiftCode] = useState('')
+  const [giftValid, setGiftValid] = useState(null)
+  const [giftInfo, setGiftInfo]   = useState(null)
+  const [hasSaved, setHasSaved]   = useState(false)
 
-  // Read ?plan= from URL and pre-fill interestedPlan
+  // On mount: restore localStorage + read URL params
   useEffect(() => {
-    const plan = new URLSearchParams(window.location.search).get('plan') || ''
+    const params = new URLSearchParams(window.location.search)
+    const plan   = params.get('plan') || ''
+    const gift   = params.get('gift')?.toUpperCase().trim() || ''
+
+    // Restore saved form data
+    try {
+      const saved = localStorage.getItem(LS_FORM)
+      if (saved) {
+        setForm(prev => ({ ...prev, ...JSON.parse(saved) }))
+        setHasSaved(true)
+      }
+      const savedStep = parseInt(localStorage.getItem(LS_STEP) || '0', 10)
+      if (savedStep > 0 && savedStep < STEPS.length) setStep(savedStep)
+    } catch {}
+
+    // URL params override saved data
     if (plan) setForm(f => ({ ...f, interestedPlan: plan }))
-    trackEvent('form_start', { form_name: 'registration', interested_plan: plan || 'none' })
+
+    // Validate gift code
+    if (gift) {
+      setGiftCode(gift)
+      fetch(`/api/gift?code=${encodeURIComponent(gift)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.valid) {
+            setGiftValid(true)
+            setGiftInfo(data)
+            if (data.planName) setForm(f => ({ ...f, interestedPlan: data.planName }))
+          } else {
+            setGiftValid(false)
+          }
+        })
+        .catch(() => setGiftValid(false))
+    }
+
+    trackEvent('form_start', { form_name: 'registration', interested_plan: plan || gift || 'none' })
   }, [])
+
+  // Persist form data to localStorage on every change
+  useEffect(() => {
+    try { localStorage.setItem(LS_FORM, JSON.stringify(form)) } catch {}
+  }, [form])
+
+  // Persist step
+  useEffect(() => {
+    try { localStorage.setItem(LS_STEP, String(step)) } catch {}
+  }, [step])
+
+  function resetForm() {
+    if (!confirm('هل تريد مسح جميع البيانات والبدء من جديد؟')) return
+    try { localStorage.removeItem(LS_FORM); localStorage.removeItem(LS_STEP) } catch {}
+    setForm(INIT); setStep(0); setErrors({}); setApiErr('')
+    setHasSaved(false)
+  }
+
+  function scrollToFirstError() {
+    setTimeout(() => {
+      const el = document.querySelector('.text-rose-500') || document.querySelector('.border-rose-400')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+  }
 
   function next() {
     const errs = validate(step, form)
-    if (Object.keys(errs).length) { setErrors(errs); return }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      scrollToFirstError()
+      return
+    }
     setErrors({})
     trackEvent('form_step_complete', { step_number: step + 1, step_name: STEPS[step].title })
     setStep(s => s + 1)
@@ -172,13 +240,19 @@ export default function RegisterPage() {
 
   async function submit() {
     const errs = validate(4, form)
-    if (Object.keys(errs).length) { setErrors(errs); return }
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      scrollToFirstError()
+      return
+    }
     setLoad(true); setApiErr('')
     try {
+      const body = { ...form }
+      if (giftCode) body.giftCode = giftCode
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'خطأ')
@@ -188,7 +262,9 @@ export default function RegisterPage() {
         gender: form.gender,
         heard_from: form.heardFrom,
       })
-      const planParam = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''
+      // Clear saved data after successful submission
+      try { localStorage.removeItem(LS_FORM); localStorage.removeItem(LS_STEP) } catch {}
+      const planParam  = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''
       const emailParam = data.email ? `&email=${encodeURIComponent(data.email)}` : ''
       router.push(data.alreadyRegistered ? `/register/success?existing=1${planParam}${emailParam}` : `/register/success?${planParam}${emailParam}`)
     } catch (e) {
@@ -214,6 +290,12 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-2xl font-extrabold text-white mb-1">استبيان التقييم الأولي</h1>
           <p className="text-white/60 text-sm">إجاباتك الدقيقة تُمكّن المدرب من تصميم برنامجك الشخصي بدقة عالية</p>
+          {hasSaved && (
+            <button onClick={resetForm}
+              className="mt-3 inline-flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition">
+              <RotateCcw className="w-3 h-3" /> مسح البيانات والبدء من جديد
+            </button>
+          )}
         </div>
 
         {/* Progress */}
@@ -246,8 +328,27 @@ export default function RegisterPage() {
         {/* Form card */}
         <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
 
+          {/* Gift banner */}
+          {giftValid && giftInfo && (
+            <div className="mb-4 bg-gradient-to-l from-violet-50 to-purple-50 border border-violet-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+              <div className="w-9 h-9 bg-violet-500 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">🎁</div>
+              <div className="flex-1">
+                <p className="text-xs font-extrabold text-violet-700 uppercase tracking-wide">هدية مجانية من المدرب أمين</p>
+                <p className="font-extrabold text-slate-900 text-sm">
+                  {giftInfo.planName}
+                  <span className="text-violet-600 font-bold mr-2">— مجاناً 🎉</span>
+                </p>
+              </div>
+            </div>
+          )}
+          {giftValid === false && giftCode && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+              <p className="text-red-600 text-sm font-semibold">⚠️ رابط الهدية غير صالح أو مستخدم مسبقاً</p>
+            </div>
+          )}
+
           {/* Selected plan banner */}
-          {form.interestedPlan && PLAN_NAME_MAP[form.interestedPlan] && (
+          {!giftValid && form.interestedPlan && PLAN_NAME_MAP[form.interestedPlan] && (
             <div className="mb-6 bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
               <div className="w-9 h-9 bg-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Star className="w-5 h-5 text-black fill-black" />
