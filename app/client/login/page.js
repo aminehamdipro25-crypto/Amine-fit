@@ -145,8 +145,14 @@ function ClientLoginInner() {
           <img
             src="/coach-hero.jpg"
             alt=""
-            className="h-full max-h-screen w-auto object-cover object-center opacity-[0.22]"
-            style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)', maskComposite: 'intersect', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)', WebkitMaskComposite: 'destination-in' }}
+            className="h-full max-h-screen w-auto object-cover opacity-[0.22]"
+            style={{
+              objectPosition: '35% 10%',
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
+              maskComposite: 'intersect',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
+              WebkitMaskComposite: 'destination-in',
+            }}
           />
         </div>
         <div className="absolute inset-0 opacity-[0.03]" style={{
