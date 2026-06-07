@@ -1,8 +1,9 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Users, TrendingUp, ClipboardList, CheckCircle2,
-  ArrowUpRight, Clock, Eye, Zap,
+  ArrowUpRight, Clock, Eye, Zap, Tag, X, Flame,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell,
@@ -51,6 +52,121 @@ const ChartTip = ({ active, payload, label }) => {
       {payload.map(p => (
         <p key={p.name} style={{ color: p.color }} className="font-bold">{p.name}: {p.value}</p>
       ))}
+    </div>
+  )
+}
+
+/* ── Offer / Discount Manager ──────────────────────────────────────────────── */
+function OfferManager() {
+  const [offer,   setOffer]   = useState(null)   // null=loading
+  const [saving,  setSaving]  = useState(false)
+  const [msg,     setMsg]     = useState('')
+  const [endsAt,  setEndsAt]  = useState('')
+  const [discount,setDiscount]= useState(50)
+  const [label,   setLabel]   = useState('عرض إطلاق حصري')
+
+  useEffect(() => {
+    fetch('/api/admin/offer')
+      .then(r => r.ok ? r.json() : {})
+      .then(d => {
+        setOffer(d)
+        if (d.endsAt)   setEndsAt(d.endsAt.slice(0, 16))
+        if (d.discount) setDiscount(d.discount)
+        if (d.label)    setLabel(d.label)
+      })
+      .catch(() => setOffer({}))
+  }, [])
+
+  const isActive = offer?.endsAt && new Date(offer.endsAt).getTime() > Date.now()
+
+  async function save(e) {
+    e.preventDefault()
+    setSaving(true); setMsg('')
+    const res = await fetch('/api/admin/offer', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ endsAt, discount, label }),
+    })
+    const d = await res.json()
+    if (res.ok) { setMsg('✅ تم تفعيل العرض بنجاح'); setOffer(d.offer) }
+    else        { setMsg(`❌ ${d.error}`) }
+    setSaving(false)
+  }
+
+  async function deactivate() {
+    if (!confirm('إيقاف العرض الحالي وإخفاء العد التنازلي؟')) return
+    setSaving(true)
+    await fetch('/api/admin/offer', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ active: false }),
+    })
+    setOffer({})
+    setMsg('✅ تم إيقاف العرض')
+    setSaving(false)
+  }
+
+  // Min datetime = now + 1h
+  const minDate = new Date(Date.now() + 3600000).toISOString().slice(0, 16)
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+          <Flame className="w-4 h-4 text-red-500" />
+        </div>
+        <div className="flex-1">
+          <p className="font-extrabold text-slate-800 text-sm">إدارة العرض والخصم</p>
+          <p className="text-[10px] text-slate-400 font-medium">العد التنازلي يظهر للجميع في نفس الوقت</p>
+        </div>
+        {isActive && (
+          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full animate-pulse">
+            🔴 نشط الآن
+          </span>
+        )}
+      </div>
+
+      {isActive && (
+        <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-bold text-red-700">{offer.label} — خصم {offer.discount}%</p>
+            <p className="text-[11px] text-red-500 mt-0.5">
+              ينتهي: {new Date(offer.endsAt).toLocaleString('ar', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}
+            </p>
+          </div>
+          <button onClick={deactivate} disabled={saving}
+            className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-100 transition flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={save} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold text-slate-500 block mb-1">اسم العرض</label>
+            <input value={label} onChange={e => setLabel(e.target.value)} maxLength={60}
+              placeholder="عرض إطلاق حصري"
+              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-red-300" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-500 block mb-1">نسبة الخصم %</label>
+            <input type="number" min={1} max={90} value={discount} onChange={e => setDiscount(Number(e.target.value))}
+              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-red-300" />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-bold text-slate-500 block mb-1">تاريخ ووقت انتهاء العرض</label>
+          <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)}
+            min={minDate}
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-red-300" />
+        </div>
+        <button type="submit" disabled={saving || !endsAt}
+          className="w-full py-2.5 bg-red-500 text-white font-bold rounded-xl text-sm hover:bg-red-600 transition disabled:opacity-50">
+          {saving ? 'جاري الحفظ...' : isActive ? '🔄 تحديث العرض' : '🚀 تفعيل العرض'}
+        </button>
+        {msg && <p className="text-xs text-center font-medium text-slate-600">{msg}</p>}
+      </form>
     </div>
   )
 }
@@ -173,6 +289,9 @@ export default function DashboardClient({ submissions }) {
           </div>
         </div>
       </div>
+
+      {/* Offer Manager */}
+      <OfferManager />
 
       {/* Recent Submissions */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
