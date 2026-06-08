@@ -3,6 +3,8 @@ import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/su
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendTelegramMessage } from '@/lib/telegram'
 
+export const dynamic = 'force-dynamic'
+
 const STR_MAX = 500  // max length for text fields
 
 function sanitizeStr(v, max = STR_MAX) {

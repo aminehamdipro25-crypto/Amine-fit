@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/clientAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 async function getPayload() {
   const token = cookies().get('client_token')?.value
   return await verifyToken(token)

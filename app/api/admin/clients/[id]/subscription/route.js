@@ -3,6 +3,8 @@ import crypto from 'crypto'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 const PLAN_DAYS = { basic: 30, standard: 30, premium: 30 }
 
 export async function POST(req, { params }) {

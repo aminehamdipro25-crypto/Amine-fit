@@ -17,6 +17,33 @@ CRITICAL RULES:
 - Order: heavy compound movements first, isolation last`
 
 const FALLBACKS = {
+  2: {
+    title: 'برنامج 2 أيام — جسم كامل',
+    days: [
+      {
+        name: 'Full Body A',
+        focus: 'جسم كامل',
+        exercises: [
+          { name: 'Barbell Back Squat', sets: 4, reps: '8-10', rest: '2 min', notes: 'Keep chest up' },
+          { name: 'Barbell Bench Press', sets: 3, reps: '8-10', rest: '90s', notes: 'Control the descent' },
+          { name: 'Barbell Bent-Over Row', sets: 3, reps: '8-10', rest: '90s', notes: 'Retract scapula' },
+          { name: 'Dumbbell Overhead Press', sets: 3, reps: '10-12', rest: '60s', notes: 'Brace core' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '45s', notes: 'Neutral spine' },
+        ],
+      },
+      {
+        name: 'Full Body B',
+        focus: 'جسم كامل',
+        exercises: [
+          { name: 'Romanian Deadlift', sets: 4, reps: '8-10', rest: '2 min', notes: 'Hip hinge, soft knees' },
+          { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '90s', notes: 'Full range of motion' },
+          { name: 'Lat Pulldown', sets: 3, reps: '10-12', rest: '90s', notes: 'Pull to upper chest' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '12-15', rest: '45s', notes: 'Lead with elbows' },
+          { name: 'Cable Crunch', sets: 3, reps: '15-20', rest: '45s', notes: 'Exhale at contraction' },
+        ],
+      },
+    ],
+  },
   3: {
     daysPerWeek: 3, duration: 60, level: 'intermediate',
     note: 'اتبع البرنامج بانتظام وستلاحظ النتائج خلال 4-6 أسابيع.',

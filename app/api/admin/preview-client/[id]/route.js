@@ -26,7 +26,7 @@ export async function POST(req, { params }) {
     path: '/',
   })
   res.cookies.set('coach_preview', previewData, {
-    httpOnly: false,
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 60 * 2,

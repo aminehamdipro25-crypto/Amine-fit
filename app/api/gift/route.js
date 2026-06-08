@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const GIFT_PREFIX = 'gift_code:'
 const GIFT_TTL    = 60 * 24 * 60 * 60 // 60 days in seconds
 

@@ -7,6 +7,8 @@ import { hashPassword, verifyPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
 
+export const dynamic = 'force-dynamic'
+
 async function setClientCookie(res, clientId) {
   await deleteClientSession(clientId)
   const sessionId = await createClientSession(clientId)
