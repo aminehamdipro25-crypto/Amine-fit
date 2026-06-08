@@ -53,6 +53,7 @@ export async function GET(req) {
     plan: gift.plan,
     planName: gift.planName,
     price: gift.price,
+    duration: gift.duration || 30,
     note: gift.note || '',
   })
 }

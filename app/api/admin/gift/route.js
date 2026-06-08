@@ -4,9 +4,9 @@ import crypto from 'crypto'
 
 const GIFT_PREFIX = 'gift_code:'
 const PLAN_INFO = {
-  training: { name: 'برنامج التدريب',  price: '50'  },
-  monthly:  { name: 'الباقة الشهرية', price: '125' },
-  '3months':{ name: 'باقة 3 أشهر',    price: '300' },
+  training: { name: 'برنامج التدريب',  price: '50',  duration: 30  },
+  monthly:  { name: 'الباقة الشهرية', price: '125', duration: 30  },
+  '3months':{ name: 'باقة 3 أشهر',    price: '300', duration: 90  },
 }
 
 function getCfg() {
@@ -30,10 +30,14 @@ export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  const { plan, note } = await req.json()
+  const { plan, note, duration: durationInput } = await req.json()
   if (!PLAN_INFO[plan]) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
+  // duration in days — admin can override, otherwise use plan default
+  const duration = (Number.isInteger(Number(durationInput)) && Number(durationInput) > 0)
+    ? Number(durationInput)
+    : PLAN_INFO[plan].duration
 
   const cfg = getCfg()
   if (!cfg) return NextResponse.json({ error: 'Redis not configured' }, { status: 503 })
@@ -47,6 +51,7 @@ export async function POST(req) {
     plan,
     planName: PLAN_INFO[plan].name,
     price: PLAN_INFO[plan].price,
+    duration,
     note: note || '',
     used: false,
     createdAt: new Date().toISOString(),

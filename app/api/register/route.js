@@ -55,6 +55,23 @@ export async function POST(req) {
       }, { status: 409 })
     }
 
+    // Validate gift code early so we can set subscription fields before saving
+    const giftCode = sanitizeStr(body.giftCode, 12).toUpperCase()
+    let validatedGift = null
+    if (giftCode) {
+      try {
+        const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+        const giftRes = await fetch(`${BASE}/api/gift?code=${encodeURIComponent(giftCode)}`, { cache: 'no-store' })
+        const giftData = await giftRes.json()
+        if (giftData.valid) validatedGift = giftData
+      } catch { /* gift validation failure is non-fatal — fall through to pending */ }
+    }
+
+    const now = Date.now()
+    const isGift = validatedGift !== null
+    const subStart = isGift ? new Date(now).toISOString() : null
+    const subEnd   = isGift ? new Date(now + (validatedGift.duration || 30) * 24 * 60 * 60 * 1000).toISOString() : null
+
     // Explicit allowlist — never spread raw body into storage
     const safeEntry = {
       email:              emailLower,
@@ -99,38 +116,60 @@ export async function POST(req) {
       commitment:          sanitizeStr(body.commitment),
       heardFrom:           sanitizeStr(body.heardFrom),
       notes:               sanitizeStr(body.notes),
-      interestedPlan:      sanitizeStr(body.interestedPlan, 100),
-      status:              'pending',
-      paymentDeadline:     new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72h to pay
+      interestedPlan:      isGift ? validatedGift.plan : sanitizeStr(body.interestedPlan, 100),
+      status:              isGift ? 'active' : 'pending',
+      paymentDeadline:     isGift ? null : new Date(now + 72 * 60 * 60 * 1000).toISOString(),
       paymentMethodChosen: null,
+      ...(isGift && {
+        subscriptionPlan:     validatedGift.plan,
+        subscriptionPlanName: validatedGift.planName,
+        subscriptionStart:    subStart,
+        subscriptionEnd:      subEnd,
+        giftCode,
+      }),
     }
 
     const entry = await saveSubmission(safeEntry)
-    console.log('[register] saved OK:', entry.id)
+    console.log('[register] saved OK:', entry.id, isGift ? '(gift)' : '(pending)')
     sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
+
+    // Mark gift as used synchronously now that the client record exists
+    if (isGift) {
+      try {
+        const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+        await fetch(`${BASE}/api/gift`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: giftCode, email: emailLower }),
+        })
+      } catch { /* non-fatal */ }
+    }
 
     // Telegram push notification to admin
     const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
     const goalAr = { loss: 'خسارة وزن', gain: 'بناء عضلات', maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي' }
-    sendTelegramMessage(
-      `🏋️ <b>طلب تسجيل جديد!</b>\n\n` +
-      `👤 <b>${entry.name}</b>\n` +
-      `📧 ${entry.email}\n` +
-      `📱 ${entry.phone || '—'}\n` +
-      `🎯 ${goalAr[entry.goal] || entry.goal || '—'}\n` +
-      `📦 ${entry.interestedPlan || '—'}\n\n` +
-      `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
-    ).catch(() => {})
 
-    // Mark gift code as used if one was supplied (fire-and-forget, non-blocking)
-    const giftCode = sanitizeStr(body.giftCode, 12)
-    if (giftCode) {
-      const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-      fetch(`${BASE}/api/gift`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: giftCode, email: safeEntry.email }),
-      }).catch(() => {})
+    if (isGift) {
+      const endDate = new Date(subEnd).toLocaleDateString('ar', { timeZone: 'Asia/Qatar', year: 'numeric', month: 'long', day: 'numeric' })
+      sendTelegramMessage(
+        `🎁 <b>هدية مُستخدمة!</b>\n\n` +
+        `👤 <b>${entry.name}</b>\n` +
+        `📧 ${entry.email}\n` +
+        `📱 ${entry.phone || '—'}\n` +
+        `📦 باقة: ${validatedGift.planName}\n` +
+        `📅 تنتهي: ${endDate}\n\n` +
+        `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
+      ).catch(() => {})
+    } else {
+      sendTelegramMessage(
+        `🏋️ <b>طلب تسجيل جديد!</b>\n\n` +
+        `👤 <b>${entry.name}</b>\n` +
+        `📧 ${entry.email}\n` +
+        `📱 ${entry.phone || '—'}\n` +
+        `🎯 ${goalAr[entry.goal] || entry.goal || '—'}\n` +
+        `📦 ${entry.interestedPlan || '—'}\n\n` +
+        `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
+      ).catch(() => {})
     }
 
     return NextResponse.json({ success: true, id: entry.id, email: safeEntry.email })

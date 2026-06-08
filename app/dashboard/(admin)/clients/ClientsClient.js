@@ -1445,11 +1445,12 @@ export default function ClientsClient({ error }) {
   const [approvalCode, setApprovalCode] = useState(null)
   const [onlineData, setOnlineData]   = useState({})
   const [toast, setToast]           = useState(null)
-  const [giftOpen, setGiftOpen]     = useState(false)
-  const [giftResult, setGiftResult] = useState(null)
-  const [giftPlan, setGiftPlan]     = useState('monthly')
-  const [giftNote, setGiftNote]     = useState('')
-  const [giftLoading, setGiftLoading] = useState(false)
+  const [giftOpen, setGiftOpen]         = useState(false)
+  const [giftResult, setGiftResult]     = useState(null)
+  const [giftPlan, setGiftPlan]         = useState('monthly')
+  const [giftDuration, setGiftDuration] = useState(30)
+  const [giftNote, setGiftNote]         = useState('')
+  const [giftLoading, setGiftLoading]   = useState(false)
 
   async function loadClients() {
     setLoading(true)
@@ -1572,12 +1573,28 @@ export default function ClientsClient({ error }) {
                 <>
                   <div>
                     <label className="text-slate-700 text-sm font-bold mb-1.5 block">الباقة</label>
-                    <select value={giftPlan} onChange={e => setGiftPlan(e.target.value)}
+                    <select value={giftPlan} onChange={e => {
+                      const p = e.target.value
+                      setGiftPlan(p)
+                      setGiftDuration(p === '3months' ? 90 : 30)
+                    }}
                       className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-400 transition">
                       <option value="training">برنامج التدريب — 50 د.ت</option>
                       <option value="monthly">الباقة الشهرية — 125 د.ت</option>
                       <option value="3months">باقة 3 أشهر — 300 د.ت</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-700 text-sm font-bold mb-1.5 block">مدة الاشتراك (أيام)</label>
+                    <div className="flex gap-2">
+                      {[7, 14, 30, 60, 90].map(d => (
+                        <button key={d} type="button"
+                          onClick={() => setGiftDuration(d)}
+                          className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition border ${giftDuration === d ? 'bg-violet-600 text-white border-violet-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-violet-300'}`}>
+                          {d === 30 ? '30\nشهر' : d === 90 ? '90\n3 أشهر' : d}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <label className="text-slate-700 text-sm font-bold mb-1.5 block">ملاحظة (اختياري)</label>
@@ -1593,7 +1610,7 @@ export default function ClientsClient({ error }) {
                         const res = await fetch('/api/admin/gift', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ plan: giftPlan, note: giftNote }),
+                          body: JSON.stringify({ plan: giftPlan, duration: giftDuration, note: giftNote }),
                         })
                         const data = await res.json()
                         if (data.code) setGiftResult(data)
@@ -1615,6 +1632,7 @@ export default function ClientsClient({ error }) {
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                     <p className="text-xs text-slate-500 mb-0.5">الكود فقط</p>
                     <p className="text-2xl font-extrabold tracking-widest text-slate-800" dir="ltr">{giftResult.code}</p>
+                    <p className="text-xs text-violet-600 font-bold mt-1">{giftResult.planName} · {giftResult.duration} يوم</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => { navigator.clipboard.writeText(giftResult.link) }}
@@ -1712,7 +1730,7 @@ export default function ClientsClient({ error }) {
             <UserPlus className="w-4 h-4" />
             إضافة عميل
           </button>
-          <button onClick={() => { setGiftOpen(true); setGiftResult(null) }}
+          <button onClick={() => { setGiftOpen(true); setGiftResult(null); setGiftPlan('monthly'); setGiftDuration(30); setGiftNote('') }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-100 text-violet-700 border border-violet-200 font-extrabold text-sm hover:bg-violet-200 transition flex-shrink-0">
             <Gift className="w-4 h-4" />
             منح هدية
