@@ -122,11 +122,11 @@ function buildCSV(submissions, stats) {
   rows.push(['انتهت مهلتهم', stats.expired])
   rows.push(['معدل التحويل', `${stats.conversionRate}%`])
   rows.push([])
-  // Client roster
+  // Client roster — paid only (no gifts)
   rows.push(['📋 قائمة العملاء المدفوعين'])
   rows.push(['الاسم', 'الإيميل', 'الهاتف', 'الباقة', 'السعر المدفوع (د.ت)', 'تاريخ التسجيل', 'تاريخ تأكيد الدفع', 'الحالة'])
-  const paid = submissions.filter(s => ['active','suspended','cancelled'].includes(s.status))
-  for (const s of paid) {
+  const paidCsv = submissions.filter(s => !s.giftCode && ['active','suspended','cancelled'].includes(s.status))
+  for (const s of paidCsv) {
     const price = (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
     rows.push([
       s.name || '—',
@@ -137,6 +137,22 @@ function buildCSV(submissions, stats) {
       s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN') : '—',
       s.paymentConfirmedAt ? new Date(s.paymentConfirmedAt).toLocaleDateString('ar-TN') : '—',
       STATUS_AR[s.status] || s.status,
+    ])
+  }
+  rows.push([])
+  // Gift clients (excluded from revenue)
+  rows.push(['🎁 عملاء الهدايا (لا يُحتسبون في الإيراد)'])
+  rows.push(['الاسم', 'الإيميل', 'الهاتف', 'الباقة', 'كود الهدية', 'تاريخ التسجيل', 'تنتهي في'])
+  const giftCsv = submissions.filter(s => s.giftCode && ['active','suspended'].includes(s.status))
+  for (const s of giftCsv) {
+    rows.push([
+      s.name || '—',
+      s.email || '—',
+      s.phone || '—',
+      PLAN_AR[s.subscriptionPlan] || s.subscriptionPlan || '—',
+      s.giftCode || '—',
+      s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN') : '—',
+      s.subscriptionEnd ? new Date(s.subscriptionEnd).toLocaleDateString('ar-TN') : '—',
     ])
   }
   rows.push([])
@@ -181,13 +197,14 @@ function PrintReport({ submissions, stats, onClose }) {
   const PLAN_PRICE_DISPLAY = { basic: 50, standard: 125, premium: 300 }
   const STATUS_AR    = { active: 'نشيط', suspended: 'موقوف', cancelled: 'ملغي' }
   const STATUS_COLOR = { active: '#10b981', suspended: '#f59e0b', cancelled: '#ef4444' }
-  const paid = submissions.filter(s => ['active','suspended','cancelled'].includes(s.status))
+  const paid = submissions.filter(s => !s.giftCode && ['active','suspended','cancelled'].includes(s.status))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const giftRows = submissions.filter(s => s.giftCode && ['active','suspended'].includes(s.status))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   // A4 is ~297mm tall × 210mm wide. With 10mm margins = 277mm usable height ≈ 1050px at 96dpi.
-  // We clamp the table to at most 15 rows to guarantee single page.
-  const tableRows = paid.slice(0, 15)
-  const hasMore   = paid.length > 15
+  const tableRows = paid.slice(0, 12)
+  const hasMore   = paid.length > 12
 
   return (
     <div className="print-visible fixed inset-0 bg-black/60 z-50 overflow-y-auto">
@@ -303,13 +320,14 @@ function PrintReport({ submissions, stats, onClose }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6pt' }}>
             {['basic','standard','premium'].map(key => {
-              const clients = paid.filter(s => s.subscriptionPlan === key)
+              const clients = paid.filter(s => s.subscriptionPlan === key && !s.giftCode)
+              const giftCount = giftRows.filter(s => s.subscriptionPlan === key).length
               const rev = clients.reduce((sum, s) => sum + PLAN_PRICE_DISPLAY[key], 0)
               return (
                 <div key={key} style={{ background: '#f8fafc', borderRadius: '6pt', padding: '7pt 8pt' }}>
                   <div style={{ fontWeight: 700, fontSize: '8.5pt', marginBottom: '3pt' }}>{PLAN_LABELS[key]}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', color: '#64748b' }}>
-                    <span><N v={clients.length} /> عميل</span>
+                    <span><N v={clients.length} /> مدفوع{giftCount > 0 ? ` + ${giftCount}🎁` : ''}</span>
                     <span style={{ color: '#10b981', fontWeight: 700 }}><N v={rev} /> د.ت</span>
                   </div>
                 </div>
@@ -321,7 +339,8 @@ function PrintReport({ submissions, stats, onClose }) {
         {/* ── PAID CLIENT TABLE ── */}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '7pt', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5pt' }}>
-            قائمة العملاء المدفوعين ({paid.length}){hasMore ? ` — يُعرض أحدث 15` : ''}
+            قائمة العملاء المدفوعين ({paid.length}){hasMore ? ` — يُعرض أحدث 12` : ''}
+            {giftRows.length > 0 && <span style={{ color: '#7c3aed', marginRight: '6pt' }}>· {giftRows.length} هدية (مستثنون من الإيرادات)</span>}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt' }}>
             <thead>
@@ -356,17 +375,34 @@ function PrintReport({ submissions, stats, onClose }) {
                   </tr>
                 )
               })}
-              {paid.length === 0 && (
+              {paid.length === 0 && giftRows.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '12pt', color: '#cbd5e1', fontSize: '8pt' }}>
-                    لا يوجد عملاء مدفوعون بعد
+                    لا يوجد عملاء بعد
                   </td>
                 </tr>
               )}
+              {/* Gift rows — greyed out, 0 revenue */}
+              {giftRows.map((s, i) => (
+                <tr key={s.id} style={{ background: '#faf5ff', opacity: 0.8 }}>
+                  <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}><N v={tableRows.length + i + 1} /></td>
+                  <td style={{ padding: '4pt 6pt', fontWeight: 700, color: '#6b21a8' }}>🎁 {s.name || '—'}</td>
+                  <td style={{ padding: '4pt 6pt', color: '#7c3aed' }}>{PLAN_AR[s.subscriptionPlan] || '—'}</td>
+                  <td style={{ padding: '4pt 6pt', fontWeight: 700, color: '#7c3aed' }}>هدية مجانية</td>
+                  <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}>
+                    {s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </td>
+                  <td style={{ padding: '4pt 6pt' }}>
+                    <span style={{ background: '#ede9fe', color: '#7c3aed', borderRadius: '4pt', padding: '2pt 5pt', fontSize: '7.5pt', fontWeight: 700 }}>
+                      هدية
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
             <tfoot>
               <tr style={{ background: '#0f172a', color: '#fff' }}>
-                <td colSpan={3} style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt' }}>الإجمالي المحصّل</td>
+                <td colSpan={3} style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt' }}>الإجمالي المحصّل (مدفوعون فقط)</td>
                 <td style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt', color: '#fbbf24' }}>
                   <N v={paid.reduce((sum, s) => sum + (PLAN_PRICE_DISPLAY[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} /> د.ت
                 </td>
@@ -404,9 +440,14 @@ export default function AnalyticsClient({ submissions }) {
   const expiredClients     = submissions.filter(s => s.status === 'payment_expired')
   const newClients         = submissions.filter(s => s.status === 'new')
   const cancelledClients   = submissions.filter(s => s.status === 'cancelled')
-  // "paid" requires a subscription plan — active-without-plan means approved but not yet paid
-  const paidClients        = submissions.filter(s =>
-    s.subscriptionPlan && ['active', 'suspended', 'cancelled'].includes(s.status)
+
+  // Gift clients: active with a giftCode field set — they have 0 revenue
+  const giftClients = submissions.filter(s =>
+    s.giftCode && ['active', 'suspended'].includes(s.status)
+  )
+  // "paid" = has subscription plan, NOT a gift, and is active/suspended/cancelled
+  const paidClients = submissions.filter(s =>
+    s.subscriptionPlan && !s.giftCode && ['active', 'suspended', 'cancelled'].includes(s.status)
   )
   // Awaiting payment = pending + payment_expired + active-without-subscription (approved but unpaid)
   const awaitingPaymentClients = [
@@ -433,8 +474,8 @@ export default function AnalyticsClient({ submissions }) {
     return sum + price * months
   }, 0)
 
-  // MRR: active clients, normalized to monthly (premium = 100/month)
-  const mrr = activeClients.reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0), 0)
+  // MRR: active PAID clients only (gifts excluded)
+  const mrr = activeClients.filter(s => !s.giftCode).reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0), 0)
 
   // Lost revenue: expired + awaiting payment who have an interested plan
   const lostRevenue = [...expiredClients, ...pendingClients, ...activeClients.filter(s => !s.subscriptionPlan)]
@@ -573,7 +614,7 @@ export default function AnalyticsClient({ submissions }) {
             icon={RefreshCw}
             label="MRR (إيراد شهري متكرر)"
             value={`${mrr.toLocaleString()} د.ت`}
-            badge={activeClients.length ? `${activeClients.length} نشط` : undefined}
+            badge={paidClients.length ? `${paidClients.length} مدفوع` : undefined}
             color={{ bg: 'bg-blue-50', text: 'text-blue-600' }}
           />
           <Stat
@@ -597,9 +638,9 @@ export default function AnalyticsClient({ submissions }) {
           />
           <Stat
             icon={Activity}
-            label="عملاء نشطون"
-            value={currentlyActive}
-            badge={total ? `${pct(currentlyActive)}%` : undefined}
+            label="نشطون (مدفوعون)"
+            value={paidClients.filter(s => s.status === 'active').length}
+            badge={giftClients.length ? `🎁 ${giftClients.length} هدية` : undefined}
             color={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }}
           />
           <Stat
