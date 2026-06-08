@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { sendEmail } from '@/lib/mailer'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,6 +72,16 @@ export async function POST(req) {
     const now = Date.now()
     const isGift = validatedGift !== null
     const subStart = isGift ? new Date(now).toISOString() : null
+
+    // Pre-generate activation code for gift clients so they can log in immediately
+    let giftActivationCode = null
+    let giftActivationCodeHash = null
+    if (isGift) {
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+      const bytes = crypto.randomBytes(6)
+      giftActivationCode = Array.from(bytes).map(b => chars[b % chars.length]).join('')
+      giftActivationCodeHash = crypto.createHash('sha256').update(giftActivationCode).digest('hex')
+    }
     const subEnd   = isGift ? new Date(now + (validatedGift.duration || 30) * 24 * 60 * 60 * 1000).toISOString() : null
 
     // Explicit allowlist — never spread raw body into storage
@@ -126,6 +138,8 @@ export async function POST(req) {
         subscriptionStart:    subStart,
         subscriptionEnd:      subEnd,
         giftCode,
+        activationCode:       giftActivationCodeHash,
+        approvedAt:           new Date(now).toISOString(),
       }),
     }
 
@@ -151,6 +165,12 @@ export async function POST(req) {
 
     if (isGift) {
       const endDate = new Date(subEnd).toLocaleDateString('ar', { timeZone: 'Asia/Qatar', year: 'numeric', month: 'long', day: 'numeric' })
+
+      // Send activation email to the gift recipient automatically
+      sendGiftActivationEmail(entry, giftActivationCode).catch(err =>
+        console.error('[gift activation email]', err.message)
+      )
+
       sendTelegramMessage(
         `🎁 <b>هدية مُستخدمة!</b>\n\n` +
         `👤 <b>${entry.name}</b>\n` +
@@ -158,6 +178,8 @@ export async function POST(req) {
         `📱 ${entry.phone || '—'}\n` +
         `📦 باقة: ${validatedGift.planName}\n` +
         `📅 تنتهي: ${endDate}\n\n` +
+        `🔑 كود التفعيل: <code>${giftActivationCode}</code>\n` +
+        `(أُرسل تلقائياً لبريد العميل — احتفظ به للإرسال عبر واتساب إذا لزم)\n\n` +
         `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
       ).catch(() => {})
     } else {
@@ -305,6 +327,54 @@ function buildEmailHtml(e, printUrl) {
   </div>
 </div>
 </body></html>`
+}
+
+async function sendGiftActivationEmail(entry, activationCode) {
+  const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+  const name = entry.name || 'عزيزي العميل'
+  await sendEmail({
+    to: entry.email,
+    subject: 'مرحباً بك في Amine-Fit 🎁 — كود تفعيل حسابك',
+    text: `مرحباً ${name}،\n\nتمت هديتك بنجاح! حسابك في Amine-Fit نشط الآن.\n\nكود التفعيل: ${activationCode}\n\nاذهب إلى: ${BASE}/client/login\nاختر "تفعيل الحساب" وأدخل بريدك الإلكتروني والكود.\n\nهذا الكود للاستخدام مرة واحدة فقط.\n\nأمين حمدي — Amine-Fit`,
+    html: `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:20px;background:#f1f5f9;font-family:Arial,sans-serif">
+<div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)">
+  <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:24px;text-align:center">
+    <div style="font-size:44px">🎁</div>
+    <h1 style="color:#fff;margin:8px 0 4px;font-size:22px">مرحباً ${name}!</h1>
+    <p style="color:rgba(255,255,255,.9);margin:0;font-size:14px">هديتك في Amine-Fit جاهزة</p>
+  </div>
+  <div style="padding:24px">
+    <p style="font-size:14px;color:#374151;margin-bottom:20px;line-height:1.7">
+      تم تفعيل حسابك بنجاح 🎉 استخدم كود التفعيل أدناه لإنشاء كلمة مرورك والدخول لبوابتك الشخصية.
+    </p>
+    <div style="background:#faf5ff;border:2px solid #a855f7;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
+      <p style="margin:0 0 8px;font-weight:bold;color:#6b21a8;font-size:14px">كود التفعيل (استخدام واحد فقط)</p>
+      <p style="margin:0;font-family:monospace;font-size:36px;font-weight:900;letter-spacing:8px;color:#7c3aed;direction:ltr">${activationCode}</p>
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px;margin-bottom:20px">
+      <p style="margin:0 0 8px;font-weight:bold;color:#166534;font-size:13px">خطوات التفعيل:</p>
+      <ol style="margin:0;padding-right:20px;font-size:13px;color:#374151;line-height:2">
+        <li>اذهب إلى بوابة العميل</li>
+        <li>اختر تبويب "تفعيل الحساب"</li>
+        <li>أدخل بريدك الإلكتروني وكود التفعيل</li>
+        <li>أنشئ كلمة مرورك الخاصة</li>
+      </ol>
+    </div>
+    <a href="${BASE}/client/login"
+       style="display:block;text-align:center;background:#7c3aed;color:#fff;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;margin-bottom:16px">
+      تفعيل الحساب الآن
+    </a>
+    <p style="font-size:11px;color:#9ca3af;text-align:center;margin:0">هذا الكود للاستخدام مرة واحدة فقط — لا تشاركه مع أحد</p>
+  </div>
+  <div style="background:#f8fafc;padding:12px 24px;text-align:center;border-top:1px solid #e2e8f0">
+    <p style="color:#9ca3af;font-size:11px;margin:0">Amine-Fit • الدوحة، قطر • +974 3065 3759</p>
+  </div>
+</div>
+</body></html>`,
+  })
 }
 
 export async function GET() {

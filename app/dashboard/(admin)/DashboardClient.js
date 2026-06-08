@@ -261,6 +261,40 @@ function OfferManager() {
   )
 }
 
+function TelegramTest() {
+  const [status, setStatus] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  async function test() {
+    setLoading(true)
+    setStatus(null)
+    try {
+      const res = await fetch('/api/dashboard/test-telegram', { method: 'POST' })
+      const d = await res.json()
+      setStatus(d.ok ? 'success' : `error:${d.error || (d.missing?.join(', '))}`)
+    } catch (e) { setStatus(`error:${e.message}`) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-extrabold text-slate-800">إشعارات تيليغرام</p>
+          <p className="text-xs text-slate-400 mt-0.5">اضغط لإرسال رسالة تجريبية والتأكد من وصول الإشعارات</p>
+          {status === 'success' && <p className="text-xs text-emerald-600 font-bold mt-1">✅ الإشعارات تعمل بشكل صحيح</p>}
+          {status?.startsWith('error:') && <p className="text-xs text-red-500 font-bold mt-1">❌ {status.replace('error:', '')}</p>}
+        </div>
+        <button onClick={test} disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-extrabold hover:bg-black transition disabled:opacity-50 flex-shrink-0">
+          {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '✈️'}
+          اختبار
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardClient({ submissions }) {
   const total    = submissions.length
   const newCount = submissions.filter(s => s.status === 'new').length
@@ -385,6 +419,9 @@ export default function DashboardClient({ submissions }) {
 
       {/* Offer Manager */}
       <OfferManager />
+
+      {/* Telegram test */}
+      <TelegramTest />
 
       {/* Recent Submissions */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
