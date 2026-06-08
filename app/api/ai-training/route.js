@@ -7,14 +7,30 @@ const SYSTEM_PROMPT = `You are an elite personal trainer and strength & conditio
 CRITICAL RULES:
 - Exercise names MUST be in English ONLY — use standard English gym terminology (e.g., "Barbell Back Squat", "Lat Pulldown", "Dumbbell Shoulder Press", "Plank", "Calf Raise")
 - NEVER write Arabic transliterations of exercise names (FORBIDDEN: "سكوات", "بلانك", "ليغ بريس", "كاف ريز" — use their English originals instead)
-- tips[] and note fields may be in Arabic
+- tips[], note, and description fields may be in Arabic
 - Day names must be in English (e.g., "Push Day", "Legs Day", "Upper Body A")
 - The "focus" field must be one of these Arabic values only: صدر | ظهر | كتف | ذراع | أرجل | بطن | كارديو | كامل | صدر وكتف | ظهر وبايسبس
 - Return ONLY valid JSON — no markdown fences, no explanations
 - rest values: use "30s", "45s", "60s", "90s", "2 min", "3 min"
 - reps values: strings like "8-10", "12", "15", "30s", "AMRAP", "each side"
 - Include 4-7 exercises per day
-- Order: heavy compound movements first, isolation last`
+- Order: heavy compound movements first, isolation last
+- NEVER place the same muscle group on consecutive days
+
+GOAL-SPECIFIC PROGRAMMING:
+- fat loss: 12-20 reps, 30-60s rest, superset pairs where possible, circuit-style finishers; prioritize metabolic conditioning
+- muscle hypertrophy/gain: 6-12 reps, 60-90s rest, progressive overload every session (+2.5 kg or +1 rep); emphasize time-under-tension
+- maintenance: 8-15 reps, 60-90s rest, balanced volume, sustainability over intensity
+- athletic performance: mix power work (3-5 reps, 3 min rest) + strength (5-8 reps) + explosive movements (Box Jump, Medicine Ball Slam, Broad Jump, Sprint Drill); include agility and coordination; avoid pure bodybuilding isolation; focus on multi-joint compound patterns and sport transfer
+
+EQUIPMENT RULES — STRICTLY FOLLOW:
+- gym (commercial): barbells, cables, machines, dumbbells — all available
+- home: dumbbells, resistance bands, pull-up bar ONLY — NO barbells, NO cable machines, NO leg press, NO smith machine; substitute → DB Romanian Deadlift instead of Barbell RDL, DB Row instead of Cable Row, DB Press instead of Barbell Bench, Resistance Band Pull-Apart instead of Face Pull
+- bodyweight: absolutely NO weights; use Push-Up (all variations), Pull-Up, Chin-Up, Dip, Inverted Row, Bodyweight Squat, Bulgarian Split Squat (bodyweight), Pistol Squat, Glute Bridge, Hip Thrust, Pike Push-Up, Plank variations, Mountain Climber, Burpee, Jump Squat
+
+WARMUP & COOLDOWN — required in every day:
+- warmup: 2-3 exercises (5-10 min total) — light cardio + dynamic stretching relevant to the day's muscles
+- cooldown: 2-3 exercises (5 min total) — static stretches for worked muscles, held 20-30s each`
 
 const FALLBACKS = {
   2: {
@@ -49,27 +65,58 @@ const FALLBACKS = {
     note: 'اتبع البرنامج بانتظام وستلاحظ النتائج خلال 4-6 أسابيع.',
     tips: ['سخّن جيداً قبل كل جلسة (10 دقائق)', 'ركّز على الأداء الصحيح قبل زيادة الأوزان', 'اشرب ماء كافياً طوال التمرين'],
     days: [
-      { name: 'Push Day', focus: 'صدر وكتف', description: 'صدر وكتف وترايسبس', exercises: [
-        { name: 'Barbell Bench Press', sets: 4, reps: '8-10', rest: '90s', note: 'حافظ على لمس الصدر في كل تكرار' },
-        { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s', note: '' },
-        { name: 'Overhead Press', sets: 4, reps: '8-10', rest: '90s', note: '' },
-        { name: 'Lateral Raise', sets: 3, reps: '15', rest: '45s', note: 'ارفع ببطء للأسفل' },
-        { name: 'Tricep Pushdown', sets: 3, reps: '15', rest: '45s', note: '' },
-      ]},
-      { name: 'Pull Day', focus: 'ظهر وبايسبس', description: 'ظهر وبايسبس', exercises: [
-        { name: 'Wide-Grip Pull-Up', sets: 4, reps: '6-8', rest: '90s', note: 'ابدأ الحركة بعضلة الظهر لا الذراع' },
-        { name: 'Barbell Row', sets: 4, reps: '8-10', rest: '90s', note: '' },
-        { name: 'Lat Pulldown', sets: 3, reps: '12', rest: '60s', note: '' },
-        { name: 'Barbell Curl', sets: 3, reps: '10-12', rest: '60s', note: '' },
-        { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s', note: '' },
-      ]},
-      { name: 'Legs Day', focus: 'أرجل', description: 'أرجل كاملة', exercises: [
-        { name: 'Barbell Back Squat', sets: 4, reps: '8-10', rest: '2 min', note: 'ظهر مستقيم والركبة لا تتجاوز القدم' },
-        { name: 'Leg Press', sets: 3, reps: '12', rest: '90s', note: '' },
-        { name: 'Romanian Deadlift', sets: 3, reps: '10-12', rest: '90s', note: '' },
-        { name: 'Leg Curl', sets: 3, reps: '15', rest: '60s', note: '' },
-        { name: 'Standing Calf Raise', sets: 4, reps: '20', rest: '45s', note: '' },
-      ]},
+      { name: 'Push Day', focus: 'صدر وكتف', description: 'صدر وكتف وترايسبس',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: 'دفئ مفصل الكتف جيداً' },
+          { name: 'Light Dumbbell Press', duration: '2×15', note: '50% من وزن التمرين' },
+        ],
+        exercises: [
+          { name: 'Barbell Bench Press', sets: 4, reps: '8-10', rest: '90s', note: 'حافظ على لمس الصدر في كل تكرار' },
+          { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s', note: '' },
+          { name: 'Overhead Press', sets: 4, reps: '8-10', rest: '90s', note: '' },
+          { name: 'Lateral Raise', sets: 3, reps: '15', rest: '45s', note: 'ارفع ببطء للأسفل' },
+          { name: 'Tricep Pushdown', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: 'افتح ذراعيك على الحائط واضغط للأمام' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: 'اسحب الذراع بلطف عبر الصدر' },
+        ],
+      },
+      { name: 'Pull Day', focus: 'ظهر وبايسبس', description: 'ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow + Thoracic Rotation', duration: '3 min', note: 'تحريك العمود الفقري' },
+          { name: 'Resistance Band Row', duration: '2×15', note: 'خفيف لتنشيط عضلة الظهر' },
+        ],
+        exercises: [
+          { name: 'Wide-Grip Pull-Up', sets: 4, reps: '6-8', rest: '90s', note: 'ابدأ الحركة بعضلة الظهر لا الذراع' },
+          { name: 'Barbell Row', sets: 4, reps: '8-10', rest: '90s', note: '' },
+          { name: 'Lat Pulldown', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Barbell Curl', sets: 3, reps: '10-12', rest: '60s', note: '' },
+          { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: 'تمدد للظهر العلوي' },
+          { name: 'Bicep Wall Stretch', duration: '30s each', note: 'ابسط ذراعك على الحائط واستدر للخارج' },
+        ],
+      },
+      { name: 'Legs Day', focus: 'أرجل', description: 'أرجل كاملة',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: 'تحريك مفصل الورك بالكامل' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: 'بدون وزن لتنشيط الأرجل' },
+        ],
+        exercises: [
+          { name: 'Barbell Back Squat', sets: 4, reps: '8-10', rest: '2 min', note: 'ظهر مستقيم والركبة لا تتجاوز القدم' },
+          { name: 'Leg Press', sets: 3, reps: '12', rest: '90s', note: '' },
+          { name: 'Romanian Deadlift', sets: 3, reps: '10-12', rest: '90s', note: '' },
+          { name: 'Leg Curl', sets: 3, reps: '15', rest: '60s', note: '' },
+          { name: 'Standing Calf Raise', sets: 4, reps: '20', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: 'امسك كاحلك وادفع الورك للأمام' },
+          { name: 'Seated Hamstring Stretch', duration: '45s each', note: 'امد الرجل واميل للأمام' },
+          { name: 'Pigeon Pose', duration: '45s each', note: 'لفك توتر عضلة الورك' },
+        ],
+      },
     ],
   },
   4: {
@@ -269,8 +316,14 @@ export async function POST(req) {
       "name": "<English day name>",
       "focus": "<Arabic from: صدر|ظهر|كتف|ذراع|أرجل|بطن|كارديو|كامل|صدر وكتف|ظهر وبايسبس>",
       "description": "<Arabic brief description>",
+      "warmup": [
+        { "name": "<English exercise>", "duration": "<e.g. 5 min or 2x10>", "note": "<Arabic>" }
+      ],
       "exercises": [
         { "name": "<English exercise name>", "sets": <number>, "reps": "<string>", "rest": "<string>", "note": "<Arabic tip or empty>" }
+      ],
+      "cooldown": [
+        { "name": "<English stretch>", "duration": "<e.g. 30s hold>", "note": "<Arabic>" }
       ]
     }
   ]
