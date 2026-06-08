@@ -75,8 +75,9 @@ export async function POST(req) {
   catch { return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 }) }
 
   const { data, filename, mimeType } = body
-  if (!data || typeof data !== 'string' || !data.startsWith('data:image/')) {
-    return NextResponse.json({ error: 'ملف غير صالح — يجب أن يكون صورة' }, { status: 400 })
+  const ALLOWED_MIME = ['data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp']
+  if (!data || typeof data !== 'string' || !ALLOWED_MIME.some(m => data.startsWith(m + ','))) {
+    return NextResponse.json({ error: 'نوع الملف غير مدعوم، استخدم JPG أو PNG فقط' }, { status: 400 })
   }
   if (data.length > 5_500_000) {
     return NextResponse.json({ error: 'حجم الصورة كبير جداً (الحد الأقصى 4 ميغابايت)' }, { status: 400 })

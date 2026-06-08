@@ -105,6 +105,83 @@ const FALLBACKS = {
       ]},
     ],
   },
+  6: {
+    title: 'برنامج 6 أيام — Push/Pull/Legs',
+    days: [
+      {
+        name: 'Push A',
+        focus: 'صدر وكتف وترايسبس',
+        exercises: [
+          { name: 'Barbell Bench Press', sets: 4, reps: '6-8', rest: '2 min', notes: 'Arch back slightly' },
+          { name: 'Incline Dumbbell Press', sets: 3, reps: '8-10', rest: '90s', notes: 'Full ROM' },
+          { name: 'Dumbbell Overhead Press', sets: 3, reps: '8-10', rest: '90s', notes: 'Brace core' },
+          { name: 'Cable Lateral Raise', sets: 3, reps: '12-15', rest: '45s', notes: 'Lead with elbows' },
+          { name: 'Tricep Rope Pushdown', sets: 3, reps: '12-15', rest: '45s', notes: 'Full extension' },
+          { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', notes: 'Keep elbows in' },
+        ],
+      },
+      {
+        name: 'Pull A',
+        focus: 'ظهر وبايسبس',
+        exercises: [
+          { name: 'Barbell Bent-Over Row', sets: 4, reps: '6-8', rest: '2 min', notes: 'Retract scapula' },
+          { name: 'Weighted Pull-Up', sets: 3, reps: '6-8', rest: '2 min', notes: 'Full dead hang' },
+          { name: 'Seated Cable Row', sets: 3, reps: '10-12', rest: '90s', notes: 'Elbows back' },
+          { name: 'Face Pull', sets: 3, reps: '15-20', rest: '45s', notes: 'External rotation' },
+          { name: 'Barbell Curl', sets: 3, reps: '10-12', rest: '60s', notes: 'No swinging' },
+          { name: 'Hammer Curl', sets: 3, reps: '12-15', rest: '45s', notes: 'Neutral grip' },
+        ],
+      },
+      {
+        name: 'Legs A',
+        focus: 'أرجل وبطن',
+        exercises: [
+          { name: 'Barbell Back Squat', sets: 4, reps: '6-8', rest: '3 min', notes: 'Depth below parallel' },
+          { name: 'Romanian Deadlift', sets: 3, reps: '8-10', rest: '2 min', notes: 'Hip hinge' },
+          { name: 'Leg Press', sets: 3, reps: '10-12', rest: '90s', notes: 'Full range' },
+          { name: 'Leg Curl', sets: 3, reps: '12-15', rest: '60s', notes: 'Slow eccentric' },
+          { name: 'Calf Raise', sets: 4, reps: '15-20', rest: '45s', notes: 'Full stretch at bottom' },
+          { name: 'Ab Wheel Rollout', sets: 3, reps: '10-12', rest: '60s', notes: 'Control throughout' },
+        ],
+      },
+      {
+        name: 'Push B',
+        focus: 'صدر وكتف وترايسبس',
+        exercises: [
+          { name: 'Incline Barbell Press', sets: 4, reps: '8-10', rest: '2 min', notes: 'Upper chest focus' },
+          { name: 'Dumbbell Flat Fly', sets: 3, reps: '12-15', rest: '60s', notes: 'Slight elbow bend' },
+          { name: 'Arnold Press', sets: 3, reps: '10-12', rest: '90s', notes: 'Rotate on the way up' },
+          { name: 'Dumbbell Lateral Raise', sets: 4, reps: '15-20', rest: '45s', notes: 'Drop set last set' },
+          { name: 'Skull Crusher', sets: 3, reps: '10-12', rest: '60s', notes: 'Lower to forehead' },
+          { name: 'Cable Chest Fly', sets: 3, reps: '15-20', rest: '45s', notes: 'Squeeze at center' },
+        ],
+      },
+      {
+        name: 'Pull B',
+        focus: 'ظهر وبايسبس',
+        exercises: [
+          { name: 'Deadlift', sets: 4, reps: '5', rest: '3 min', notes: 'Neutral spine throughout' },
+          { name: 'Lat Pulldown', sets: 3, reps: '10-12', rest: '90s', notes: 'Pull to upper chest' },
+          { name: 'One-Arm Dumbbell Row', sets: 3, reps: '10-12', rest: '60s', notes: 'Elbow high' },
+          { name: 'Reverse Fly', sets: 3, reps: '15-20', rest: '45s', notes: 'Rear delt focus' },
+          { name: 'Preacher Curl', sets: 3, reps: '10-12', rest: '60s', notes: 'Full extension' },
+          { name: 'Concentration Curl', sets: 3, reps: '12-15', rest: '45s', notes: 'Peak contraction' },
+        ],
+      },
+      {
+        name: 'Legs B',
+        focus: 'أرجل وبطن',
+        exercises: [
+          { name: 'Front Squat', sets: 4, reps: '6-8', rest: '3 min', notes: 'Elbows high' },
+          { name: 'Bulgarian Split Squat', sets: 3, reps: '10-12', rest: '90s', notes: 'Per leg' },
+          { name: 'Hack Squat', sets: 3, reps: '10-12', rest: '90s', notes: 'Controlled descent' },
+          { name: 'Leg Extension', sets: 3, reps: '15-20', rest: '45s', notes: 'Quad isolation' },
+          { name: 'Seated Calf Raise', sets: 4, reps: '15-20', rest: '45s', notes: 'Soleus focus' },
+          { name: 'Hanging Leg Raise', sets: 3, reps: '12-15', rest: '60s', notes: 'Posterior tilt pelvis' },
+        ],
+      },
+    ],
+  },
   5: {
     daysPerWeek: 5, duration: 75, level: 'intermediate',
     note: 'برنامج PPL المتقدم لأقصى نمو عضلي.',
