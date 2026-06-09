@@ -171,6 +171,8 @@ export default function CalculatorPage() {
     setSelectedWeek(0)
     setSaveStatus(null)
     setIsAI(!!savedPlan.ai)
+    // Sync to localStorage so "تقرير PDF" reads the saved (AI-modified) version
+    try { localStorage.setItem('amineFitPlan', JSON.stringify(savedPlan)) } catch {}
   }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0

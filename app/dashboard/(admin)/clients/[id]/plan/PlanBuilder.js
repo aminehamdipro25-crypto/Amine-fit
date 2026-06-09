@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Plus, Trash2, Save, ArrowRight,
   ChevronDown, ChevronUp, Loader2, CheckCircle2, Flame, Zap,
-  Sparkles, LogIn, Download, Info, X, Brain, Wand2, Paperclip, Search,
+  Sparkles, LogIn, Download, Info, X, Brain, Wand2, Paperclip, Search, Printer,
 } from 'lucide-react'
 import { FOODS, EX } from '@/lib/nutritionEngine'
 
@@ -1421,6 +1421,26 @@ export default function PlanBuilder({ client }) {
                 >
                   <Download className="w-3.5 h-3.5" />
                   من الحاسبة
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!client?.id) return
+                    try {
+                      const r = await fetch(`/api/admin/clients/${client.id}/calc-plan`)
+                      const d = await r.json()
+                      if (!d.plan) { alert('لا توجد خطة محفوظة في الحاسبة لهذا العميل'); return }
+                      localStorage.setItem('amineFitPlan', JSON.stringify(d.plan))
+                      window.open('/plan-report', '_blank')
+                    } catch {
+                      alert('حدث خطأ أثناء تحميل الخطة')
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-slate-500 text-xs font-bold hover:bg-slate-50 transition"
+                  title="فتح تقرير PDF من الخطة المحفوظة في الحاسبة"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  PDF
                 </button>
               </div>
             </div>

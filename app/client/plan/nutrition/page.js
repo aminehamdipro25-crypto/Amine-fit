@@ -1,25 +1,158 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer } from 'lucide-react'
+import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 
-// Normalize a calculator-format meal to the PlanBuilder display format
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
+function isSameDay(a, b) {
+  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
+}
+function getWeekStart(date) { const d = startOfDay(date); d.setDate(d.getDate() - d.getDay()); return d }
+function getWeekDays(ws) {
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(ws); d.setDate(d.getDate() + i); return d })
+}
+
+const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+const MONTHS_MAGHREBI = [
+  'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+  'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+]
+function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
+
+// ─── Week navigator (nutrition — green theme) ─────────────────────────────────
+function WeekNav({ today, selectedDate, onSelect }) {
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  const weekStart = useMemo(() => {
+    const ws = getWeekStart(today); ws.setDate(ws.getDate() + weekOffset * 7); return ws
+  }, [today, weekOffset])
+
+  const days = useMemo(() => getWeekDays(weekStart), [weekStart])
+
+  const monthLabel = useMemo(() => {
+    const mid = days[3]
+    return `${MONTHS_MAGHREBI[mid.getMonth()]} ${mid.getFullYear()}`
+  }, [days])
+
+  return (
+    <div className="rounded-2xl px-4 py-4 select-none" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={() => setWeekOffset(o => o - 1)}
+          className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-all active:scale-90">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <p className="text-white/50 text-xs font-bold tracking-wider">{monthLabel}</p>
+        <button onClick={() => setWeekOffset(o => o + 1)}
+          className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-all active:scale-90">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, i) => {
+          const isToday    = isSameDay(day, today)
+          const isSelected = isSameDay(day, selectedDate)
+          return (
+            <button key={i} onClick={() => onSelect(startOfDay(day))}
+              className={`flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 active:scale-95
+                ${isSelected ? 'bg-emerald-400' : isToday ? 'bg-white/10 ring-1 ring-emerald-400/50' : 'hover:bg-white/5'}`}>
+              <span className={`text-[9px] font-bold uppercase tracking-wide ${isSelected ? 'text-black' : 'text-white/35'}`}>
+                {DAY_SHORT[day.getDay()]}
+              </span>
+              <span className={`text-sm font-extrabold leading-none
+                ${isSelected ? 'text-black' : isToday ? 'text-emerald-400' : 'text-white/75'}`}>
+                {day.getDate()}
+              </span>
+              <span className={`w-1.5 h-1.5 rounded-full transition-colors
+                ${isSelected ? 'bg-black/25' : 'bg-emerald-400/60'}`} />
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Meal card ────────────────────────────────────────────────────────────────
+const MEAL_ICONS = ['☀️', '🕑', '🌆', '🌙', '🥤', '🍽️']
+
+function MealCard({ meal, idx, open, onToggle }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <button onClick={onToggle}
+        className="w-full flex items-center gap-4 p-5 text-right hover:bg-slate-50 transition">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+          style={{ background: 'linear-gradient(135deg,#064e3b,#059669)' }}>
+          <span>{MEAL_ICONS[idx % MEAL_ICONS.length]}</span>
+        </div>
+        <div className="flex-1 min-w-0 text-right">
+          <p className="font-extrabold text-slate-900 text-sm">{meal.name || `وجبة ${idx + 1}`}</p>
+          {meal.time && (
+            <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+              <Clock className="w-3 h-3" /> {meal.time}
+            </p>
+          )}
+        </div>
+        {meal.calories && (
+          <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex-shrink-0">
+            {meal.calories} kcal
+          </span>
+        )}
+        {open
+          ? <ChevronUp className="w-4 h-4 text-slate-300 flex-shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-slate-300 flex-shrink-0" />
+        }
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t border-slate-50">
+          {meal.description && (
+            <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
+          )}
+          {meal.items?.length > 0 && (
+            <div className="space-y-1.5 mt-3">
+              {meal.items.map((item, j) => (
+                <div key={j} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                  <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
+                  <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2.5 py-1 rounded-full">{item.amount}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {meal.macros && (meal.macros.protein || meal.macros.carbs || meal.macros.fats) && (
+            <div className="flex gap-2 mt-4 flex-wrap">
+              {meal.macros.protein && <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">بروتين: {meal.macros.protein}غ</span>}
+              {meal.macros.carbs   && <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">كارب: {meal.macros.carbs}غ</span>}
+              {meal.macros.fats    && <span className="text-xs font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">دهون: {meal.macros.fats}غ</span>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Normalize calculator-format meal to display format ───────────────────────
 function normCalcMeal(m) {
   return {
-    name: m.name,
-    time: m.time,
+    name:     m.name,
+    time:     m.time,
     calories: m.kcal,
-    items: (m.items || []).map(i => ({ food: i.food, amount: i.amount })),
-    macros: { protein: m.protein, carbs: m.carbs, fats: m.fat },
+    items:    (m.items || []).map(i => ({ food: i.food, amount: i.amount })),
+    macros:   { protein: m.protein, carbs: m.carbs, fats: m.fat },
   }
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function NutritionPlan() {
   const router = useRouter()
-  const [client, setClient] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [openMeal, setOpenMeal] = useState(0)
-  const [selectedDay, setSelectedDay] = useState(0)
+  const [client, setClient]         = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [openMeal, setOpenMeal]     = useState(0)
+  const [selectedWeek, setSelectedWeek] = useState(0)
+
+  const today        = useMemo(() => startOfDay(new Date()), [])
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()))
 
   useEffect(() => {
     fetch('/api/client/me')
@@ -31,6 +164,11 @@ export default function NutritionPlan() {
       .finally(() => setLoading(false))
   }, [router])
 
+  const handleSelectDate = useCallback((d) => {
+    setSelectedDate(d)
+    setOpenMeal(0)
+  }, [])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -41,10 +179,10 @@ export default function NutritionPlan() {
 
   if (!client) return null
 
-  const plan = client.plan?.nutrition
+  const plan     = client.plan?.nutrition
   const calcPlan = client.nutritionCalcPlan
 
-  // Derive effective plan data — PlanBuilder takes priority, then calculator
+  // Effective plan metadata
   const effectivePlan = plan || (calcPlan ? {
     calories:  calcPlan.target,
     protein:   calcPlan.ex?.macros?.protein,
@@ -65,20 +203,16 @@ export default function NutritionPlan() {
         }}>
           <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
             {[
-              { e: '🥗', t: '8%',  l: '5%',  s: 64, r: -15 },
-              { e: '🍎', t: '12%', r: '8%',  s: 56, rot: 20 },
-              { e: '🥦', t: '55%', l: '3%',  s: 52, r: 10 },
-              { e: '🥑', t: '60%', r: '5%',  s: 60, rot: -12 },
-              { e: '🍗', t: '30%', l: '45%', s: 80, rot: 8 },
-              { e: '💧', t: '75%', l: '30%', s: 44, rot: 0 },
-              { e: '🥚', t: '20%', l: '25%', s: 40, rot: -5 },
-              { e: '🥩', t: '70%', r: '25%', s: 50, rot: 15 },
+              { e: '🥗', t: '8%',  l: '5%',  s: 64, d: -15 },
+              { e: '🍎', t: '12%', r: '8%',  s: 56, d: 20 },
+              { e: '🥦', t: '55%', l: '3%',  s: 52, d: 10 },
+              { e: '🥑', t: '60%', r: '5%',  s: 60, d: -12 },
+              { e: '🍗', t: '30%', l: '45%', s: 80, d: 8 },
+              { e: '💧', t: '75%', l: '30%', s: 44, d: 0 },
             ].map((item, i) => (
               <span key={i} className="absolute opacity-10" style={{
                 top: item.t, left: item.l, right: item.r,
-                fontSize: item.s,
-                transform: `rotate(${item.r ?? item.rot ?? 0}deg)`,
-                lineHeight: 1
+                fontSize: item.s, transform: `rotate(${item.d}deg)`, lineHeight: 1
               }}>{item.e}</span>
             ))}
           </div>
@@ -92,31 +226,35 @@ export default function NutritionPlan() {
     )
   }
 
-  const macros = [
-    { label: 'السعرات',    val: effectivePlan.calories, unit: 'kcal', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-100', icon: Flame },
-    { label: 'بروتين',     val: effectivePlan.protein,  unit: 'غ',    color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-100',  icon: Zap },
-    { label: 'كربوهيدرات', val: effectivePlan.carbs,    unit: 'غ',    color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-100',icon: Zap },
-    { label: 'دهون',       val: effectivePlan.fats,     unit: 'غ',    color: 'text-orange-700',  bg: 'bg-orange-50',  border: 'border-orange-100',icon: Droplets },
-  ].filter(m => m.val)
+  // ─── Resolve display meals ────────────────────────────────────────────────
+  const hasPlanMeals  = plan?.meals?.length > 0
+  const isWeeklyCalc  = !hasPlanMeals && calcPlan?.duration === 'week'
+  const isMonthlyCalc = !hasPlanMeals && calcPlan?.duration === 'month'
 
-  // Resolve display meals — PlanBuilder manual meals first, then calculator plan
-  const hasPlanMeals = plan?.meals?.length > 0
-  let displayMeals = []
-  let calcDays = null
+  let meals = []
+  let dayLabel = ''
 
   if (hasPlanMeals) {
-    displayMeals = plan.meals
+    meals = plan.meals
+  } else if (isWeeklyCalc) {
+    const calcDays = calcPlan.days || []
+    // DAY_NAMES[i] index === JS getDay() — الأحد=0, الاثنين=1, ...
+    const dayIdx = selectedDate.getDay()
+    meals    = (calcDays[dayIdx]?.menu || []).map(normCalcMeal)
+    dayLabel = calcDays[dayIdx]?.name || ''
+  } else if (isMonthlyCalc) {
+    const calcWeeks = calcPlan.weeks || []
+    meals = (calcWeeks[selectedWeek]?.menu || []).map(normCalcMeal)
   } else if (calcPlan) {
-    if (calcPlan.duration === 'week') {
-      calcDays = calcPlan.days || []
-      displayMeals = (calcDays[selectedDay]?.menu || []).map(normCalcMeal)
-    } else if (calcPlan.duration === 'month') {
-      calcDays = calcPlan.weeks || []
-      displayMeals = (calcDays[selectedDay]?.menu || []).map(normCalcMeal)
-    } else {
-      displayMeals = (calcPlan.menu || []).map(normCalcMeal)
-    }
+    meals = (calcPlan.menu || []).map(normCalcMeal)
   }
+
+  const macros = [
+    { label: 'السعرات',    val: effectivePlan.calories, unit: 'kcal', color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-100',  icon: Flame },
+    { label: 'بروتين',     val: effectivePlan.protein,  unit: 'غ',    color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-100',   icon: Zap },
+    { label: 'كربوهيدرات', val: effectivePlan.carbs,    unit: 'غ',    color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-100', icon: Zap },
+    { label: 'دهون',       val: effectivePlan.fats,     unit: 'غ',    color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', icon: Droplets },
+  ].filter(m => m.val)
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -157,8 +295,11 @@ export default function NutritionPlan() {
               <h1 className="text-3xl font-extrabold text-white leading-tight">
                 الخطة<br /><span className="text-emerald-300">الغذائية</span>
               </h1>
+              {isWeeklyCalc && (
+                <p className="text-emerald-200 text-sm font-bold mt-2">{fmtDate(selectedDate)}</p>
+              )}
               {effectivePlan.note && (
-                <p className="text-emerald-200/80 text-sm font-medium mt-3 max-w-xs leading-relaxed">{effectivePlan.note}</p>
+                <p className="text-emerald-200/80 text-sm font-medium mt-2 max-w-xs leading-relaxed">{effectivePlan.note}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
@@ -173,6 +314,38 @@ export default function NutritionPlan() {
         </div>
       </div>
       <style>{`@media print { .print\\:hidden { display:none !important } aside, header { display:none !important } body { background:white } }`}</style>
+
+      {/* Week calendar — for weekly calc plans */}
+      {isWeeklyCalc && (
+        <WeekNav today={today} selectedDate={selectedDate} onSelect={handleSelectDate} />
+      )}
+
+      {/* Month week tabs — for monthly calc plans */}
+      {isMonthlyCalc && (calcPlan.weeks || []).length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {(calcPlan.weeks || []).map((w, i) => (
+            <button key={i} onClick={() => { setSelectedWeek(i); setOpenMeal(0) }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                selectedWeek === i
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              }`}>
+              {w.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Day label banner for weekly plan */}
+      {isWeeklyCalc && dayLabel && meals.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: 'linear-gradient(135deg,#064e3b,#065f46)' }}>
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-emerald-400 text-black px-3 py-1 rounded-full uppercase tracking-widest flex-shrink-0">
+            {isSameDay(selectedDate, today) ? '✦ اليوم' : '✦ وجبات اليوم'}
+          </div>
+          <p className="text-white font-extrabold text-sm">{dayLabel}</p>
+        </div>
+      )}
 
       {/* Macros */}
       {macros.length > 0 && (
@@ -210,81 +383,40 @@ export default function NutritionPlan() {
         </div>
       )}
 
-      {/* Day tabs for multi-day calculator plans */}
-      {calcDays && calcDays.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {calcDays.map((d, i) => (
-            <button key={i} onClick={() => { setSelectedDay(i); setOpenMeal(0) }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                selectedDay === i
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}>
-              {d.name}
-            </button>
+      {/* Meals */}
+      {meals.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <span>🍽️</span> {isWeeklyCalc && dayLabel ? `وجبات ${dayLabel}` : 'الوجبات اليومية'}
+          </h2>
+          {meals.map((meal, i) => (
+            <MealCard
+              key={`${selectedDate.toISOString()}-${i}`}
+              meal={meal}
+              idx={i}
+              open={openMeal === i}
+              onToggle={() => setOpenMeal(openMeal === i ? -1 : i)}
+            />
           ))}
         </div>
       )}
 
-      {/* Meals */}
-      {displayMeals.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-            <span>🍽️</span> الوجبات اليومية
-          </h2>
-          {displayMeals.map((meal, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <button onClick={() => setOpenMeal(openMeal === i ? -1 : i)}
-                className="w-full flex items-center gap-4 p-5 text-right hover:bg-slate-50 transition">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
-                  style={{ background: 'linear-gradient(135deg,#064e3b,#059669)' }}>
-                  <span>{['☀️','🕑','🌆','🌙','🥤'][i % 5]}</span>
-                </div>
-                <div className="flex-1 min-w-0 text-right">
-                  <p className="font-extrabold text-slate-900 text-sm">{meal.name || `وجبة ${i + 1}`}</p>
-                  {meal.time && (
-                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3" /> {meal.time}
-                    </p>
-                  )}
-                </div>
-                {meal.calories && (
-                  <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex-shrink-0">
-                    {meal.calories} kcal
-                  </span>
-                )}
-                {openMeal === i
-                  ? <ChevronUp className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                }
-              </button>
-
-              {openMeal === i && (
-                <div className="px-5 pb-5 border-t border-slate-50">
-                  {meal.description && (
-                    <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
-                  )}
-                  {meal.items?.length > 0 && (
-                    <div className="space-y-1.5 mt-3">
-                      {meal.items.map((item, j) => (
-                        <div key={j} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                          <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
-                          <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2.5 py-1 rounded-full">{item.amount}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {meal.macros && (meal.macros.protein || meal.macros.carbs || meal.macros.fats) && (
-                    <div className="flex gap-2 mt-4 flex-wrap">
-                      {meal.macros.protein && <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">بروتين: {meal.macros.protein}غ</span>}
-                      {meal.macros.carbs   && <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">كارب: {meal.macros.carbs}غ</span>}
-                      {meal.macros.fats    && <span className="text-xs font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-100">دهون: {meal.macros.fats}غ</span>}
-                    </div>
-                  )}
-                </div>
-              )}
+      {/* Rest day message for weekly plan */}
+      {meals.length === 0 && isWeeklyCalc && (
+        <div className="rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.15)' }}>
+          <div className="relative px-6 py-12 text-center" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
+            <span className="absolute inset-0 flex items-center justify-center text-[120px] leading-none opacity-[0.06] select-none pointer-events-none">🌿</span>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-white/10 text-white/50 px-3 py-1 rounded-full uppercase tracking-widest mb-4">
+                {isSameDay(selectedDate, today) ? '✦ اليوم' : '✦ يوم راحة'}
+              </div>
+              <h2 className="text-3xl font-black text-white leading-none tracking-tighter">راحة</h2>
+              <p className="text-white/50 font-bold text-sm mt-2">{dayLabel || fmtDate(selectedDate)}</p>
+              <p className="text-white/25 text-xs mt-3 max-w-xs mx-auto leading-relaxed font-medium">
+                يوم راحة غذائي — حافظ على الترطيب وتناول وجبات خفيفة وصحية
+              </p>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
