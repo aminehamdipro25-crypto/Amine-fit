@@ -127,6 +127,8 @@ export default function CalculatorPage() {
   const [selectedWeek, setSelectedWeek] = useState(0)
   const [showPicker, setShowPicker]   = useState(false)
   const [pickedClient, setPickedClient] = useState(null)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error'
   const chatEndRef = useRef(null)
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
@@ -175,6 +177,7 @@ export default function CalculatorPage() {
     setChatMessages([])
     setSelectedDay(0)
     setSelectedWeek(0)
+    setSaveStatus(null)
     try {
       const res  = await fetch('/api/ai-plan', {
         method: 'POST',
@@ -195,6 +198,24 @@ export default function CalculatorPage() {
     if (!result) return
     localStorage.setItem('amineFitPlan', JSON.stringify(result))
     window.open('/plan-report', '_blank')
+  }
+
+  async function savePlan() {
+    if (!pickedClient || !result) return
+    setSaveLoading(true)
+    setSaveStatus(null)
+    try {
+      const res = await fetch(`/api/admin/clients/${pickedClient.id}/calc-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: result }),
+      })
+      setSaveStatus(res.ok ? 'saved' : 'error')
+    } catch {
+      setSaveStatus('error')
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   async function sendChatMessage() {
@@ -721,12 +742,38 @@ export default function CalculatorPage() {
           </div>
         </StepCard>
 
-        {/* Export */}
+        {/* Export + Save */}
         <div className="flex gap-3">
           <button onClick={openReport}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md">
             <FileText className="w-5 h-5" />
             تصدير الخطة — طباعة PDF احترافية
+          </button>
+        </div>
+
+        {/* Save to client */}
+        <div className={`flex items-center gap-4 p-4 rounded-2xl border ${saveStatus === 'saved' ? 'bg-emerald-50 border-emerald-200' : saveStatus === 'error' ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="flex-1 min-w-0">
+            {pickedClient ? (
+              <div>
+                <p className="text-sm font-bold text-slate-800">حفظ الخطة في ملف العميل</p>
+                <p className="text-xs text-slate-500">سيتم الحفظ في ملف <span className="font-semibold text-primary-600">{pickedClient.name}</span> — يمكن استرجاعها لاحقاً</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-bold text-slate-600">حفظ الخطة في ملف العميل</p>
+                <p className="text-xs text-slate-400">اختر عميلاً من الأعلى أولاً لتفعيل الحفظ</p>
+              </div>
+            )}
+          </div>
+          {saveStatus === 'saved' && <span className="text-sm font-bold text-emerald-600 flex-shrink-0">✓ تم الحفظ</span>}
+          {saveStatus === 'error' && <span className="text-sm font-bold text-red-600 flex-shrink-0">خطأ — حاول مجدداً</span>}
+          <button
+            onClick={savePlan}
+            disabled={!pickedClient || saveLoading}
+            className="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-sm font-bold transition flex-shrink-0"
+          >
+            {saveLoading ? 'جاري...' : '💾 حفظ'}
           </button>
         </div>
 
