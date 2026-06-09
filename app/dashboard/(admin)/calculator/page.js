@@ -782,30 +782,33 @@ export default function CalculatorPage() {
           </button>
         </div>
 
-        {/* Save to client */}
-        <div className={`flex items-center gap-4 p-4 rounded-2xl border ${saveStatus === 'saved' ? 'bg-emerald-50 border-emerald-200' : saveStatus === 'error' ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
-          <div className="flex-1 min-w-0">
-            {pickedClient ? (
-              <div>
-                <p className="text-sm font-bold text-slate-800">حفظ الخطة في ملف العميل</p>
-                <p className="text-xs text-slate-500">سيتم الحفظ في ملف <span className="font-semibold text-primary-600">{pickedClient.name}</span> — يمكن استرجاعها لاحقاً</p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-sm font-bold text-slate-600">حفظ الخطة في ملف العميل</p>
-                <p className="text-xs text-slate-400">اختر عميلاً من الأعلى أولاً لتفعيل الحفظ</p>
-              </div>
-            )}
+        {/* Publish to client portal */}
+        <div className={`rounded-2xl border-2 overflow-hidden ${saveStatus === 'saved' ? 'border-emerald-400' : saveStatus === 'error' ? 'border-red-300' : 'border-primary-300'}`}>
+          <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'linear-gradient(135deg,#0a0a0a,#1a1a2e)' }}>
+            <span className="text-2xl">📲</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-extrabold">نشر الخطة على منصة العميل</p>
+              <p className="text-white/40 text-xs mt-0.5">
+                {pickedClient
+                  ? <>ستظهر لـ <span className="text-primary-300 font-bold">{pickedClient.name}</span> في صفحة الخطة الغذائية فوراً</>
+                  : 'اختر عميلاً من الأعلى أولاً'}
+              </p>
+            </div>
+            {saveStatus === 'saved' && <span className="text-sm font-extrabold text-emerald-400 flex-shrink-0">✓ تم النشر</span>}
+            {saveStatus === 'error'  && <span className="text-sm font-bold text-red-400 flex-shrink-0">خطأ — حاول مجدداً</span>}
+            <button
+              onClick={savePlan}
+              disabled={!pickedClient || saveLoading}
+              className="px-5 py-2.5 bg-primary-500 hover:bg-primary-400 disabled:bg-white/10 disabled:text-white/25 text-white rounded-xl text-sm font-extrabold transition flex-shrink-0 active:scale-95"
+            >
+              {saveLoading ? 'جاري النشر...' : '🚀 نشر الآن'}
+            </button>
           </div>
-          {saveStatus === 'saved' && <span className="text-sm font-bold text-emerald-600 flex-shrink-0">✓ تم الحفظ</span>}
-          {saveStatus === 'error' && <span className="text-sm font-bold text-red-600 flex-shrink-0">خطأ — حاول مجدداً</span>}
-          <button
-            onClick={savePlan}
-            disabled={!pickedClient || saveLoading}
-            className="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-sm font-bold transition flex-shrink-0"
-          >
-            {saveLoading ? 'جاري...' : '💾 حفظ'}
-          </button>
+          {saveStatus === 'saved' && (
+            <div className="px-4 py-2.5 bg-emerald-50 border-t border-emerald-200 text-xs text-emerald-700 font-medium">
+              ✓ الخطة الأسبوعية منشورة — يستطيع العميل رؤيتها الآن في منصته مع التقويم الأسبوعي
+            </div>
+          )}
         </div>
 
         {/* ── AI Chat Section ── */}

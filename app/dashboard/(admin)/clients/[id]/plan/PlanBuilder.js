@@ -1252,7 +1252,8 @@ export default function PlanBuilder({ client }) {
     return dayLabel
   }
 
-  /* Import macros + meals from the calculator — Redis first, then localStorage */
+  /* Import macros + meals from the calculator — Redis first, then localStorage.
+     For weekly/monthly plans, immediately publishes to client portal. */
   async function importFromCalculator() {
     setImportStatus('جاري التحميل...')
     try {
@@ -1283,9 +1284,27 @@ export default function PlanBuilder({ client }) {
       setCalcDayIdx(0)
       const dayLabel = applyCalcDay(plan, 0)
 
-      const savedNote = source === 'redis' ? ' (من الحفظ الأخير بالتعديلات)' : ' (من الجلسة الأخيرة)'
+      // Immediately publish full weekly/monthly plan to client portal
+      const isMultiDay = plan.days?.length > 0 || plan.weeks?.length > 0
+      if (isMultiDay && client?.id) {
+        try {
+          await fetch(`/api/admin/clients/${client.id}/calc-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan }),
+          })
+          try { localStorage.setItem('amineFitPlan', JSON.stringify(plan)) } catch {}
+          source = 'published'
+        } catch {}
+      }
+
+      const savedNote = source === 'published'
+        ? ' — ✓ نُشرت على منصة العميل'
+        : source === 'redis'
+          ? ' (من الحفظ الأخير بالتعديلات)'
+          : ' (من الجلسة الأخيرة)'
       setImportStatus('ok' + savedNote + dayLabel)
-      setTimeout(() => setImportStatus(''), 5000)
+      setTimeout(() => setImportStatus(''), 6000)
     } catch {
       setImportStatus('حدث خطأ أثناء الاستيراد.')
     }
