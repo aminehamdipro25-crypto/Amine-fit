@@ -205,29 +205,41 @@ export default function CalculatorPage() {
     setChatMessages(newMessages)
     setChatLoading(true)
     try {
+      const isMulti = result.duration !== 'day'
+      const allMenus = isMulti
+        ? (result.duration === 'week'
+            ? result.days.map(d => ({ name: d.name, menu: d.menu }))
+            : result.weeks.map(w => ({ name: w.name, menu: w.menu })))
+        : null
+
+      const requestBody = isMulti
+        ? { plan: result, allMenus, messages: newMessages }
+        : { plan: result, menu: currentMenu, messages: newMessages }
+
       const res = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: result, menu: currentMenu, messages: newMessages })
+        body: JSON.stringify(requestBody),
       })
-      const { menu: updatedMenu, message } = await res.json()
-      // Apply the updated menu to the right place in result
-      if (result.duration === 'day') {
-        setRes(r => ({ ...r, menu: updatedMenu }))
-      } else if (result.duration === 'week') {
-        setRes(r => {
-          const days = [...r.days]
-          days[selectedDay] = { ...days[selectedDay], menu: updatedMenu }
-          return { ...r, days }
-        })
-      } else if (result.duration === 'month') {
-        setRes(r => {
-          const weeks = [...r.weeks]
-          weeks[selectedWeek] = { ...weeks[selectedWeek], menu: updatedMenu }
-          return { ...r, weeks }
-        })
+      const data = await res.json()
+
+      if (isMulti && data.allMenus) {
+        if (result.duration === 'week') {
+          setRes(r => ({
+            ...r,
+            days: r.days.map((d, i) => ({ ...d, menu: data.allMenus[i]?.menu || d.menu })),
+          }))
+        } else {
+          setRes(r => ({
+            ...r,
+            weeks: r.weeks.map((w, i) => ({ ...w, menu: data.allMenus[i]?.menu || w.menu })),
+          }))
+        }
+      } else if (!isMulti && data.menu) {
+        setRes(r => ({ ...r, menu: data.menu }))
       }
-      setChatMessages(prev => [...prev, { role: 'assistant', content: message }])
+
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.message }])
     } catch {
       setChatMessages(prev => [...prev, { role: 'assistant', content: 'حدث خطأ في الاتصال — لم تتغير الخطة.' }])
     } finally {
@@ -726,7 +738,10 @@ export default function CalculatorPage() {
             </div>
             <div>
               <h3 className="font-bold text-violet-800 text-sm">محادثة مع الذكاء الاصطناعي — تعديل البرنامج</h3>
-              <p className="text-xs text-violet-500">للمدرب فقط • لا تظهر في تقرير العميل</p>
+              <p className="text-xs text-violet-500">
+                للمدرب فقط • لا تظهر في تقرير العميل
+                {result.duration !== 'day' && <span className="mr-1 text-violet-700 font-semibold">• ✦ التعديلات تُطبَّق على جميع {result.duration === 'week' ? 'أيام الأسبوع' : 'أسابيع الشهر'}</span>}
+              </p>
             </div>
             <span className="mr-auto text-[10px] font-extrabold bg-violet-100 text-violet-700 px-2 py-1 rounded-full">🔒 خاص</span>
           </div>
