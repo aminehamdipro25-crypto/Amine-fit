@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
@@ -20,7 +20,7 @@ const MONTHS_MAGHREBI = [
 ]
 function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
 
-// ─── Week navigator (nutrition — green theme) ─────────────────────────────────
+// ─── Week navigator — locked to current week and forward only ─────────────────
 function WeekNav({ today, selectedDate, onSelect }) {
   const [weekOffset, setWeekOffset] = useState(0)
 
@@ -35,11 +35,15 @@ function WeekNav({ today, selectedDate, onSelect }) {
     return `${MONTHS_MAGHREBI[mid.getMonth()]} ${mid.getFullYear()}`
   }, [days])
 
+  const canGoBack = weekOffset > 0
+
   return (
-    <div className="rounded-2xl px-4 py-4 select-none" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
+    <div className="no-print rounded-2xl px-4 py-4 select-none" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => setWeekOffset(o => o - 1)}
-          className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-all active:scale-90">
+        <button
+          onClick={() => canGoBack && setWeekOffset(o => o - 1)}
+          disabled={!canGoBack}
+          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 ${canGoBack ? 'bg-white/10 text-white/50 hover:text-white hover:bg-white/20' : 'bg-white/5 text-white/15 cursor-not-allowed'}`}>
           <ChevronRight className="w-4 h-4" />
         </button>
         <p className="text-white/50 text-xs font-bold tracking-wider">{monthLabel}</p>
@@ -78,7 +82,7 @@ const MEAL_ICONS = ['☀️', '🕑', '🌆', '🌙', '🥤', '🍽️']
 
 function MealCard({ meal, idx, open, onToggle }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden print-meal-card">
       <button onClick={onToggle}
         className="w-full flex items-center gap-4 p-5 text-right hover:bg-slate-50 transition">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
@@ -98,13 +102,16 @@ function MealCard({ meal, idx, open, onToggle }) {
             {meal.calories} kcal
           </span>
         )}
-        {open
-          ? <ChevronUp className="w-4 h-4 text-slate-300 flex-shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-slate-300 flex-shrink-0" />
-        }
+        <span className="no-print">
+          {open
+            ? <ChevronUp className="w-4 h-4 text-slate-300 flex-shrink-0" />
+            : <ChevronDown className="w-4 h-4 text-slate-300 flex-shrink-0" />
+          }
+        </span>
       </button>
 
-      {open && (
+      {/* Items always shown in print mode, toggleable otherwise */}
+      <div className={open ? '' : 'hidden print:block'}>
         <div className="px-5 pb-5 border-t border-slate-50">
           {meal.description && (
             <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
@@ -127,12 +134,12 @@ function MealCard({ meal, idx, open, onToggle }) {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-// ─── Normalize calculator-format meal to display format ───────────────────────
+// ─── Normalize calculator-format meal ─────────────────────────────────────────
 function normCalcMeal(m) {
   return {
     name:     m.name,
@@ -143,6 +150,29 @@ function normCalcMeal(m) {
   }
 }
 
+// ─── Macros bar (shared between day and print-week views) ─────────────────────
+function MacrosBar({ plan }) {
+  const items = [
+    { label: 'السعرات',    val: plan.calories, unit: 'kcal', color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-100',  icon: Flame },
+    { label: 'بروتين',     val: plan.protein,  unit: 'غ',    color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-100',   icon: Zap },
+    { label: 'كربوهيدرات', val: plan.carbs,    unit: 'غ',    color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-100', icon: Zap },
+    { label: 'دهون',       val: plan.fats,     unit: 'غ',    color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', icon: Droplets },
+  ].filter(m => m.val)
+  if (!items.length) return null
+  return (
+    <div className={`grid gap-3 ${items.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : `grid-cols-${items.length}`}`}>
+      {items.map(m => (
+        <div key={m.label} className={`${m.bg} rounded-2xl p-4 border ${m.border} text-center`}>
+          <m.icon className={`w-5 h-5 ${m.color} mx-auto mb-2`} />
+          <p className={`text-2xl font-extrabold ${m.color}`}>{m.val}</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{m.unit}</p>
+          <p className="text-xs text-slate-500 font-semibold mt-1">{m.label}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function NutritionPlan() {
   const router = useRouter()
@@ -150,6 +180,7 @@ export default function NutritionPlan() {
   const [loading, setLoading]       = useState(true)
   const [openMeal, setOpenMeal]     = useState(0)
   const [selectedWeek, setSelectedWeek] = useState(0)
+  const [printAllDays, setPrintAllDays] = useState(false)
 
   const today        = useMemo(() => startOfDay(new Date()), [])
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()))
@@ -164,10 +195,27 @@ export default function NutritionPlan() {
       .finally(() => setLoading(false))
   }, [router])
 
+  // Reset printAllDays after printing
+  useEffect(() => {
+    const handler = () => setPrintAllDays(false)
+    window.addEventListener('afterprint', handler)
+    return () => window.removeEventListener('afterprint', handler)
+  }, [])
+
   const handleSelectDate = useCallback((d) => {
     setSelectedDate(d)
     setOpenMeal(0)
   }, [])
+
+  function printDay() {
+    setPrintAllDays(false)
+    setTimeout(() => window.print(), 50)
+  }
+
+  function printWeek() {
+    setPrintAllDays(true)
+    setTimeout(() => window.print(), 100)
+  }
 
   if (loading) {
     return (
@@ -182,7 +230,6 @@ export default function NutritionPlan() {
   const plan     = client.plan?.nutrition
   const calcPlan = client.nutritionCalcPlan
 
-  // Effective plan metadata
   const effectivePlan = plan || (calcPlan ? {
     calories:  calcPlan.target,
     protein:   calcPlan.ex?.macros?.protein,
@@ -198,24 +245,8 @@ export default function NutritionPlan() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="relative rounded-3xl overflow-hidden mb-6" style={{
-          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
-          minHeight: 260
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)', minHeight: 260
         }}>
-          <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-            {[
-              { e: '🥗', t: '8%',  l: '5%',  s: 64, d: -15 },
-              { e: '🍎', t: '12%', r: '8%',  s: 56, d: 20 },
-              { e: '🥦', t: '55%', l: '3%',  s: 52, d: 10 },
-              { e: '🥑', t: '60%', r: '5%',  s: 60, d: -12 },
-              { e: '🍗', t: '30%', l: '45%', s: 80, d: 8 },
-              { e: '💧', t: '75%', l: '30%', s: 44, d: 0 },
-            ].map((item, i) => (
-              <span key={i} className="absolute opacity-10" style={{
-                top: item.t, left: item.l, right: item.r,
-                fontSize: item.s, transform: `rotate(${item.d}deg)`, lineHeight: 1
-              }}>{item.e}</span>
-            ))}
-          </div>
           <div className="relative z-10 flex flex-col items-center justify-center text-center py-16 px-6">
             <div className="text-6xl mb-4">🥗</div>
             <h2 className="text-2xl font-extrabold text-white mb-2">الخطة الغذائية قيد الإعداد</h2>
@@ -226,9 +257,7 @@ export default function NutritionPlan() {
     )
   }
 
-  // ─── Resolve display meals ────────────────────────────────────────────────
-  // Weekly/monthly calc plan takes priority — lets admin push full-week plans
-  // without single-day PlanBuilder meals blocking the calendar view
+  // ─── Resolve meals ────────────────────────────────────────────────────────
   const isWeeklyCalc  = calcPlan?.duration === 'week'
   const isMonthlyCalc = !isWeeklyCalc && calcPlan?.duration === 'month'
   const hasPlanMeals  = !isWeeklyCalc && !isMonthlyCalc && plan?.meals?.length > 0
@@ -240,8 +269,7 @@ export default function NutritionPlan() {
     meals = plan.meals
   } else if (isWeeklyCalc) {
     const calcDays = calcPlan.days || []
-    // DAY_NAMES[i] index === JS getDay() — الأحد=0, الاثنين=1, ...
-    const dayIdx = selectedDate.getDay()
+    const dayIdx = selectedDate.getDay()   // 0=Sun … 6=Sat matches DAY_NAMES order
     meals    = (calcDays[dayIdx]?.menu || []).map(normCalcMeal)
     dayLabel = calcDays[dayIdx]?.name || ''
   } else if (isMonthlyCalc) {
@@ -251,45 +279,43 @@ export default function NutritionPlan() {
     meals = (calcPlan.menu || []).map(normCalcMeal)
   }
 
-  const macros = [
-    { label: 'السعرات',    val: effectivePlan.calories, unit: 'kcal', color: 'text-amber-700',  bg: 'bg-amber-50',  border: 'border-amber-100',  icon: Flame },
-    { label: 'بروتين',     val: effectivePlan.protein,  unit: 'غ',    color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-100',   icon: Zap },
-    { label: 'كربوهيدرات', val: effectivePlan.carbs,    unit: 'غ',    color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-100', icon: Zap },
-    { label: 'دهون',       val: effectivePlan.fats,     unit: 'غ',    color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', icon: Droplets },
-  ].filter(m => m.val)
+  // All 7 days for full-week print
+  const allCalcDays = isWeeklyCalc ? (calcPlan.days || []) : []
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
 
-      {/* Hero banner */}
-      <div className="relative rounded-3xl overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%)',
-        minHeight: 200
+      {/* ── Print styles ── */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important }
+          aside, header, nav { display: none !important }
+          body { background: white }
+          .print-meal-card button { pointer-events: none }
+          .print-day-only { display: block !important }
+          .print-week-all { display: block !important }
+        }
+        .print-week-all { display: none }
+      `}</style>
+
+      {/* ── Hero banner ── */}
+      <div className="no-print relative rounded-3xl overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%)', minHeight: 200
       }}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
           {[
-            { e: '🥗', top: '5%',  left: '2%',  size: 72, deg: -15 },
-            { e: '🍎', top: '8%',  right: '4%', size: 60, deg: 20 },
-            { e: '🥦', top: '55%', left: '1%',  size: 56, deg: 10 },
+            { e: '🥗', top: '5%', left: '2%', size: 72, deg: -15 },
+            { e: '🍎', top: '8%', right: '4%', size: 60, deg: 20 },
+            { e: '🥦', top: '55%', left: '1%', size: 56, deg: 10 },
             { e: '🥑', top: '58%', right: '3%', size: 64, deg: -12 },
             { e: '🍗', top: '25%', left: '42%', size: 90, deg: 8 },
-            { e: '💧', top: '70%', left: '28%', size: 48, deg: 0 },
-            { e: '🥚', top: '15%', left: '22%', size: 44, deg: -5 },
-            { e: '🥩', top: '68%', right: '22%',size: 54, deg: 15 },
-            { e: '🍌', top: '40%', right: '15%',size: 50, deg: -20 },
-            { e: '🫐', top: '45%', left: '15%', size: 42, deg: 5 },
           ].map((item, i) => (
             <span key={i} className="absolute opacity-[0.12]" style={{
               top: item.top, left: item.left, right: item.right,
-              fontSize: item.size, lineHeight: 1,
-              transform: `rotate(${item.deg}deg)`,
+              fontSize: item.size, lineHeight: 1, transform: `rotate(${item.deg}deg)`,
             }}>{item.e}</span>
           ))}
         </div>
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)',
-          backgroundSize: '40px 40px'
-        }} />
         <div className="relative z-10 px-6 py-8">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -304,33 +330,52 @@ export default function NutritionPlan() {
                 <p className="text-emerald-200/80 text-sm font-medium mt-2 max-w-xs leading-relaxed">{effectivePlan.note}</p>
               )}
             </div>
-            <div className="flex flex-col items-end gap-3">
-              <div className="text-7xl opacity-80 select-none">🥗</div>
-              <button onClick={() => window.print()}
-                className="print:hidden flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-xs font-bold rounded-xl transition border border-white/10">
-                <Printer className="w-3.5 h-3.5" />
-                طباعة / PDF
-              </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="text-6xl opacity-70 select-none">🥗</div>
+              {/* Print buttons */}
+              <div className="flex gap-2">
+                <button onClick={printDay}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-xs font-bold rounded-xl transition border border-white/10">
+                  <Printer className="w-3.5 h-3.5" />
+                  اليوم
+                </button>
+                {isWeeklyCalc && allCalcDays.length > 0 && (
+                  <button onClick={printWeek}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-xs font-bold rounded-xl transition border border-emerald-400/30">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    الأسبوع
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <style>{`@media print { .print\\:hidden { display:none !important } aside, header { display:none !important } body { background:white } }`}</style>
 
-      {/* Week calendar — for weekly calc plans */}
+      {/* ── Print header (only in print mode) ── */}
+      <div className="hidden print:block mb-4">
+        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">برنامج التغذية المخصص</p>
+        <h1 className="text-2xl font-extrabold text-slate-900">الخطة الغذائية</h1>
+        {isWeeklyCalc && !printAllDays && dayLabel && (
+          <p className="text-sm text-slate-600 mt-1">{dayLabel} — {fmtDate(selectedDate)}</p>
+        )}
+        {isWeeklyCalc && printAllDays && (
+          <p className="text-sm text-slate-600 mt-1">الأسبوع الكامل — {fmtDate(today)}</p>
+        )}
+      </div>
+
+      {/* ── Week calendar (hidden in print) ── */}
       {isWeeklyCalc && (
         <WeekNav today={today} selectedDate={selectedDate} onSelect={handleSelectDate} />
       )}
 
-      {/* Month week tabs — for monthly calc plans */}
+      {/* ── Month week tabs ── */}
       {isMonthlyCalc && (calcPlan.weeks || []).length > 1 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           {(calcPlan.weeks || []).map((w, i) => (
             <button key={i} onClick={() => { setSelectedWeek(i); setOpenMeal(0) }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                selectedWeek === i
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                selectedWeek === i ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
               }`}>
               {w.name}
             </button>
@@ -338,9 +383,9 @@ export default function NutritionPlan() {
         </div>
       )}
 
-      {/* Day label banner for weekly plan */}
+      {/* ── Day label banner ── */}
       {isWeeklyCalc && dayLabel && meals.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+        <div className="no-print flex items-center gap-3 px-4 py-3 rounded-2xl"
           style={{ background: 'linear-gradient(135deg,#064e3b,#065f46)' }}>
           <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-emerald-400 text-black px-3 py-1 rounded-full uppercase tracking-widest flex-shrink-0">
             {isSameDay(selectedDate, today) ? '✦ اليوم' : '✦ وجبات اليوم'}
@@ -349,21 +394,10 @@ export default function NutritionPlan() {
         </div>
       )}
 
-      {/* Macros */}
-      {macros.length > 0 && (
-        <div className={`grid gap-3 ${macros.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : `grid-cols-${macros.length}`}`}>
-          {macros.map(m => (
-            <div key={m.label} className={`${m.bg} rounded-2xl p-4 border ${m.border} text-center`}>
-              <m.icon className={`w-5 h-5 ${m.color} mx-auto mb-2`} />
-              <p className={`text-2xl font-extrabold ${m.color}`}>{m.val}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{m.unit}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">{m.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── Macros ── */}
+      <MacrosBar plan={effectivePlan} />
 
-      {/* Water & Fiber */}
+      {/* ── Water & Fiber ── */}
       {(effectivePlan.waterGoal || effectivePlan.fiberG) && (
         <div className="grid grid-cols-2 gap-3">
           {effectivePlan.waterGoal && (
@@ -385,44 +419,94 @@ export default function NutritionPlan() {
         </div>
       )}
 
-      {/* Meals */}
-      {meals.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-            <span>🍽️</span> {isWeeklyCalc && dayLabel ? `وجبات ${dayLabel}` : 'الوجبات اليومية'}
-          </h2>
-          {meals.map((meal, i) => (
-            <MealCard
-              key={`${selectedDate.toISOString()}-${i}`}
-              meal={meal}
-              idx={i}
-              open={openMeal === i}
-              onToggle={() => setOpenMeal(openMeal === i ? -1 : i)}
-            />
-          ))}
-        </div>
-      )}
+      {/* ══ SINGLE DAY VIEW (normal + single-day print) ═══════════════════════ */}
+      <div className={printAllDays ? 'print:hidden' : ''}>
+        {meals.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+              <span>🍽️</span> {isWeeklyCalc && dayLabel ? `وجبات ${dayLabel}` : 'الوجبات اليومية'}
+            </h2>
+            {meals.map((meal, i) => (
+              <MealCard
+                key={`${selectedDate.toISOString()}-${i}`}
+                meal={meal} idx={i}
+                open={openMeal === i}
+                onToggle={() => setOpenMeal(openMeal === i ? -1 : i)}
+              />
+            ))}
+          </div>
+        )}
 
-      {/* Rest day message for weekly plan */}
-      {meals.length === 0 && isWeeklyCalc && (
-        <div className="rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.15)' }}>
-          <div className="relative px-6 py-12 text-center" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
-            <span className="absolute inset-0 flex items-center justify-center text-[120px] leading-none opacity-[0.06] select-none pointer-events-none">🌿</span>
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-white/10 text-white/50 px-3 py-1 rounded-full uppercase tracking-widest mb-4">
-                {isSameDay(selectedDate, today) ? '✦ اليوم' : '✦ يوم راحة'}
+        {/* Rest day */}
+        {meals.length === 0 && isWeeklyCalc && (
+          <div className="no-print rounded-3xl overflow-hidden">
+            <div className="relative px-6 py-12 text-center" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold bg-white/10 text-white/50 px-3 py-1 rounded-full uppercase tracking-widest mb-4">
+                  {isSameDay(selectedDate, today) ? '✦ اليوم' : '✦ يوم راحة'}
+                </div>
+                <h2 className="text-3xl font-black text-white leading-none tracking-tighter">راحة</h2>
+                <p className="text-white/50 font-bold text-sm mt-2">{dayLabel || fmtDate(selectedDate)}</p>
               </div>
-              <h2 className="text-3xl font-black text-white leading-none tracking-tighter">راحة</h2>
-              <p className="text-white/50 font-bold text-sm mt-2">{dayLabel || fmtDate(selectedDate)}</p>
-              <p className="text-white/25 text-xs mt-3 max-w-xs mx-auto leading-relaxed font-medium">
-                يوم راحة غذائي — حافظ على الترطيب وتناول وجبات خفيفة وصحية
-              </p>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* ══ FULL WEEK PRINT VIEW ═════════════════════════════════════════════ */}
+      {isWeeklyCalc && (
+        <div className="print-week-all space-y-8">
+          {allCalcDays.map((day, di) => {
+            const dayMeals = (day.menu || []).map(normCalcMeal)
+            if (!dayMeals.length) return null
+            return (
+              <div key={di} className="break-inside-avoid">
+                <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-emerald-600">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-extrabold flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#064e3b,#059669)' }}>
+                    {di + 1}
+                  </div>
+                  <h2 className="text-lg font-extrabold text-slate-900">{day.name}</h2>
+                </div>
+                <div className="space-y-2">
+                  {dayMeals.map((meal, mi) => (
+                    <div key={mi} className="bg-white rounded-xl border border-slate-100 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          {meal.calories ? `${meal.calories} kcal` : ''}
+                        </span>
+                        <div className="text-right">
+                          <p className="font-extrabold text-slate-900 text-sm">{meal.name || `وجبة ${mi + 1}`}</p>
+                          {meal.time && <p className="text-xs text-slate-400">{meal.time}</p>}
+                        </div>
+                      </div>
+                      {meal.items?.length > 0 && (
+                        <div className="space-y-1 mt-2">
+                          {meal.items.map((item, ji) => (
+                            <div key={ji} className="flex items-center justify-between text-sm py-1 border-b border-slate-50 last:border-0">
+                              <span className="text-slate-400 text-xs">{item.amount}</span>
+                              <span className="text-slate-700 font-semibold">{item.food}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {meal.macros && (meal.macros.protein || meal.macros.carbs || meal.macros.fats) && (
+                        <div className="flex gap-2 mt-2 flex-wrap justify-end">
+                          {meal.macros.protein && <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">بروتين: {meal.macros.protein}غ</span>}
+                          {meal.macros.carbs   && <span className="text-[11px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">كارب: {meal.macros.carbs}غ</span>}
+                          {meal.macros.fats    && <span className="text-[11px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full">دهون: {meal.macros.fats}غ</span>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* Tips */}
+      {/* ── Tips ── */}
       {effectivePlan.tips?.length > 0 && (
         <div className="rounded-2xl overflow-hidden border border-emerald-100">
           <div className="px-5 py-4 flex items-center gap-2" style={{ background: 'linear-gradient(135deg,#064e3b,#065f46)' }}>
@@ -440,7 +524,7 @@ export default function NutritionPlan() {
         </div>
       )}
 
-      <p className="text-center text-slate-400 text-xs font-medium pb-4">
+      <p className="no-print text-center text-slate-400 text-xs font-medium pb-4">
         أسئلة عن خطتك؟{' '}
         <a href="tel:+97430653759" className="text-emerald-600 font-bold hover:text-emerald-500 transition">
           تواصل مع المدرب أمين
