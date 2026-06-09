@@ -1318,6 +1318,21 @@ export default function PlanBuilder({ client }) {
         body: JSON.stringify({ plan }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      // If we have a full weekly/monthly calc plan loaded, also persist it to
+      // nutritionCalcPlan so the client portal shows the full weekly calendar
+      if (calcPlanData && (calcPlanData.days?.length > 0 || calcPlanData.weeks?.length > 0)) {
+        try {
+          await fetch(`/api/admin/clients/${client.id}/calc-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan: calcPlanData }),
+          })
+          // Keep localStorage in sync for PDF report
+          try { localStorage.setItem('amineFitPlan', JSON.stringify(calcPlanData)) } catch {}
+        } catch {}
+      }
+
       setToast('تم حفظ الخطة بنجاح ✓')
     } catch {
       setToast('❌ فشل الحفظ — تحقق من الاتصال وأعد المحاولة')
@@ -1425,16 +1440,22 @@ export default function PlanBuilder({ client }) {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!client?.id) return
-                    try {
-                      const r = await fetch(`/api/admin/clients/${client.id}/calc-plan`)
-                      const d = await r.json()
-                      if (!d.plan) { alert('لا توجد خطة محفوظة في الحاسبة لهذا العميل'); return }
-                      localStorage.setItem('amineFitPlan', JSON.stringify(d.plan))
-                      window.open('/plan-report', '_blank')
-                    } catch {
-                      alert('حدث خطأ أثناء تحميل الخطة')
+                    // Try Redis first, then React state (calcPlanData), then localStorage
+                    let planData = null
+                    if (client?.id) {
+                      try {
+                        const r = await fetch(`/api/admin/clients/${client.id}/calc-plan`)
+                        const d = await r.json()
+                        if (d.plan) planData = d.plan
+                      } catch {}
                     }
+                    if (!planData && calcPlanData) planData = calcPlanData
+                    if (!planData) {
+                      try { const raw = localStorage.getItem('amineFitPlan'); if (raw) planData = JSON.parse(raw) } catch {}
+                    }
+                    if (!planData) { alert('لا توجد خطة محفوظة — احفظ الخطة أولاً ثم حاول مجدداً'); return }
+                    localStorage.setItem('amineFitPlan', JSON.stringify(planData))
+                    window.open('/plan-report', '_blank')
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-slate-500 text-xs font-bold hover:bg-slate-50 transition"
                   title="فتح تقرير PDF من الخطة المحفوظة في الحاسبة"

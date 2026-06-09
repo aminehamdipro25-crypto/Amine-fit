@@ -227,9 +227,11 @@ export default function NutritionPlan() {
   }
 
   // ─── Resolve display meals ────────────────────────────────────────────────
-  const hasPlanMeals  = plan?.meals?.length > 0
-  const isWeeklyCalc  = !hasPlanMeals && calcPlan?.duration === 'week'
-  const isMonthlyCalc = !hasPlanMeals && calcPlan?.duration === 'month'
+  // Weekly/monthly calc plan takes priority — lets admin push full-week plans
+  // without single-day PlanBuilder meals blocking the calendar view
+  const isWeeklyCalc  = calcPlan?.duration === 'week'
+  const isMonthlyCalc = !isWeeklyCalc && calcPlan?.duration === 'month'
+  const hasPlanMeals  = !isWeeklyCalc && !isMonthlyCalc && plan?.meals?.length > 0
 
   let meals = []
   let dayLabel = ''
