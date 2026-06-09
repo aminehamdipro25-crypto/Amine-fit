@@ -1195,16 +1195,40 @@ export default function PlanBuilder({ client }) {
     }
   }
 
-  /* Import macros + meals from the calculator (localStorage) */
-  function importFromCalculator() {
+  /* Import macros + meals from the calculator — Redis first, then localStorage */
+  async function importFromCalculator() {
+    setImportStatus('جاري التحميل...')
     try {
-      const raw = localStorage.getItem('amineFitPlan')
-      if (!raw) {
+      let plan = null
+      let source = ''
+
+      // 1. Try Redis first — contains AI-modified version
+      if (client?.id) {
+        try {
+          const r = await fetch(`/api/admin/clients/${client.id}/calc-plan`)
+          const d = await r.json()
+          if (d.plan) { plan = d.plan; source = 'redis' }
+        } catch {}
+      }
+
+      // 2. Fall back to localStorage
+      if (!plan) {
+        const raw = localStorage.getItem('amineFitPlan')
+        if (raw) { plan = JSON.parse(raw); source = 'local' }
+      }
+
+      if (!plan) {
         setImportStatus('لم تُنشئ خطة في الحاسبة بعد — اذهب إلى الحاسبة أولاً ثم ارجع هنا.')
         return
       }
-      const plan = JSON.parse(raw)
-      const { target, ex, menu } = plan
+
+      const { target, ex } = plan
+
+      // Resolve menu — handle day / week / month structures
+      let menu = plan.menu
+      let dayLabel = ''
+      if (!menu && plan.days?.length)  { menu = plan.days[0].menu;  dayLabel = ` — ${plan.days[0].name}` }
+      if (!menu && plan.weeks?.length) { menu = plan.weeks[0].menu; dayLabel = ` — ${plan.weeks[0].name}` }
 
       // Macros
       if (target)      setCalories(String(Math.round(target)))
@@ -1213,6 +1237,9 @@ export default function PlanBuilder({ client }) {
         setCarbs(String(Math.round(ex.macros.carbs    || 0)))
         setFats(String(Math.round(ex.macros.fat       || 0)))
       }
+      const fiberVal = ex?.fiber?.g ?? ex?.fiber
+      if (plan.water?.liters) setWater(String(plan.water.liters))
+      if (fiberVal)           setFiber(String(Math.round(fiberVal)))
 
       // Meals — link items to food DB using fuzzy matching
       if (Array.isArray(menu) && menu.length > 0) {
@@ -1241,8 +1268,9 @@ export default function PlanBuilder({ client }) {
         }))
       }
 
-      setImportStatus('ok')
-      setTimeout(() => setImportStatus(''), 4000)
+      const savedNote = source === 'redis' ? ' (من الحفظ الأخير بالتعديلات)' : ' (من الجلسة الأخيرة)'
+      setImportStatus('ok' + savedNote + dayLabel)
+      setTimeout(() => setImportStatus(''), 5000)
     } catch {
       setImportStatus('حدث خطأ أثناء الاستيراد.')
     }
@@ -1497,16 +1525,17 @@ export default function PlanBuilder({ client }) {
             )}
 
             {/* Import status message */}
-            {importStatus && importStatus !== 'ok' && (
-              <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
+            {importStatus && !importStatus.startsWith('ok') && (
+              <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl text-xs font-medium ${importStatus === 'جاري التحميل...' ? 'bg-violet-50 border border-violet-200 text-violet-700' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 {importStatus}
               </div>
             )}
-            {importStatus === 'ok' && (
+            {importStatus?.startsWith('ok') && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-bold">
                 <CheckCircle2 className="w-4 h-4" />
-                تم توليد الخطة بنجاح ✓
+                تم استيراد الخطة بنجاح ✓
+                {importStatus.length > 2 && <span className="font-normal text-emerald-600">{importStatus.slice(2)}</span>}
               </div>
             )}
 
