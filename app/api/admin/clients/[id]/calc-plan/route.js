@@ -27,3 +27,12 @@ export async function POST(req, { params }) {
   if (!updated) return NextResponse.json({ error: 'client not found' }, { status: 404 })
   return NextResponse.json({ ok: true })
 }
+
+export async function DELETE(req, { params }) {
+  const deny = await requireAdmin()
+  if (deny) return deny
+  const { id } = await params
+  const updated = await updateSubmission(id, { nutritionCalcPlan: null })
+  if (!updated) return NextResponse.json({ error: 'client not found' }, { status: 404 })
+  return NextResponse.json({ ok: true })
+}

@@ -878,6 +878,8 @@ export default function PlanBuilder({ client }) {
   const [nutritionTips, setNTips] = useState(existing.nutrition?.tips?.join('\n') || '')
   const [meals, setMeals]       = useState(() => linkMealsToDB(existing.nutrition?.meals || []))
   const [importStatus, setImportStatus] = useState('')
+  const [calcPlanData, setCalcPlanData] = useState(null)
+  const [calcDayIdx,   setCalcDayIdx]   = useState(0)
 
   // Training state
   const [daysPerWeek, setDPW]   = useState(existing.training?.daysPerWeek || '')
@@ -1195,6 +1197,61 @@ export default function PlanBuilder({ client }) {
     }
   }
 
+  /* Apply meals from a specific day of a calculator plan */
+  function applyCalcDay(plan, dayIdx) {
+    const { target, ex } = plan
+    let menu = null
+    let dayLabel = ''
+    if (plan.days?.length) {
+      const d = plan.days[dayIdx] || plan.days[0]
+      menu = d?.menu ?? null
+      dayLabel = ` — ${d?.name || ''}`
+    } else if (plan.weeks?.length) {
+      const w = plan.weeks[dayIdx] || plan.weeks[0]
+      menu = w?.menu ?? null
+      dayLabel = ` — ${w?.name || ''}`
+    } else {
+      menu = plan.menu ?? null
+    }
+
+    if (target) setCalories(String(Math.round(target)))
+    if (ex?.macros) {
+      setProtein(String(Math.round(ex.macros.protein || 0)))
+      setCarbs(String(Math.round(ex.macros.carbs    || 0)))
+      setFats(String(Math.round(ex.macros.fat       || 0)))
+    }
+    const fiberVal = ex?.fiber?.g ?? ex?.fiber
+    if (plan.water?.liters) setWater(String(plan.water.liters))
+    if (fiberVal)           setFiber(String(Math.round(fiberVal)))
+
+    if (Array.isArray(menu) && menu.length > 0) {
+      setMeals(menu.map(m => {
+        const linkedItems = (m.items || []).map(item => {
+          const dbFood = findFoodInDB(item.food)
+          if (dbFood) {
+            const servings = item.servings || 1
+            return makeDBItem(dbFood, servings)
+          }
+          return { food: item.food || '', amount: item.amount || '' }
+        })
+        const totals = calcItemTotals(linkedItems)
+        return {
+          name:        m.name || '',
+          time:        m.time || '',
+          calories:    totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
+          description: '',
+          macros: {
+            protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
+            carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
+            fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
+          },
+          items: linkedItems,
+        }
+      }))
+    }
+    return dayLabel
+  }
+
   /* Import macros + meals from the calculator — Redis first, then localStorage */
   async function importFromCalculator() {
     setImportStatus('جاري التحميل...')
@@ -1222,51 +1279,9 @@ export default function PlanBuilder({ client }) {
         return
       }
 
-      const { target, ex } = plan
-
-      // Resolve menu — handle day / week / month structures
-      let menu = plan.menu
-      let dayLabel = ''
-      if (!menu && plan.days?.length)  { menu = plan.days[0].menu;  dayLabel = ` — ${plan.days[0].name}` }
-      if (!menu && plan.weeks?.length) { menu = plan.weeks[0].menu; dayLabel = ` — ${plan.weeks[0].name}` }
-
-      // Macros
-      if (target)      setCalories(String(Math.round(target)))
-      if (ex?.macros) {
-        setProtein(String(Math.round(ex.macros.protein || 0)))
-        setCarbs(String(Math.round(ex.macros.carbs    || 0)))
-        setFats(String(Math.round(ex.macros.fat       || 0)))
-      }
-      const fiberVal = ex?.fiber?.g ?? ex?.fiber
-      if (plan.water?.liters) setWater(String(plan.water.liters))
-      if (fiberVal)           setFiber(String(Math.round(fiberVal)))
-
-      // Meals — link items to food DB using fuzzy matching
-      if (Array.isArray(menu) && menu.length > 0) {
-        setMeals(menu.map(m => {
-          const linkedItems = (m.items || []).map(item => {
-            const dbFood = findFoodInDB(item.food)
-            if (dbFood) {
-              const servings = item.servings || 1
-              return makeDBItem(dbFood, servings)
-            }
-            return { food: item.food || '', amount: item.amount || '' }
-          })
-          const totals = calcItemTotals(linkedItems)
-          return {
-            name:        m.name || '',
-            time:        m.time || '',
-            calories:    totals ? String(Math.round(totals.kcal)) : String(Math.round(m.kcal || 0)),
-            description: '',
-            macros: {
-              protein: totals ? String(Math.round(totals.protein)) : String(Math.round(m.protein || 0)),
-              carbs:   totals ? String(Math.round(totals.carbs))   : String(Math.round(m.carbs   || 0)),
-              fats:    totals ? String(Math.round(totals.fat))     : String(Math.round(m.fat     || 0)),
-            },
-            items: linkedItems,
-          }
-        }))
-      }
+      setCalcPlanData(plan)
+      setCalcDayIdx(0)
+      const dayLabel = applyCalcDay(plan, 0)
 
       const savedNote = source === 'redis' ? ' (من الحفظ الأخير بالتعديلات)' : ' (من الجلسة الأخيرة)'
       setImportStatus('ok' + savedNote + dayLabel)
@@ -1536,6 +1551,32 @@ export default function PlanBuilder({ client }) {
                 <CheckCircle2 className="w-4 h-4" />
                 تم استيراد الخطة بنجاح ✓
                 {importStatus.length > 2 && <span className="font-normal text-emerald-600">{importStatus.slice(2)}</span>}
+              </div>
+            )}
+
+            {/* Day picker — shown for weekly/monthly calculator plans */}
+            {calcPlanData?.days?.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                <span className="text-xs text-amber-700 font-bold flex-shrink-0">اختر اليوم:</span>
+                {calcPlanData.days.map((d, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setCalcDayIdx(i)
+                      applyCalcDay(calcPlanData, i)
+                      setImportStatus(`ok — ${d.name}`)
+                      setTimeout(() => setImportStatus(''), 3000)
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                      calcDayIdx === i
+                        ? 'bg-amber-500 border-amber-500 text-white'
+                        : 'bg-white border-amber-300 text-amber-700 hover:bg-amber-100'
+                    }`}
+                  >
+                    {d.name}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -1907,12 +1948,16 @@ export default function PlanBuilder({ client }) {
         <div className="flex items-center justify-between pb-6">
           {/* Delete current tab's plan */}
           <button
-            onClick={() => {
+            onClick={async () => {
               const label = tab === 'nutrition' ? 'الخطة الغذائية' : 'الخطة التدريبية'
               if (!confirm(`هل أنت متأكد من حذف ${label} كاملاً؟ لا يمكن التراجع.`)) return
               if (tab === 'nutrition') {
                 setCalories(''); setProtein(''); setCarbs(''); setFats('')
                 setWater(''); setFiber(''); setNNote(''); setNTips(''); setMeals([])
+                setCalcPlanData(null); setCalcDayIdx(0); setImportStatus('')
+                if (client?.id) {
+                  try { await fetch(`/api/admin/clients/${client.id}/calc-plan`, { method: 'DELETE' }) } catch {}
+                }
               } else {
                 setDPW(''); setDuration(''); setLevel(''); setTNote(''); setTTips(''); setDays([])
               }
