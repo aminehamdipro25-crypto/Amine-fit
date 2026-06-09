@@ -3,11 +3,23 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer } from 'lucide-react'
 
+// Normalize a calculator-format meal to the PlanBuilder display format
+function normCalcMeal(m) {
+  return {
+    name: m.name,
+    time: m.time,
+    calories: m.kcal,
+    items: (m.items || []).map(i => ({ food: i.food, amount: i.amount })),
+    macros: { protein: m.protein, carbs: m.carbs, fats: m.fat },
+  }
+}
+
 export default function NutritionPlan() {
   const router = useRouter()
   const [client, setClient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [openMeal, setOpenMeal] = useState(0)
+  const [selectedDay, setSelectedDay] = useState(0)
 
   useEffect(() => {
     fetch('/api/client/me')
@@ -30,16 +42,27 @@ export default function NutritionPlan() {
   if (!client) return null
 
   const plan = client.plan?.nutrition
+  const calcPlan = client.nutritionCalcPlan
 
-  if (!plan) {
+  // Derive effective plan data — PlanBuilder takes priority, then calculator
+  const effectivePlan = plan || (calcPlan ? {
+    calories:  calcPlan.target,
+    protein:   calcPlan.ex?.macros?.protein,
+    carbs:     calcPlan.ex?.macros?.carbs,
+    fats:      calcPlan.ex?.macros?.fat,
+    waterGoal: calcPlan.water?.liters,
+    fiberG:    calcPlan.ex?.fiber?.g ?? calcPlan.ex?.fiber,
+    note:      null,
+    tips:      [],
+  } : null)
+
+  if (!effectivePlan) {
     return (
       <div className="max-w-2xl mx-auto">
-        {/* Empty state hero */}
         <div className="relative rounded-3xl overflow-hidden mb-6" style={{
           background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
           minHeight: 260
         }}>
-          {/* Floating food emojis */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
             {[
               { e: '🥗', t: '8%',  l: '5%',  s: 64, r: -15 },
@@ -70,11 +93,30 @@ export default function NutritionPlan() {
   }
 
   const macros = [
-    { label: 'السعرات',    val: plan.calories, unit: 'kcal', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-100', icon: Flame },
-    { label: 'بروتين',     val: plan.protein,  unit: 'غ',    color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-100',  icon: Zap },
-    { label: 'كربوهيدرات', val: plan.carbs,    unit: 'غ',    color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-100',icon: Zap },
-    { label: 'دهون',       val: plan.fats,     unit: 'غ',    color: 'text-orange-700',  bg: 'bg-orange-50',  border: 'border-orange-100',icon: Droplets },
+    { label: 'السعرات',    val: effectivePlan.calories, unit: 'kcal', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-100', icon: Flame },
+    { label: 'بروتين',     val: effectivePlan.protein,  unit: 'غ',    color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-100',  icon: Zap },
+    { label: 'كربوهيدرات', val: effectivePlan.carbs,    unit: 'غ',    color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-100',icon: Zap },
+    { label: 'دهون',       val: effectivePlan.fats,     unit: 'غ',    color: 'text-orange-700',  bg: 'bg-orange-50',  border: 'border-orange-100',icon: Droplets },
   ].filter(m => m.val)
+
+  // Resolve display meals — PlanBuilder manual meals first, then calculator plan
+  const hasPlanMeals = plan?.meals?.length > 0
+  let displayMeals = []
+  let calcDays = null
+
+  if (hasPlanMeals) {
+    displayMeals = plan.meals
+  } else if (calcPlan) {
+    if (calcPlan.duration === 'week') {
+      calcDays = calcPlan.days || []
+      displayMeals = (calcDays[selectedDay]?.menu || []).map(normCalcMeal)
+    } else if (calcPlan.duration === 'month') {
+      calcDays = calcPlan.weeks || []
+      displayMeals = (calcDays[selectedDay]?.menu || []).map(normCalcMeal)
+    } else {
+      displayMeals = (calcPlan.menu || []).map(normCalcMeal)
+    }
+  }
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -84,7 +126,6 @@ export default function NutritionPlan() {
         background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #059669 100%)',
         minHeight: 200
       }}>
-        {/* Background food emojis */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
           {[
             { e: '🥗', top: '5%',  left: '2%',  size: 72, deg: -15 },
@@ -105,13 +146,10 @@ export default function NutritionPlan() {
             }}>{item.e}</span>
           ))}
         </div>
-
-        {/* Grid overlay */}
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)',
           backgroundSize: '40px 40px'
         }} />
-
         <div className="relative z-10 px-6 py-8">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -119,8 +157,8 @@ export default function NutritionPlan() {
               <h1 className="text-3xl font-extrabold text-white leading-tight">
                 الخطة<br /><span className="text-emerald-300">الغذائية</span>
               </h1>
-              {plan.note && (
-                <p className="text-emerald-200/80 text-sm font-medium mt-3 max-w-xs leading-relaxed">{plan.note}</p>
+              {effectivePlan.note && (
+                <p className="text-emerald-200/80 text-sm font-medium mt-3 max-w-xs leading-relaxed">{effectivePlan.note}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-3">
@@ -151,20 +189,20 @@ export default function NutritionPlan() {
       )}
 
       {/* Water & Fiber */}
-      {(plan.waterGoal || plan.fiberG) && (
+      {(effectivePlan.waterGoal || effectivePlan.fiberG) && (
         <div className="grid grid-cols-2 gap-3">
-          {plan.waterGoal && (
+          {effectivePlan.waterGoal && (
             <div className="bg-cyan-50 rounded-2xl p-4 border border-cyan-100 text-center">
               <div className="text-3xl mb-1">💧</div>
-              <p className="text-2xl font-extrabold text-cyan-700">{plan.waterGoal} L</p>
+              <p className="text-2xl font-extrabold text-cyan-700">{effectivePlan.waterGoal} L</p>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">يومياً</p>
               <p className="text-xs text-slate-500 font-semibold mt-1">هدف الماء</p>
             </div>
           )}
-          {plan.fiberG && (
+          {effectivePlan.fiberG && (
             <div className="bg-green-50 rounded-2xl p-4 border border-green-100 text-center">
               <div className="text-3xl mb-1">🌿</div>
-              <p className="text-2xl font-extrabold text-green-700">{plan.fiberG} غ</p>
+              <p className="text-2xl font-extrabold text-green-700">{effectivePlan.fiberG} غ</p>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">يومياً</p>
               <p className="text-xs text-slate-500 font-semibold mt-1">الألياف الغذائية</p>
             </div>
@@ -172,13 +210,29 @@ export default function NutritionPlan() {
         </div>
       )}
 
+      {/* Day tabs for multi-day calculator plans */}
+      {calcDays && calcDays.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {calcDays.map((d, i) => (
+            <button key={i} onClick={() => { setSelectedDay(i); setOpenMeal(0) }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                selectedDay === i
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              }`}>
+              {d.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Meals */}
-      {plan.meals?.length > 0 && (
+      {displayMeals.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
             <span>🍽️</span> الوجبات اليومية
           </h2>
-          {plan.meals.map((meal, i) => (
+          {displayMeals.map((meal, i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <button onClick={() => setOpenMeal(openMeal === i ? -1 : i)}
                 className="w-full flex items-center gap-4 p-5 text-right hover:bg-slate-50 transition">
@@ -235,14 +289,14 @@ export default function NutritionPlan() {
       )}
 
       {/* Tips */}
-      {plan.tips?.length > 0 && (
+      {effectivePlan.tips?.length > 0 && (
         <div className="rounded-2xl overflow-hidden border border-emerald-100">
           <div className="px-5 py-4 flex items-center gap-2" style={{ background: 'linear-gradient(135deg,#064e3b,#065f46)' }}>
             <span className="text-xl">💡</span>
             <h2 className="text-sm font-extrabold text-white uppercase tracking-widest">نصائح التغذية</h2>
           </div>
           <div className="bg-emerald-50 px-5 py-4 space-y-3">
-            {plan.tips.map((tip, i) => (
+            {effectivePlan.tips.map((tip, i) => (
               <div key={i} className="flex items-start gap-3">
                 <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[11px] font-extrabold flex-shrink-0 mt-0.5">{i + 1}</span>
                 <span className="text-sm text-emerald-900 font-medium leading-relaxed">{tip}</span>
