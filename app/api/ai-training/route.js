@@ -332,6 +332,216 @@ const FALLBACKS_HOME = {
       },
     ],
   },
+  4: {
+    daysPerWeek: 4, duration: 55, level: 'intermediate',
+    note: 'برنامج Upper/Lower المنزلي — دمبل ومطاط وعارضة فقط. راحة يوم بين كل يومين متتاليين.',
+    tips: [
+      'سخّن 5 دقائق بالحركة الديناميكية قبل كل جلسة',
+      'زد وزن الدمبل عندما تنهي التكرارات بسهولة تامة',
+      'النوم 7-8 ساعات عامل أساسي في بناء العضل',
+    ],
+    days: [
+      {
+        name: 'Upper A — Push',
+        focus: 'صدر وكتف',
+        description: 'دفع — صدر وكتف وترايسبس',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: 'دفئ مفصل الكتف جيداً' },
+          { name: 'Knee Push-Up', duration: '2×10', note: 'نزول بطيء 3 ثوانٍ' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '12-15', rest: '60s', note: 'صدر مستقيم — نزول بطيء' },
+          { name: 'Dumbbell Floor Press', sets: 4, reps: '10-12', rest: '60s', note: 'مرفقك بزاوية 45° من الجسم' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '10-12', rest: '60s', note: 'اضغط للأعلى بالكامل' },
+          { name: 'Incline Push-Up', sets: 3, reps: '12-15', rest: '45s', note: 'يدك على كرسي أو أريكة' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15', rest: '45s', note: 'ارفع ببطء للأسفل' },
+          { name: 'Resistance Band Tricep Pushdown', sets: 3, reps: '15-20', rest: '45s', note: 'ثبّت المطاط فوق الباب' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: 'افتح ذراعيك على إطار الباب واضغط للأمام' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: 'اسحب الذراع بلطف عبر الصدر' },
+        ],
+      },
+      {
+        name: 'Lower A — Quad Focus',
+        focus: 'أرجل',
+        description: 'أرجل أ — تركيز على الكوادريسبس',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: 'تحريك مفصل الورك بالكامل' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: 'بطيء للأسفل' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12', rest: '90s', note: 'ظهر مستقيم وركبة تتبع القدم' },
+          { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: 'قدمك الخلفية على كرسي' },
+          { name: 'Dumbbell Reverse Lunge', sets: 3, reps: '12 each', rest: '60s', note: 'الجذع منتصب' },
+          { name: 'Resistance Band Leg Extension', sets: 3, reps: '20', rest: '45s', note: 'ثبّت المطاط خلفك على الكرسي' },
+          { name: 'Standing Calf Raise', sets: 4, reps: '20-25', rest: '45s', note: 'امسك دمبل للمقاومة — ارفع على أطراف أصابعك بالكامل' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: 'امسك كاحلك وادفع الورك للأمام' },
+          { name: 'Kneeling Hip Flexor Stretch', duration: '40s each', note: 'ركبة على الأرض — ادفع الجسم للأمام' },
+        ],
+      },
+      {
+        name: 'Upper B — Pull',
+        focus: 'ظهر وبايسبس',
+        description: 'سحب — ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow + Thoracic Rotation', duration: '3 min', note: 'تحريك العمود الفقري' },
+          { name: 'Resistance Band Row', duration: '2×15', note: 'خفيف لتنشيط عضلة الظهر' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '6-8', rest: '90s', note: 'ابدأ الحركة بعضلة الظهر لا الذراع' },
+          { name: 'Dumbbell Row', sets: 4, reps: '10-12', rest: '60s', note: 'كوع للسقف — اسحب تجاه الورك' },
+          { name: 'Resistance Band Pull-Apart', sets: 3, reps: '20', rest: '30s', note: 'أداة ممتازة لتقوية الكفة المدوّرة' },
+          { name: 'Dumbbell Rear Delt Fly', sets: 3, reps: '15', rest: '45s', note: 'انحنِ للأمام — ذراعان خلفاً' },
+          { name: 'Dumbbell Curl', sets: 3, reps: '12', rest: '45s', note: 'مرفقك ثابت بجانب الجسم' },
+          { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s', note: 'قبضة محايدة — للبراكياليس' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: 'تمدد للظهر العلوي والسفلي' },
+          { name: 'Bicep Wall Stretch', duration: '30s each', note: 'ابسط ذراعك على الحائط واستدر للخارج' },
+        ],
+      },
+      {
+        name: 'Lower B — Hip Focus',
+        focus: 'أرجل وبطن',
+        description: 'أرجل ب — هامسترينج وأرداف وبطن',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: 'تنشيط عضلات الأرداف' },
+          { name: 'Hip Circle', duration: '1 min each side', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Romanian Deadlift', sets: 4, reps: '12', rest: '90s', note: 'ركبة خفيف مكسورة — ظهر مستقيم' },
+          { name: 'Dumbbell Hip Thrust', sets: 3, reps: '15', rest: '60s', note: 'كتفك على الكنبة — اضغط الأرداف في الأعلى' },
+          { name: 'Dumbbell Walking Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Resistance Band Kickback', sets: 3, reps: '20 each', rest: '30s', note: 'قف أمام الباب وثبّت المطاط على كاحلك' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: 'جسم مستقيم كالخشبة' },
+          { name: 'Dumbbell Russian Twist', sets: 3, reps: '20', rest: '30s', note: '10 لكل جانب' },
+        ],
+        cooldown: [
+          { name: 'Seated Hamstring Stretch', duration: '45s each', note: 'امد الرجل واميل للأمام' },
+          { name: 'Pigeon Pose', duration: '45s each', note: 'لفك توتر عضلة الورك' },
+        ],
+      },
+    ],
+  },
+  5: {
+    daysPerWeek: 5, duration: 55, level: 'intermediate',
+    note: 'برنامج Push/Pull/Legs المنزلي المتقدم — كثافة عالية بدمبل ومطاط وعارضة فقط.',
+    tips: [
+      'راحة بين الجلسات الشديدة ضرورية — لا تتجاهل يوم الراحة',
+      'سجّل أوزانك وتكراراتك لتتابع التقدم أسبوعاً بعد أسبوع',
+      'وجبة بروتين بعد التمرين خلال 30-60 دقيقة تُسرّع التعافي',
+    ],
+    days: [
+      {
+        name: 'Push A',
+        focus: 'صدر وكتف',
+        description: 'دفع أ — صدر وكتف وترايسبس',
+        warmup: [
+          { name: 'Band Pull-Apart + Arm Circles', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×12', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '15-20', rest: '60s', note: 'هذا هو تمرينك الأساسي — أتقنه' },
+          { name: 'Dumbbell Floor Press', sets: 4, reps: '10-12', rest: '60s', note: 'مرفق بزاوية 45° من الجسم' },
+          { name: 'Dumbbell Shoulder Press', sets: 4, reps: '10-12', rest: '60s', note: '' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15', rest: '45s', note: 'ارفع ببطء للأسفل' },
+          { name: 'Close-Grip Push-Up', sets: 3, reps: '12', rest: '45s', note: 'يداك بمسافة ضيقة — للترايسبس' },
+          { name: 'Resistance Band Tricep Pushdown', sets: 3, reps: '15-20', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s', note: '' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Pull A',
+        focus: 'ظهر وبايسبس',
+        description: 'سحب أ — ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow Stretch', duration: '2 min', note: '' },
+          { name: 'Resistance Band Row', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '6-8', rest: '90s', note: '' },
+          { name: 'Dumbbell Row', sets: 4, reps: '10-12', rest: '60s', note: '' },
+          { name: 'Resistance Band Pull-Apart', sets: 3, reps: '20', rest: '30s', note: '' },
+          { name: 'Dumbbell Rear Delt Fly', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Dumbbell Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Bicep Wall Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Legs Day',
+        focus: 'أرجل',
+        description: 'أرجل شاملة — كوادريسبس وهامسترينج وأرداف',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12', rest: '90s', note: '' },
+          { name: 'Dumbbell Romanian Deadlift', sets: 4, reps: '12', rest: '90s', note: '' },
+          { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: '' },
+          { name: 'Dumbbell Hip Thrust', sets: 3, reps: '15', rest: '60s', note: '' },
+          { name: 'Standing Calf Raise', sets: 4, reps: '20', rest: '45s', note: 'امسك دمبل للمقاومة' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '45s each', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Push B',
+        focus: 'كتف',
+        description: 'دفع ب — كتف وترايسبس',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: '' },
+          { name: 'Pike Push-Up', duration: '2×8', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Shoulder Press', sets: 4, reps: '10-12', rest: '60s', note: 'دورة كاملة للكتف' },
+          { name: 'Dumbbell Arnold Press', sets: 3, reps: '10-12', rest: '60s', note: 'ابدأ بالكفوف تجاهك ودوّر عند الرفع' },
+          { name: 'Dumbbell Lateral Raise', sets: 4, reps: '15-20', rest: '45s', note: 'Drop set في الجولة الأخيرة' },
+          { name: 'Dumbbell Front Raise', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Decline Push-Up', sets: 3, reps: '12-15', rest: '45s', note: 'رجلاك على كرسي — للصدر العلوي' },
+          { name: 'Resistance Band Overhead Tricep Extension', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+          { name: 'Tricep Overhead Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Pull B + Core',
+        focus: 'ظهر وبطن',
+        description: 'سحب ب — ظهر وبطن',
+        warmup: [
+          { name: 'Cat-Cow + Thoracic Rotation', duration: '3 min', note: '' },
+          { name: 'Dead Hang', duration: '20s hold', note: '' },
+        ],
+        exercises: [
+          { name: 'Chin-Up', sets: 4, reps: '6-8', rest: '90s', note: 'قبضة متجهة نحوك — أيسر على البايسبس' },
+          { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: '12', rest: '60s', note: 'تنشيط الظهر السفلي' },
+          { name: 'Resistance Band Face Pull', sets: 3, reps: '20', rest: '30s', note: 'ثبّت المطاط أمامك على مستوى الوجه' },
+          { name: 'Dumbbell Concentration Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Lat Stretch', duration: '30s each', note: 'امسك إطار الباب برفع ذراع — اميل للجانب' },
+        ],
+      },
+    ],
+  },
 }
 
 const FALLBACKS_BW = {
@@ -387,6 +597,211 @@ const FALLBACKS_BW = {
         cooldown: [
           { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
           { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+  4: {
+    daysPerWeek: 4, duration: 45, level: 'beginner',
+    note: 'برنامج وزن الجسم 4 أيام — لا تحتاج أي معدات. فقط جسمك وإرادتك.',
+    tips: [
+      'ركّز على إتقان الأداء أولاً قبل زيادة التكرارات',
+      'النزول البطيء (3 ثوانٍ) يضاعف صعوبة التمرين ويبني عضلاً أفضل',
+      'خذ راحة كاملة بين كل يومين متتاليين',
+    ],
+    days: [
+      {
+        name: 'Push Day',
+        focus: 'صدر وكتف',
+        description: 'دفع — صدر وكتف وترايسبس',
+        warmup: [
+          { name: 'Jumping Jacks', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: 'بطيء' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '12-15', rest: '60s', note: 'هذا تمرينك الأساسي — أتقنه' },
+          { name: 'Wide Push-Up', sets: 3, reps: '12', rest: '60s', note: 'يداك أعرض من الكتف بـ 20 سم' },
+          { name: 'Pike Push-Up', sets: 3, reps: '10', rest: '60s', note: 'ورك للسماء — للكتف' },
+          { name: 'Diamond Push-Up', sets: 3, reps: '10', rest: '60s', note: 'يداك كالماسة — للترايسبس' },
+          { name: 'Tricep Dip', sets: 3, reps: '12', rest: '45s', note: 'يداك على كرسي ثابت' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: 'افتح ذراعيك وأدر كتفيك للخلف' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Lower A — Quad Focus',
+        focus: 'أرجل',
+        description: 'أرجل أ — تركيز على الكوادريسبس',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '60s', note: 'ظهر مستقيم — الفخذ موازٍ للأرض' },
+          { name: 'Jump Squat', sets: 3, reps: '12', rest: '60s', note: 'هبوط خفيف على أمشاط القدم' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '60s', note: 'الجذع منتصب' },
+          { name: 'Step-Up', sets: 3, reps: '12 each', rest: '45s', note: 'استخدم درج أو كرسي متين' },
+          { name: 'Single-Leg Calf Raise', sets: 3, reps: '20 each', rest: '45s', note: 'استمسك بالحائط للتوازن' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Kneeling Hip Flexor Stretch', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Pull Day',
+        focus: 'ظهر',
+        description: 'سحب — ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow Stretch', duration: '2 min', note: '' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '5-8', rest: '90s', note: 'ابدأ من امتداد كامل' },
+          { name: 'Chin-Up', sets: 3, reps: '6-8', rest: '90s', note: 'قبضة متجهة نحوك' },
+          { name: 'Inverted Row', sets: 3, reps: '10-12', rest: '60s', note: 'طاولة أو عارضة منخفضة' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: 'ارفع يديك وقدميك معاً' },
+          { name: 'Dead Hang', sets: 3, reps: '30s hold', rest: '60s', note: 'تمدد للكتف والظهر' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Lat Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Lower B + Core',
+        focus: 'أرجل وبطن',
+        description: 'أرجل ب — هامسترينج وأرداف وبطن',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: '' },
+          { name: 'Glute Bridge', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Glute Bridge', sets: 4, reps: '20', rest: '45s', note: 'اضغط الأرداف في أعلى نقطة' },
+          { name: 'Single-Leg Hip Thrust', sets: 3, reps: '12 each', rest: '60s', note: 'كتفك على الكنبة أو السرير' },
+          { name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: 'وزن الجسم فقط — قدمك الخلفية على كرسي' },
+          { name: 'Donkey Kick', sets: 3, reps: '20 each', rest: '30s', note: 'اضغط الأرداف في أعلى نقطة' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Seated Hamstring Stretch', duration: '45s each', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+  5: {
+    daysPerWeek: 5, duration: 45, level: 'intermediate',
+    note: 'برنامج وزن الجسم المتقدم 5 أيام — تدريب عالي الكثافة بلا معدات.',
+    tips: [
+      'النزول البطيء (3-4 ثوانٍ) يجعل كل تكرار أكثر صعوبة ويبني عضلاً أكثر',
+      'اهدف إلى زيادة التكرارات أو الجولات كل أسبوع',
+      'الراحة النشطة (مشي، تمدد) في أيام العطلة أفضل من الراحة الكاملة',
+    ],
+    days: [
+      {
+        name: 'Push A',
+        focus: 'صدر وكتف',
+        description: 'دفع أ — صدر وكتف وترايسبس',
+        warmup: [
+          { name: 'Jumping Jacks', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '15-20', rest: '60s', note: 'الأساس — نزول 3 ثوانٍ' },
+          { name: 'Decline Push-Up', sets: 3, reps: '12', rest: '60s', note: 'رجلاك على كرسي — للصدر العلوي' },
+          { name: 'Pike Push-Up', sets: 3, reps: '12', rest: '60s', note: 'ورك للسماء' },
+          { name: 'Diamond Push-Up', sets: 3, reps: '10-12', rest: '60s', note: '' },
+          { name: 'Tricep Dip', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s', note: '' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Pull Day',
+        focus: 'ظهر',
+        description: 'سحب — ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow', duration: '2 min', note: '' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '6-8', rest: '90s', note: '' },
+          { name: 'Chin-Up', sets: 3, reps: '6-8', rest: '90s', note: '' },
+          { name: 'Inverted Row', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Dead Hang', sets: 3, reps: '30s hold', rest: '60s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Lat Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Legs Power',
+        focus: 'أرجل',
+        description: 'أرجل — قوة انفجارية',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Jump Squat', sets: 4, reps: '12', rest: '60s', note: 'هبوط هادئ — اثنِ الركبة عند الهبوط' },
+          { name: 'Broad Jump', sets: 3, reps: '8', rest: '60s', note: 'اقفز للأمام بأقصى قوة' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: '' },
+          { name: 'Single-Leg Calf Raise', sets: 4, reps: '20 each', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '45s each', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Push B',
+        focus: 'صدر',
+        description: 'دفع ب — حجم وتحمّل',
+        warmup: [
+          { name: 'Arm Circles', duration: '2 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×12', note: '' },
+        ],
+        exercises: [
+          { name: 'Wide Push-Up', sets: 4, reps: '15', rest: '45s', note: 'يداك أعرض — للصدر الخارجي' },
+          { name: 'Incline Push-Up', sets: 3, reps: '15', rest: '45s', note: 'يداك على الأريكة أو طاولة' },
+          { name: 'Push-Up Hold', sets: 3, reps: '5 reps (5s pause at bottom)', rest: '60s', note: 'ابقَ في المنتصف 5 ثوانٍ' },
+          { name: 'Pike Push-Up', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Tricep Dip', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Stretch', duration: '30s', note: '' },
+          { name: 'Tricep Overhead Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body — Core & Conditioning',
+        focus: 'كامل',
+        description: 'جسم كامل — تكييف وبطن وتحمّل',
+        warmup: [
+          { name: 'High Knees', duration: '2 min', note: '' },
+          { name: 'Jumping Jacks', duration: '1 min', note: '' },
+        ],
+        exercises: [
+          { name: 'Burpee', sets: 3, reps: '10', rest: '60s', note: 'تمرين كامل الجسم الأمثل' },
+          { name: 'Glute Bridge', sets: 3, reps: '20', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+          { name: 'Pistol Squat', sets: 3, reps: '5 each', rest: '60s', note: 'استخدم كرسياً للمساعدة إذا احتجت' },
+          { name: 'Hollow Body Hold', sets: 3, reps: '30s hold', rest: '30s', note: 'ظهرك ملاصق للأرض — يدان وقدمان مرفوعتان' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Full Body Stretch', duration: '2 min', note: 'تمدد عام لكل العضلات المعمول عليها' },
         ],
       },
     ],
@@ -486,7 +901,7 @@ ${schema}`
     return NextResponse.json({ ...plan, ai: true })
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
-    const fb = FALLBACKS[n] || FALLBACKS[3]
+    const fb = getFallback(n, safeEquip)
     return NextResponse.json({ ...fb, daysPerWeek: n, ai: false })
   }
 }
