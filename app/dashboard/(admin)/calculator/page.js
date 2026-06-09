@@ -129,6 +129,7 @@ export default function CalculatorPage() {
   const [pickedClient, setPickedClient] = useState(null)
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error'
+  const [savedPlan, setSavedPlan] = useState(null) // plan fetched from Redis for picked client
   const chatEndRef = useRef(null)
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
@@ -153,6 +154,23 @@ export default function CalculatorPage() {
     setPickedClient(c)
     setShowPicker(false)
     setRes(null)
+    setSavedPlan(null)
+    // Fetch any previously saved calc plan for this client
+    fetch(`/api/admin/clients/${c.id}/calc-plan`)
+      .then(r => r.json())
+      .then(d => { if (d.plan) setSavedPlan(d.plan) })
+      .catch(() => {})
+  }
+
+  function loadSavedPlan() {
+    if (!savedPlan) return
+    setRes(savedPlan)
+    if (savedPlan.form) setForm(savedPlan.form)
+    setChatMessages([])
+    setSelectedDay(0)
+    setSelectedWeek(0)
+    setSaveStatus(null)
+    setIsAI(!!savedPlan.ai)
   }
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
@@ -289,7 +307,7 @@ export default function CalculatorPage() {
           {/* ── Client Picker ── */}
           <div className="rounded-xl border border-dashed border-primary-300 bg-primary-50/50 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Users className="w-4 h-4 text-primary-600" />
                 <span className="text-sm font-bold text-primary-700">تعبئة من العملاء</span>
                 {pickedClient && (
@@ -297,10 +315,21 @@ export default function CalculatorPage() {
                     <CheckCircle2 className="w-3 h-3" /> {pickedClient.name}
                   </span>
                 )}
+                {savedPlan && (
+                  <button onClick={loadSavedPlan}
+                    className="flex items-center gap-1 text-xs font-bold text-violet-700 bg-violet-100 border border-violet-200 hover:bg-violet-200 px-2.5 py-1 rounded-full transition">
+                    📂 تحميل الخطة المحفوظة
+                    {savedPlan.savedAt && (
+                      <span className="font-normal text-violet-400 mr-1">
+                        {new Date(savedPlan.savedAt).toLocaleDateString('ar-TN', { day: 'numeric', month: 'short' })}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {pickedClient && (
-                  <button onClick={() => { setPickedClient(null); setForm(INIT); setRes(null) }}
+                  <button onClick={() => { setPickedClient(null); setForm(INIT); setRes(null); setSavedPlan(null) }}
                     className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
                     <X className="w-3 h-3" /> مسح
                   </button>
