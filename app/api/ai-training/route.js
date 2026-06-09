@@ -272,6 +272,133 @@ const FALLBACKS = {
   },
 }
 
+// Home & bodyweight fallback programs (no barbell / no cables / no machines)
+const FALLBACKS_HOME = {
+  3: {
+    daysPerWeek: 3, duration: 50, level: 'beginner',
+    note: 'برنامج منزلي فعّال — كل ما تحتاجه دمبل ومطاط وعارضة سحب.',
+    tips: ['سخّن 5 دقائق بالجري في مكانك أو Jumping Jacks', 'ركّز على الأداء الصحيح قبل زيادة الوزن', 'خصّص 60 ثانية تمدد بعد كل جلسة'],
+    days: [
+      { name: 'Push Day', focus: 'صدر وكتف',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: 'دفئ الكتف جيداً' },
+          { name: 'Knee Push-Up', duration: '2×10', note: 'بطء في الهبوط' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '10-15', rest: '60s', note: 'صدر مستقيم ونزول بطيء' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '10-12', rest: '60s', note: 'اضغط للأعلى بالكامل' },
+          { name: 'Incline Push-Up', sets: 3, reps: '12', rest: '45s', note: 'يدك على كرسي أو طاولة' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15', rest: '45s', note: 'ذراعان بطيء للأسفل' },
+          { name: 'Resistance Band Tricep Pushdown', sets: 3, reps: '15', rest: '45s', note: 'ثبّت المطاط فوق الباب' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: '' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      { name: 'Pull Day', focus: 'ظهر وبايسبس',
+        warmup: [
+          { name: 'Cat-Cow Stretch', duration: '2 min', note: '' },
+          { name: 'Resistance Band Row', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '5-8', rest: '90s', note: 'ابدأ من امتداد كامل' },
+          { name: 'Dumbbell Row', sets: 3, reps: '10-12', rest: '60s', note: 'كوع للسقف' },
+          { name: 'Resistance Band Pull-Apart', sets: 3, reps: '20', rest: '30s', note: 'أداة ممتازة للكفة' },
+          { name: 'Dumbbell Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Hammer Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Bicep Wall Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      { name: 'Legs & Core', focus: 'أرجل وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12', rest: '90s', note: 'ظهر مستقيم' },
+          { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: '12', rest: '90s', note: 'ركبة خفيف' },
+          { name: 'Dumbbell Reverse Lunge', sets: 3, reps: '10 each', rest: '60s', note: '' },
+          { name: 'Glute Bridge', sets: 3, reps: '20', rest: '45s', note: 'اضغط الأرداف في الأعلى' },
+          { name: 'Plank', sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+}
+
+const FALLBACKS_BW = {
+  3: {
+    daysPerWeek: 3, duration: 45, level: 'beginner',
+    note: 'برنامج وزن الجسم فقط — لا تحتاج أي معدات.',
+    tips: ['نفّذ كل تمرين بتركيز كامل', 'انتبه لنزول بطيء في كل تكرار', 'راحة كافية بين الجلسات'],
+    days: [
+      { name: 'Push Day', focus: 'صدر وكتف',
+        warmup: [
+          { name: 'Jumping Jacks', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '10-15', rest: '60s', note: 'نزول 3 ثوانٍ' },
+          { name: 'Diamond Push-Up', sets: 3, reps: '10', rest: '60s', note: 'يديك قريبتان' },
+          { name: 'Pike Push-Up', sets: 3, reps: '10', rest: '60s', note: 'ورك للسماء' },
+          { name: 'Tricep Dip', sets: 3, reps: '12', rest: '45s', note: 'على كرسي ثابت' },
+        ],
+        cooldown: [
+          { name: 'Chest Stretch', duration: '30s hold', note: '' },
+          { name: 'Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      { name: 'Pull Day', focus: 'ظهر',
+        warmup: [
+          { name: 'Cat-Cow', duration: '2 min', note: '' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up', sets: 4, reps: '5-8', rest: '90s', note: 'ابدأ من امتداد كامل' },
+          { name: 'Chin-Up', sets: 3, reps: '6-8', rest: '90s', note: '' },
+          { name: 'Inverted Row', sets: 3, reps: '10-12', rest: '60s', note: 'طاولة أو عارضة منخفضة' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose", duration: '45s', note: '' },
+          { name: 'Lat Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      { name: 'Legs & Core', focus: 'أرجل وبطن',
+        warmup: [
+          { name: 'Leg Swing', duration: '2 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '60s', note: '' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Glute Bridge', sets: 3, reps: '25', rest: '45s', note: '' },
+          { name: 'Jump Squat', sets: 3, reps: '10', rest: '45s', note: 'هبوط خفيف على الأمشاط' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+}
+
+function getFallback(n, equipment) {
+  if (equipment === 'home')       return FALLBACKS_HOME[n] || FALLBACKS_HOME[3]
+  if (equipment === 'bodyweight') return FALLBACKS_BW[n]   || FALLBACKS_BW[3]
+  return FALLBACKS[n] || FALLBACKS[3]
+}
+
 export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
@@ -301,7 +428,8 @@ export async function POST(req) {
   const equipMap = { gym: 'full commercial gym', home: 'home gym (dumbbells, bands, pull-up bar)', bodyweight: 'bodyweight only' }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    const fb = FALLBACKS[n] || FALLBACKS[3]
+    // Pick a fallback appropriate to equipment
+    const fb = getFallback(n, safeEquip)
     return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, ai: false })
   }
 

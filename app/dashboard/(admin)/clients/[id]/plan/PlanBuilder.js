@@ -890,7 +890,7 @@ export default function PlanBuilder({ client }) {
   // AI generation state
   const [aiModal, setAiModal]     = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiForm, setAiForm]       = useState({ goal: client.goal || 'gain', level: client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate', daysPerWeek: '3', equipment: 'gym', injuries: '' })
+  const [aiForm, setAiForm]       = useState({ goal: client.goal || 'gain', level: client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate', daysPerWeek: '3', equipment: existing.training?.equipment || 'gym', injuries: '' })
 
   // Nutrition AI generation panel
   const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
@@ -1260,8 +1260,9 @@ export default function PlanBuilder({ client }) {
         meals,
       },
       training: {
-        daysPerWeek: String(days.length),   // always sync with actual day count
+        daysPerWeek: String(days.length),
         duration, level,
+        equipment: aiForm.equipment,
         note: trainingNote,
         tips: trainingTips.split('\n').map(t => t.trim()).filter(Boolean),
         days,
@@ -1872,9 +1873,25 @@ export default function PlanBuilder({ client }) {
         </div>
       )}
 
-      {/* Save button (bottom) — only for nutrition/training tabs */}
+      {/* Save / Delete row — only for nutrition/training tabs */}
       {tab !== 'resources' && (
-        <div className="flex justify-end pb-6">
+        <div className="flex items-center justify-between pb-6">
+          {/* Delete current tab's plan */}
+          <button
+            onClick={() => {
+              const label = tab === 'nutrition' ? 'الخطة الغذائية' : 'الخطة التدريبية'
+              if (!confirm(`هل أنت متأكد من حذف ${label} كاملاً؟ لا يمكن التراجع.`)) return
+              if (tab === 'nutrition') {
+                setCalories(''); setProtein(''); setCarbs(''); setFats('')
+                setWater(''); setFiber(''); setNNote(''); setNTips(''); setMeals([])
+              } else {
+                setDPW(''); setDuration(''); setLevel(''); setTNote(''); setTTips(''); setDays([])
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 text-red-500 border border-red-200 rounded-xl font-bold text-sm hover:bg-red-50 transition">
+            <Trash2 className="w-4 h-4" />
+            حذف {tab === 'nutrition' ? 'الخطة الغذائية' : 'الخطة التدريبية'}
+          </button>
           <button onClick={save} disabled={saving}
             className="flex items-center gap-2 px-6 py-3 bg-[#0a0a0a] text-white rounded-xl font-bold hover:bg-black transition disabled:opacity-50 shadow-sm">
             {saving

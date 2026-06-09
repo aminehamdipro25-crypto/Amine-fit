@@ -21,7 +21,7 @@ export async function POST(req) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ menu, message: 'لا يوجد اتصال بـ Claude — لم تتغير الخطة.' })
+    return NextResponse.json({ menu, message: '⚠️ ANTHROPIC_API_KEY غير مضبوط في Vercel — أضفه في Environment Variables لتفعيل تعديل الخطة بالذكاء الاصطناعي.' })
   }
 
   try {
@@ -60,6 +60,6 @@ ${JSON.stringify(menu, null, 2)}
     })
   } catch (err) {
     console.error('AI chat error:', err.message)
-    return NextResponse.json({ menu, message: 'لا يوجد اتصال بـ Claude — لم تتغير الخطة.' })
+    return NextResponse.json({ menu, message: `⚠️ خطأ في الاتصال بـ Claude: ${err.message}` })
   }
 }
