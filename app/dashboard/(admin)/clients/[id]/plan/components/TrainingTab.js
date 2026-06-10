@@ -1,74 +1,77 @@
 'use client'
+import { useState } from 'react'
 import { Dumbbell, Zap, Plus, Brain, Sparkles, Wand2 } from 'lucide-react'
 import DayCard from './DayCard'
 
 /* ── Training Templates ──────────────────────────────────────────────────── */
-const TEMPLATES = {
+const TEMPLATES_GYM = {
   ppl: {
     label: 'Push / Pull / Legs',
     emoji: '💪',
-    desc: '٣ أيام — PPL',
+    desc: '٣ أيام',
     days: [
       { name:'Push Day', focus:'صدر وكتف', description:'', exercises:[
-        { name:'Barbell Bench Press',    sets:'4', reps:'8-10',  rest:'90s',   note:'Keep the bar touching chest each rep', videoUrl:'' },
+        { name:'Barbell Bench Press',    sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
         { name:'Incline Dumbbell Press', sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
         { name:'Overhead Press',         sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
-        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'Control the descent', videoUrl:'' },
+        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
         { name:'Tricep Pushdown',        sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
       ]},
       { name:'Pull Day', focus:'ظهر وبايسبس', description:'', exercises:[
-        { name:'Wide-Grip Pull-Up',      sets:'4', reps:'6-8',   rest:'90s',   note:'ابدأ الحركة بعضلة الظهر لا الذراع', videoUrl:'' },
+        { name:'Wide-Grip Pull-Up',      sets:'4', reps:'6-8',   rest:'90s',   note:'', videoUrl:'' },
         { name:'Barbell Row',            sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
         { name:'Lat Pulldown',           sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
-        { name:'Barbell Curl',           sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
+        { name:'Dumbbell Curl',          sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
         { name:'Hammer Curl',            sets:'3', reps:'12',    rest:'45s',   note:'', videoUrl:'' },
       ]},
       { name:'Legs Day', focus:'أرجل', description:'', exercises:[
-        { name:'Barbell Back Squat',     sets:'5', reps:'8-10',  rest:'2 min', note:'ظهر مستقيم، ركبة لا تتجاوز القدم', videoUrl:'' },
+        { name:'Barbell Back Squat',     sets:'5', reps:'8-10',  rest:'2 min', note:'', videoUrl:'' },
         { name:'Leg Press',              sets:'4', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
         { name:'Romanian Deadlift',      sets:'3', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
         { name:'Leg Curl',               sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
-        { name:'Standing Calf Raise',    sets:'4', reps:'20',    rest:'45s',   note:'', videoUrl:'' },
+        { name:'Calf Raise',             sets:'4', reps:'20',    rest:'45s',   note:'', videoUrl:'' },
       ]},
     ],
   },
   upper_lower: {
     label: 'Upper / Lower',
     emoji: '🔄',
-    desc: '٤ أيام — علوي/سفلي',
+    desc: '٤ أيام',
     days: [
       { name:'Upper Body A', focus:'صدر وظهر', description:'', exercises:[
         { name:'Barbell Bench Press',    sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
         { name:'Barbell Row',            sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
         { name:'Incline Dumbbell Press', sets:'3', reps:'10-12', rest:'90s',   note:'', videoUrl:'' },
-        { name:'Cable Row',              sets:'3', reps:'10-12', rest:'90s',   note:'', videoUrl:'' },
+        { name:'Seated Cable Row',       sets:'3', reps:'10-12', rest:'90s',   note:'', videoUrl:'' },
+        { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
       ]},
       { name:'Lower Body A', focus:'أرجل', description:'', exercises:[
         { name:'Barbell Back Squat',     sets:'4', reps:'6-8',   rest:'2 min', note:'', videoUrl:'' },
         { name:'Leg Press',              sets:'3', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
-        { name:'Leg Extension',          sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
-        { name:'Standing Calf Raise',    sets:'4', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
+        { name:'Romanian Deadlift',      sets:'3', reps:'12',    rest:'90s',   note:'', videoUrl:'' },
+        { name:'Leg Curl',               sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Calf Raise',             sets:'4', reps:'20',    rest:'45s',   note:'', videoUrl:'' },
       ]},
       { name:'Upper Body B', focus:'كتف', description:'', exercises:[
         { name:'Overhead Press',         sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
         { name:'Lat Pulldown',           sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
         { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
-        { name:'Barbell Curl',           sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
+        { name:'Dumbbell Curl',          sets:'3', reps:'10-12', rest:'60s',   note:'', videoUrl:'' },
         { name:'Tricep Pushdown',        sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
       ]},
       { name:'Lower Body B', focus:'أرجل وبطن', description:'', exercises:[
-        { name:'Romanian Deadlift',      sets:'4', reps:'8-10',  rest:'90s',   note:'ظهر مستقيم طوال الحركة', videoUrl:'' },
+        { name:'Romanian Deadlift',      sets:'4', reps:'8-10',  rest:'90s',   note:'', videoUrl:'' },
         { name:'Walking Lunge',          sets:'3', reps:'12 each',rest:'60s',  note:'', videoUrl:'' },
         { name:'Leg Curl',               sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
         { name:'Plank',                  sets:'3', reps:'45s',   rest:'30s',   note:'', videoUrl:'' },
-        { name:'Cable Crunch',           sets:'3', reps:'20',    rest:'30s',   note:'', videoUrl:'' },
+        { name:'Leg Raise',              sets:'3', reps:'15',    rest:'30s',   note:'', videoUrl:'' },
       ]},
     ],
   },
   full_body: {
     label: 'Full Body 3×',
     emoji: '⚡',
-    desc: '٣ أيام — جسم كامل',
+    desc: '٣ أيام',
     days: [
       { name:'Full Body A', focus:'كامل', description:'', exercises:[
         { name:'Barbell Back Squat',     sets:'3', reps:'8',     rest:'2 min', note:'', videoUrl:'' },
@@ -80,12 +83,12 @@ const TEMPLATES = {
       { name:'Full Body B', focus:'كامل', description:'', exercises:[
         { name:'Romanian Deadlift',      sets:'3', reps:'10',    rest:'90s',   note:'', videoUrl:'' },
         { name:'Incline Dumbbell Press', sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
-        { name:'Cable Row',              sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
+        { name:'Seated Cable Row',       sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
         { name:'Lateral Raise',          sets:'3', reps:'15',    rest:'45s',   note:'', videoUrl:'' },
         { name:'Bicycle Crunch',         sets:'3', reps:'20',    rest:'30s',   note:'', videoUrl:'' },
       ]},
       { name:'Full Body C', focus:'كامل', description:'', exercises:[
-        { name:'Walking Lunge',          sets:'3', reps:'12 each',rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Goblet Squat',  sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
         { name:'Dumbbell Bench Press',   sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
         { name:'Lat Pulldown',           sets:'3', reps:'15',    rest:'60s',   note:'', videoUrl:'' },
         { name:'Arnold Press',           sets:'3', reps:'12',    rest:'60s',   note:'', videoUrl:'' },
@@ -94,6 +97,137 @@ const TEMPLATES = {
     ],
   },
 }
+
+const TEMPLATES_HOME = {
+  home_ppl: {
+    label: 'Push / Pull / Legs',
+    emoji: '🏠',
+    desc: '٣ أيام — منزل',
+    days: [
+      { name:'Push Day', focus:'صدر وكتف', description:'', exercises:[
+        { name:'Push-Up',                    sets:'4', reps:'12-15', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Shoulder Press',    sets:'3', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Floor Press',       sets:'3', reps:'12',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Lateral Raise',     sets:'3', reps:'15',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Resistance Band Tricep Pushdown', sets:'3', reps:'15', rest:'45s', note:'', videoUrl:'' },
+      ]},
+      { name:'Pull Day', focus:'ظهر وبايسبس', description:'', exercises:[
+        { name:'Pull-Up',                    sets:'4', reps:'6-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Row',               sets:'4', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Resistance Band Pull-Apart', sets:'3', reps:'20',    rest:'30s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Curl',              sets:'3', reps:'12',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Hammer Curl',                sets:'3', reps:'12',    rest:'45s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Legs Day', focus:'أرجل وبطن', description:'', exercises:[
+        { name:'Dumbbell Goblet Squat',      sets:'4', reps:'12',    rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Romanian Deadlift', sets:'3', reps:'12',    rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Bulgarian Split Squat', sets:'3', reps:'10 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Glute Bridge',               sets:'3', reps:'20',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Plank',                      sets:'3', reps:'45s',   rest:'30s',  note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+  home_upper_lower: {
+    label: 'Upper / Lower',
+    emoji: '🔄',
+    desc: '٤ أيام — منزل',
+    days: [
+      { name:'Upper A — Push', focus:'صدر وكتف', description:'', exercises:[
+        { name:'Push-Up',                    sets:'4', reps:'12-15', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Floor Press',       sets:'4', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Shoulder Press',    sets:'3', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Lateral Raise',     sets:'3', reps:'15',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Resistance Band Tricep Pushdown', sets:'3', reps:'15-20', rest:'45s', note:'', videoUrl:'' },
+      ]},
+      { name:'Lower A — Quad Focus', focus:'أرجل', description:'', exercises:[
+        { name:'Dumbbell Goblet Squat',      sets:'4', reps:'12',    rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Bulgarian Split Squat', sets:'3', reps:'10 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Dumbbell Reverse Lunge',     sets:'3', reps:'12 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Glute Bridge',               sets:'3', reps:'20',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Single-Leg Calf Raise',      sets:'3', reps:'20 each', rest:'45s', note:'', videoUrl:'' },
+      ]},
+      { name:'Upper B — Pull', focus:'ظهر وبايسبس', description:'', exercises:[
+        { name:'Pull-Up',                    sets:'4', reps:'6-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Row',               sets:'4', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Resistance Band Face Pull',  sets:'3', reps:'20',    rest:'30s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Curl',              sets:'3', reps:'12',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Hammer Curl',                sets:'3', reps:'12',    rest:'45s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Lower B — Hip Focus', focus:'أرجل وبطن', description:'', exercises:[
+        { name:'Dumbbell Romanian Deadlift', sets:'4', reps:'12',    rest:'90s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Hip Thrust',        sets:'3', reps:'15',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Dumbbell Walking Lunge',     sets:'3', reps:'12 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Plank',                      sets:'3', reps:'45s',   rest:'30s',  note:'', videoUrl:'' },
+        { name:'Mountain Climber',           sets:'3', reps:'30s',   rest:'30s',  note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+}
+
+const TEMPLATES_BW = {
+  bw_ppl: {
+    label: 'Push / Pull / Legs',
+    emoji: '🤸',
+    desc: '٣ أيام — بدون معدات',
+    days: [
+      { name:'Push Day', focus:'صدر وكتف', description:'', exercises:[
+        { name:'Push-Up',           sets:'4', reps:'12-15', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Diamond Push-Up',   sets:'3', reps:'10',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Pike Push-Up',      sets:'3', reps:'10',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Tricep Dip',        sets:'3', reps:'12',    rest:'45s',  note:'على كرسي ثابت', videoUrl:'' },
+        { name:'Decline Push-Up',   sets:'3', reps:'12',    rest:'45s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Pull Day', focus:'ظهر', description:'', exercises:[
+        { name:'Pull-Up',           sets:'4', reps:'5-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Chin-Up',           sets:'3', reps:'6-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Inverted Row',      sets:'3', reps:'10-12', rest:'60s',  note:'طاولة منخفضة', videoUrl:'' },
+        { name:'Superman Hold',     sets:'3', reps:'15',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Dead Hang',         sets:'3', reps:'30s',   rest:'60s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Legs Day', focus:'أرجل وبطن', description:'', exercises:[
+        { name:'Bodyweight Squat',  sets:'4', reps:'20',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Jump Squat',        sets:'3', reps:'12',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Reverse Lunge',     sets:'3', reps:'12 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Glute Bridge',      sets:'3', reps:'25',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Plank',             sets:'3', reps:'45s',   rest:'30s',  note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+  bw_full: {
+    label: 'Full Body 3×',
+    emoji: '⚡',
+    desc: '٣ أيام — بدون معدات',
+    days: [
+      { name:'Full Body A', focus:'كامل', description:'', exercises:[
+        { name:'Push-Up',           sets:'3', reps:'15',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Pull-Up',           sets:'3', reps:'6-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Bodyweight Squat',  sets:'3', reps:'20',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Plank',             sets:'3', reps:'45s',   rest:'30s',  note:'', videoUrl:'' },
+        { name:'Mountain Climber',  sets:'3', reps:'30s',   rest:'30s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Full Body B', focus:'كامل', description:'', exercises:[
+        { name:'Diamond Push-Up',   sets:'3', reps:'10',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Chin-Up',           sets:'3', reps:'6-8',   rest:'90s',  note:'', videoUrl:'' },
+        { name:'Jump Squat',        sets:'3', reps:'12',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Glute Bridge',      sets:'3', reps:'20',    rest:'45s',  note:'', videoUrl:'' },
+        { name:'Burpee',            sets:'3', reps:'8',     rest:'60s',  note:'', videoUrl:'' },
+      ]},
+      { name:'Full Body C', focus:'كامل', description:'', exercises:[
+        { name:'Wide Push-Up',      sets:'3', reps:'15',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Inverted Row',      sets:'3', reps:'10-12', rest:'60s',  note:'', videoUrl:'' },
+        { name:'Bulgarian Split Squat', sets:'3', reps:'10 each', rest:'60s', note:'', videoUrl:'' },
+        { name:'Pike Push-Up',      sets:'3', reps:'10',    rest:'60s',  note:'', videoUrl:'' },
+        { name:'Plank',             sets:'3', reps:'45s',   rest:'30s',  note:'', videoUrl:'' },
+      ]},
+    ],
+  },
+}
+
+const EQUIP_TABS = [
+  { key: 'gym',        label: '🏋️ صالة',    templates: TEMPLATES_GYM },
+  { key: 'home',       label: '🏠 منزل',     templates: TEMPLATES_HOME },
+  { key: 'bodyweight', label: '🤸 بدون معدات', templates: TEMPLATES_BW },
+]
 
 const emptyDay = () => ({ name: '', focus: '', description: '', exercises: [] })
 
@@ -104,8 +238,12 @@ export default function TrainingTab({
   days,
   onDaysChange,
   onGenerate,
+  defaultEquipment,
 }) {
   const { daysPerWeek, duration, level, trainingNote, trainingTips } = form
+  const [tplTab, setTplTab] = useState(
+    defaultEquipment === 'bodyweight' ? 'bodyweight' : defaultEquipment === 'home' ? 'home' : 'gym'
+  )
 
   const updateDay  = (i, val) => { const d = [...days]; d[i] = val; onDaysChange(d) }
   const removeDay  = (i) => onDaysChange(days.filter((_, j) => j !== i))
@@ -175,8 +313,17 @@ export default function TrainingTab({
           <h3 className="font-extrabold text-slate-700 text-sm">قوالب جاهزة</h3>
           <span className="text-xs text-slate-400 font-medium">— اختر وعدّل بعدها</span>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {Object.entries(TEMPLATES).map(([key, tpl]) => (
+        {/* Equipment tabs */}
+        <div className="flex gap-1 mb-3 bg-slate-100 rounded-xl p-1">
+          {EQUIP_TABS.map(t => (
+            <button key={t.key} type="button" onClick={() => setTplTab(t.key)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all ${tplTab === t.key ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {Object.entries(EQUIP_TABS.find(t => t.key === tplTab)?.templates || {}).map(([key, tpl]) => (
             <button key={key} type="button"
               onClick={() => {
                 if (confirm(`تحميل قالب "${tpl.label}"؟ سيُستبدل الأيام الحالية.`)) {

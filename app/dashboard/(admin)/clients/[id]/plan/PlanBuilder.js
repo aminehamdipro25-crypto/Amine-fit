@@ -400,6 +400,7 @@ export default function PlanBuilder({ client }) {
           days={days}
           onDaysChange={setDays}
           onGenerate={() => setAiModal(true)}
+          defaultEquipment={aiForm.equipment}
         />
       )}
 
