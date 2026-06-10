@@ -287,6 +287,8 @@ export default function CalculatorPage() {
     }
   }
 
+  const [lastModified, setLastModified] = useState(false) // true after a successful chat modification
+
   async function sendChatMessage() {
     if (!chatInput.trim() || chatLoading) return
     const userMsg = chatInput.trim()
@@ -294,6 +296,7 @@ export default function CalculatorPage() {
     const newMessages = [...chatMessages, { role: 'user', content: userMsg }]
     setChatMessages(newMessages)
     setChatLoading(true)
+    setLastModified(false)
     try {
       const isMulti = result.duration !== 'day'
       const allMenus = isMulti
@@ -313,6 +316,7 @@ export default function CalculatorPage() {
       })
       const data = await res.json()
 
+      let changed = false
       if (isMulti && data.allMenus) {
         if (result.duration === 'week') {
           setRes(r => ({
@@ -325,10 +329,13 @@ export default function CalculatorPage() {
             weeks: r.weeks.map((w, i) => ({ ...w, menu: data.allMenus[i]?.menu || w.menu })),
           }))
         }
+        changed = data.changed === true
       } else if (!isMulti && data.menu) {
         setRes(r => ({ ...r, menu: data.menu }))
+        changed = data.changed === true
       }
 
+      if (changed) setLastModified(true)
       setChatMessages(prev => [...prev, { role: 'assistant', content: data.message }])
     } catch {
       setChatMessages(prev => [...prev, { role: 'assistant', content: 'حدث خطأ في الاتصال — لم تتغير الخطة.' }])
@@ -1004,6 +1011,24 @@ export default function CalculatorPage() {
             )}
             <div ref={chatEndRef} />
           </div>
+          {/* Modified banner — appears after a successful chat edit */}
+          {lastModified && pickedClient && (
+            <div className="mx-3 mb-2 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-sm">
+              <span className="text-emerald-600 text-lg">✅</span>
+              <span className="flex-1 font-semibold text-emerald-800">القائمة عُدِّلت — انقر لنشر التعديلات على منصة العميل</span>
+              <button
+                onClick={async () => { await savePlan(); setLastModified(false) }}
+                disabled={saveLoading}
+                className="flex-shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-extrabold transition">
+                {saveLoading ? 'جاري النشر...' : '🚀 نشر الآن'}
+              </button>
+            </div>
+          )}
+          {lastModified && !pickedClient && (
+            <div className="mx-3 mb-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-700 font-semibold">
+              ✅ القائمة عُدِّلت بنجاح — اختر عميلاً من الأعلى لنشرها على منصته
+            </div>
+          )}
           {/* Input */}
           <div className="flex gap-2 p-3 border-t border-violet-100 bg-white">
             <input

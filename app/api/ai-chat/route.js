@@ -46,16 +46,16 @@ export async function POST(req) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     if (isMulti) {
-      // Split days into chunks of 3 → process chunks in parallel
-      // Max 3 concurrent calls (safe for rate limits) × small output per call (reliable JSON)
-      const CHUNK = 3
+      // CHUNK=1: process each day separately to avoid JSON truncation.
+      // With CHUNK=3 and max_tokens=2500, a 3-day output (~2300 tokens) was
+      // cut off before closing brackets → silent parse failure → original menus returned.
+      // CHUNK=1 keeps output well under 3000 tokens per call (1 day ≈ 800-1200 tokens).
+      const CHUNK = 1
       const chunks = []
       for (let i = 0; i < allMenus.length; i += CHUNK) {
         chunks.push(allMenus.slice(i, i + CHUNK))
       }
 
-      // Extract only the latest user request — sending full history causes the
-      // model to mimic prior text responses instead of returning JSON
       const latestUserMsg = messages.filter(m => m.role === 'user').at(-1)?.content || ''
 
       const chunkResults = await Promise.all(
@@ -63,41 +63,48 @@ export async function POST(req) {
           const conv = [
             {
               role: 'user',
-              content: `القوائم:\n${JSON.stringify(chunk)}\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'}\n\nطلب التعديل: ${latestUserMsg}`,
+              content: `القائمة:\n${JSON.stringify(chunk)}\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'}\n\nطلب التعديل: ${latestUserMsg}`,
             },
           ]
           const resp = await client.messages.create({
             model:      'claude-haiku-4-5-20251001',
-            max_tokens: 2500,
+            max_tokens: 3000,
             system:     SYSTEM_PROMPT_CHUNK,
             messages:   conv,
           })
           const rawText = resp.content[0].text.trim()
             .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-          // Extract JSON object even if model prefixed it with explanation text
           const raw = rawText.startsWith('{') ? rawText : (rawText.match(/\{[\s\S]*\}/) || [rawText])[0]
           try {
             const p = JSON.parse(raw)
-            return {
-              days:    Array.isArray(p.days) ? p.days : chunk,
-              message: p.message || '',
+            if (Array.isArray(p.days) && p.days.length > 0) {
+              return { days: p.days, message: p.message || '', ok: true }
             }
+            return { days: chunk, message: '', ok: false }
           } catch {
-            return { days: chunk, message: '' } // keep originals on parse failure
+            console.warn('[ai-chat] parse failed for chunk:', rawText?.slice(0, 200))
+            return { days: chunk, message: '', ok: false }
           }
         })
       )
 
       const mergedDays = chunkResults.flatMap(r => r.days)
-      const successMsg = chunkResults.find(r => r.message)?.message
-        || 'تم تعديل القائمة لجميع الأيام.'
+      const anyOk      = chunkResults.some(r => r.ok)
+      const allOk      = chunkResults.every(r => r.ok)
+      const successMsg = anyOk
+        ? (chunkResults.find(r => r.message)?.message || 'تم تعديل القائمة بنجاح.')
+        : '⚠️ لم يتمكن المساعد من تعديل القائمة — حاول مرة أخرى.'
+      const finalMsg   = !allOk && anyOk
+        ? (chunkResults.find(r => r.message)?.message || 'تم تعديل بعض الأيام — أعد المحاولة إذا لاحظت يوماً لم يتغير.')
+        : successMsg
 
       return NextResponse.json({
         allMenus: allMenus.map((orig, i) => ({
           name: orig.name,
           menu: mergedDays[i]?.menu || orig.menu,
         })),
-        message: successMsg,
+        message: finalMsg,
+        changed: anyOk,
       })
     }
 
@@ -114,7 +121,7 @@ export async function POST(req) {
 
     const response = await client.messages.create({
       model:      'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 3000,
       system:     SYSTEM_PROMPT_SINGLE,
       messages:   conv,
     })
@@ -127,6 +134,7 @@ export async function POST(req) {
     return NextResponse.json({
       menu:    result.menu    || menu,
       message: result.message || 'تم تعديل القائمة.',
+      changed: !!(result.menu),
     })
 
   } catch (err) {
