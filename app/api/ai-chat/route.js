@@ -48,13 +48,17 @@ export async function POST(req) {
         chunks.push(allMenus.slice(i, i + CHUNK))
       }
 
+      // Extract only the latest user request — sending full history causes the
+      // model to mimic prior text responses instead of returning JSON
+      const latestUserMsg = messages.filter(m => m.role === 'user').at(-1)?.content || ''
+
       const chunkResults = await Promise.all(
         chunks.map(async (chunk) => {
-          const ctxMsg = `القوائم:\n${JSON.stringify(chunk)}\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'}`
           const conv = [
-            { role: 'user',      content: ctxMsg },
-            { role: 'assistant', content: 'جاهز لتعديل هذه الأيام.' },
-            ...messages,
+            {
+              role: 'user',
+              content: `القوائم:\n${JSON.stringify(chunk)}\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'}\n\nطلب التعديل: ${latestUserMsg}`,
+            },
           ]
           const resp = await client.messages.create({
             model:      'claude-haiku-4-5-20251001',
@@ -62,8 +66,10 @@ export async function POST(req) {
             system:     SYSTEM_PROMPT_CHUNK,
             messages:   conv,
           })
-          const raw = resp.content[0].text.trim()
+          const rawText = resp.content[0].text.trim()
             .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+          // Extract JSON object even if model prefixed it with explanation text
+          const raw = rawText.startsWith('{') ? rawText : (rawText.match(/\{[\s\S]*\}/) || [rawText])[0]
           try {
             const p = JSON.parse(raw)
             return {
