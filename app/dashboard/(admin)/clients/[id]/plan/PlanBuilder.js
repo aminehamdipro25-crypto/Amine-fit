@@ -978,6 +978,7 @@ export default function PlanBuilder({ client }) {
         avoided:      genAvoided,
         meals:        genMeals,
         duration:     genDuration,
+        country:      client.country      || '',
       }
       const res  = await fetch('/api/ai-plan', {
         method: 'POST',
@@ -1500,6 +1501,7 @@ export default function PlanBuilder({ client }) {
                     { l: 'الوزن', v: client.weight ? client.weight + ' كغ' : null },
                     { l: 'الطول', v: client.height ? client.height + ' سم' : null },
                     { l: 'الهدف', v: { loss:'خسارة وزن', gain:'بناء عضلات', maintain:'حفاظ', performance:'أداء رياضي' }[client.goal] || client.goal },
+                    { l: 'البلد', v: client.country || null },
                   ].filter(x => x.v).map(x => (
                     <span key={x.l} className="bg-white border border-violet-200 text-violet-800 font-semibold px-2 py-0.5 rounded-lg">
                       {x.l}: {x.v}
@@ -1507,17 +1509,17 @@ export default function PlanBuilder({ client }) {
                   ))}
                 </div>
 
-                {/* Duration — day costs API credits, week/month are free */}
+                {/* Duration */}
                 <div>
                   <label className="text-xs font-bold text-slate-600 block mb-1.5">
                     مدة الخطة
-                    <span className="mr-2 font-normal text-slate-400 text-[10px]">الأسبوع والشهر مجاناً (محرك محلي) • اليوم يستخدم Claude AI</span>
+                    <span className="mr-2 font-normal text-slate-400 text-[10px]">اليوم والأسبوع بـ Claude AI • الشهر بالمحرك المحلي مجاناً</span>
                   </label>
                   <div className="flex gap-2">
                     {[
-                      { key:'day',   label:'يوم واحد', badge:'AI 💳', badgeColor:'bg-amber-100 text-amber-700' },
-                      { key:'week',  label:'أسبوع كامل', badge:'مجاناً ✓', badgeColor:'bg-emerald-100 text-emerald-700' },
-                      { key:'month', label:'شهر كامل',   badge:'مجاناً ✓', badgeColor:'bg-emerald-100 text-emerald-700' },
+                      { key:'day',   label:'يوم واحد',    badge:'Haiku AI',  badgeColor:'bg-amber-100 text-amber-700' },
+                      { key:'week',  label:'أسبوع كامل',  badge:'Sonnet AI', badgeColor:'bg-violet-100 text-violet-700' },
+                      { key:'month', label:'شهر كامل',    badge:'مجاناً ✓',  badgeColor:'bg-emerald-100 text-emerald-700' },
                     ].map(d => (
                       <button key={d.key} type="button" onClick={() => setGenDuration(d.key)}
                         className={`flex-1 py-2 px-1 rounded-xl border-2 font-bold text-xs transition-all flex flex-col items-center gap-0.5

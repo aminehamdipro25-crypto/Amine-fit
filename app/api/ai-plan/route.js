@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/adminAuth'
 import { isRateLimited } from '@/lib/rateLimit'
 import {
   calcBMR, calcTDEE, calcTarget, calcExchanges, calcWaterGoal, generateMenu,
+  getRegion, REGION_FOOD_HINTS, REGION_LABELS,
 } from '@/lib/nutritionEngine'
 
 const ACTIVITY_LABELS = {
@@ -115,16 +116,25 @@ export async function POST(req) {
 
   const duration = form.duration || 'day'
 
-  // Week/month plans exceed haiku's 8192-token output limit → use local engine
-  if (duration === 'week' || duration === 'month') {
+  // Month plans → always use local engine (too large for AI)
+  if (duration === 'month') {
     return NextResponse.json(localPlan(form))
   }
 
-  try {
-    const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  // Build regional context for the prompt
+  const region      = getRegion(form.country || '')
+  const regionLabel = REGION_LABELS[region] || ''
+  const regionHint  = REGION_FOOD_HINTS[region] || ''
 
-    const menuSchema = `[
+  const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
+  const safePreferred = String(form.preferred || '').slice(0, 200) || 'لا يوجد'
+  const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
+
+  const regionSection = region !== 'global' ? `المنطقة: ${regionLabel}
+الأطعمة المحلية المفضلة: ${regionHint}
+` : ''
+
+  const menuSchema = `[
     {
       "name": "الفطور", "time": "07:30", "icon": "🌅",
       "kcal": number, "carbs": number, "protein": number, "fat": number,
@@ -134,49 +144,92 @@ export async function POST(req) {
     }
   ]`
 
-    const schemaStr = `{
+  try {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk')
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const floor     = form.gender === 'male' ? 1500 : 1200
+
+    // ── WEEK PLAN — use Sonnet (higher output limit) to generate all 7 days ──
+    if (duration === 'week') {
+      const weekSchema = `{
   "bmr": number, "tdee": number, "target": number,
   "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
-  "duration": "day",
-  "menu": ${menuSchema}
+  "duration": "week",
+  "days": [
+    { "name": "الأحد",     "menu": ${menuSchema} },
+    { "name": "الاثنين",   "menu": ${menuSchema} },
+    { "name": "الثلاثاء",  "menu": ${menuSchema} },
+    { "name": "الأربعاء",  "menu": ${menuSchema} },
+    { "name": "الخميس",    "menu": ${menuSchema} },
+    { "name": "الجمعة",    "menu": ${menuSchema} },
+    { "name": "السبت",     "menu": ${menuSchema} }
+  ]
 }`
 
-    const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
-    const safePreferred = String(form.preferred || '').slice(0, 200) || 'لا يوجد'
-    const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
-
-    const userPrompt = `═══ بيانات العميل ═══
+      const weekPrompt = `═══ بيانات العميل ═══
 الاسم: ${safeName}
 العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
 الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
 مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
 الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-الأطعمة المفضلة: ${safePreferred}
+${regionSection}الأطعمة المفضلة: ${safePreferred}
+الأطعمة الممنوعة: ${safeAvoided}
+عدد الوجبات يومياً: ${form.meals}
+
+أنشئ خطة غذائية كاملة لمدة أسبوع (7 أيام) مع التنويع بين الأيام.
+استخدم الأطعمة المحلية إذا أمكن.
+أعد JSON بالضبط (بدون أي نص خارجه):
+${weekSchema}`
+
+      const response = await anthropic.messages.create({
+        model:      'claude-sonnet-4-6',
+        max_tokens: 8192,
+        system:     SYSTEM_PROMPT,
+        messages:   [{ role: 'user', content: weekPrompt }],
+      })
+
+      const raw  = response.content[0].text.trim()
+        .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+      const plan = JSON.parse(raw)
+      if (plan.target) plan.target = Math.max(floor, plan.target)
+      return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: 'week' })
+    }
+
+    // ── DAY PLAN — use Haiku (faster / cheaper) ───────────────────────────────
+    const daySchema = `{
+  "bmr": number, "tdee": number, "target": number,
+  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
+  "duration": "day",
+  "menu": ${menuSchema}
+}`
+
+    const dayPrompt = `═══ بيانات العميل ═══
+الاسم: ${safeName}
+العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
+الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
+الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
+مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
+الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
+${regionSection}الأطعمة المفضلة: ${safePreferred}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
 أنشئ خطة غذائية ليوم واحد وأعد JSON بالضبط:
-${schemaStr}`
+${daySchema}`
 
-    const maxTokens = 4096
-
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: maxTokens,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+    const response = await anthropic.messages.create({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system:     SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: dayPrompt }],
     })
 
-    const raw = response.content[0].text.trim()
+    const raw  = response.content[0].text.trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
-    // Enforce gender-aware calorie floor (AI may ignore it despite the system prompt)
-    if (plan.target) {
-      const floor = form.gender === 'male' ? 1500 : 1200
-      plan.target = Math.max(floor, plan.target)
-    }
-    return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || duration })
+    if (plan.target) plan.target = Math.max(floor, plan.target)
+    return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' })
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)

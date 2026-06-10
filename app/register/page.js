@@ -89,9 +89,32 @@ const STEPS = [
   { title: 'نمط الحياة والالتزام',              icon: '🌙', sub: 'Lifestyle & Commitment' },
 ]
 
+const COUNTRIES = [
+  { code:'TN', label:'🇹🇳 تونس' },
+  { code:'MA', label:'🇲🇦 المغرب' },
+  { code:'DZ', label:'🇩🇿 الجزائر' },
+  { code:'LY', label:'🇱🇾 ليبيا' },
+  { code:'QA', label:'🇶🇦 قطر' },
+  { code:'SA', label:'🇸🇦 السعودية' },
+  { code:'AE', label:'🇦🇪 الإمارات' },
+  { code:'KW', label:'🇰🇼 الكويت' },
+  { code:'BH', label:'🇧🇭 البحرين' },
+  { code:'OM', label:'🇴🇲 عُمان' },
+  { code:'EG', label:'🇪🇬 مصر' },
+  { code:'JO', label:'🇯🇴 الأردن' },
+  { code:'LB', label:'🇱🇧 لبنان' },
+  { code:'SY', label:'🇸🇾 سوريا' },
+  { code:'IQ', label:'🇮🇶 العراق' },
+  { code:'YE', label:'🇾🇪 اليمن' },
+  { code:'SD', label:'🇸🇩 السودان' },
+  { code:'MR', label:'🇲🇷 موريتانيا' },
+  { code:'PS', label:'🇵🇸 فلسطين' },
+  { code:'OTHER', label:'🌍 دولة أخرى' },
+]
+
 const INIT = {
   email:'', name:'', gender:'', age:'', height:'', weight:'',
-  phone:'', workActivity:'', hasScale:'',
+  phone:'', country:'', workActivity:'', hasScale:'',
   goal:'', targetWeight:'', goalTimeline:'', trainingExperience:'',
   hasInBody:'', inBodyNote:'', bodyFatPct:'', hasNFS:'', nfsNote:'',
   dailyMeals:'', foodAllergy:'', dislikedFoods:'', preferredFoods:'',
@@ -388,6 +411,18 @@ export default function RegisterPage() {
                 hint="للتواصل وإرسال بيانات الدخول">
                 <TextInput field="phone" type="tel" placeholder="+974 3065 3759"
                   dir="ltr" form={form} setForm={setForm} errors={errors} />
+              </Inp>
+              <Inp label="البلد" error={errors.country}
+                hint="يساعد في تكييف البرنامج الغذائي مع الأطعمة المحلية">
+                <select
+                  value={form.country ?? ''}
+                  onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                  className={cls(errors.country)}>
+                  <option value="">اختر بلدك...</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
               </Inp>
               <Inp label="الجنس" required error={errors.gender}>
                 <RadioGroup field="gender" form={form} setForm={setForm}

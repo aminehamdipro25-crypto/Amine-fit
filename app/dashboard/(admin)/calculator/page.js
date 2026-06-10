@@ -43,7 +43,7 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5 }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'' }
 
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
@@ -150,6 +150,7 @@ export default function CalculatorPage() {
       avoided,
       duration:     'day',
       meals:        5,
+      country:      c.country        || '',
     })
     setPickedClient(c)
     setShowPicker(false)
@@ -492,7 +493,7 @@ export default function CalculatorPage() {
         {/* AI/Local badge */}
         <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${isAI ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
           {isAI ? <><Sparkles className="w-4 h-4" /> تم التوليد بالذكاء الاصطناعي Claude</> : <><Calculator className="w-4 h-4" /> تم التوليد بالمحرك المحلي (المجاني)</>}
-          {!isAI && !result.aiError && <span className="mr-auto text-xs font-normal text-slate-400">{result.duration !== 'day' ? 'AI متاح ليوم واحد فقط — الأسبوع/الشهر بالمحرك المحلي' : 'أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI'}</span>}
+          {!isAI && !result.aiError && <span className="mr-auto text-xs font-normal text-slate-400">{result.duration === 'month' ? 'الشهر بالمحرك المحلي — اليوم والأسبوع بـ Claude AI' : 'أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI'}</span>}
           {result.aiError && <span className="mr-auto text-xs font-normal text-red-500">خطأ AI: {result.aiError}</span>}
         </div>
 
