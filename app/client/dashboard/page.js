@@ -1045,7 +1045,7 @@ export default function ClientDashboard() {
   const hasPlan       = !!client.plan
   const calcPlan      = client.nutritionCalcPlan
   const hasNutrition  = (hasPlan && !!client.plan?.nutrition) || !!calcPlan
-  const hasTraining   = hasPlan && !!client.plan?.training
+  const hasTraining   = hasPlan && Array.isArray(client.plan?.training?.days) && client.plan.training.days.length > 0
 
   return (
     <div className="space-y-5 max-w-3xl mx-auto">
@@ -1103,9 +1103,13 @@ export default function ClientDashboard() {
               <span className="text-gold-400">{client.name?.split(' ')[0]}</span>
             </h1>
             <p className="text-white/50 text-sm mt-2 font-medium leading-relaxed max-w-xs">
-              {hasPlan
-                ? 'عميلنا العزيز، خطتك المخصصة جاهزة — نحن معك في كل خطوة نحو هدفك'
-                : 'عميلنا العزيز، يعمل المدرب أمين على تحضير خطتك المخصصة — ستصلك قريباً'}
+              {hasNutrition && hasTraining
+                ? 'خطتك المخصصة جاهزة — تغذية وتدريب ✓'
+                : hasNutrition
+                ? 'خطتك الغذائية جاهزة — البرنامج التدريبي قيد الإعداد'
+                : hasTraining
+                ? 'برنامجك التدريبي جاهز — الخطة الغذائية قيد الإعداد'
+                : 'يعمل المدرب أمين على تحضير خطتك المخصصة — ستصلك قريباً'}
             </p>
             <div className="flex items-center gap-2 mt-4">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -1177,6 +1181,8 @@ export default function ClientDashboard() {
                     client.plan?.nutrition?.meals?.length
                     ?? (calcPlan?.duration === 'day'
                         ? calcPlan?.menu?.length
+                        : calcPlan?.duration === 'month'
+                        ? calcPlan?.weeks?.[0]?.menu?.length
                         : calcPlan?.days?.[0]?.menu?.length)
                     ?? 0
                   } وجبات`
