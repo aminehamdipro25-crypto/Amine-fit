@@ -76,12 +76,23 @@ export default function PlanBuilder({ client }) {
   // AI modal state (training generation)
   const [aiModal, setAiModal]     = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiForm, setAiForm]       = useState({
-    goal:       client.goal || 'gain',
-    level:      client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate',
-    daysPerWeek: '3',
-    equipment:  existing.training?.equipment || 'gym',
-    injuries:   '',
+  const [aiForm, setAiForm]       = useState(() => {
+    // Map client's questionnaire trainingLocation → equipment type
+    const locToEquip = { home: 'home', outdoor: 'bodyweight', combination: 'gym' }
+    const defaultEquip = existing.training?.equipment
+      || locToEquip[client.trainingLocation]
+      || 'gym'
+    // Default days from questionnaire
+    const defaultDays = client.availableTrainingDays && /^\d$/.test(client.availableTrainingDays)
+      ? client.availableTrainingDays
+      : '3'
+    return {
+      goal:       client.goal || 'gain',
+      level:      client.activityLevel?.includes('مبتدئ') ? 'beginner' : 'intermediate',
+      daysPerWeek: defaultDays,
+      equipment:  defaultEquip,
+      injuries:   client.injuries || '',
+    }
   })
 
   // Auto-sum meal macros into top-level daily totals
