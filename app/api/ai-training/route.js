@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { isRateLimited } from '@/lib/rateLimit'
+import { getExerciseListForPrompt, validateAndFix } from '@/lib/exerciseDb'
 
 export const dynamic = 'force-dynamic'
 
-const SYSTEM_PROMPT = `You are an elite personal trainer and strength & conditioning specialist. Generate scientifically-sound, personalized training programs.
+const SYSTEM_PROMPT_BASE = `You are an elite personal trainer and strength & conditioning specialist. Generate scientifically-sound, personalized training programs.
 
 CRITICAL RULES:
 - Exercise names MUST be in English ONLY — use standard English gym terminology (e.g., "Barbell Back Squat", "Lat Pulldown", "Dumbbell Shoulder Press", "Plank", "Calf Raise")
@@ -276,6 +277,53 @@ const FALLBACKS = {
 
 // Home & bodyweight fallback programs (no barbell / no cables / no machines)
 const FALLBACKS_HOME = {
+  2: {
+    daysPerWeek: 2, duration: 50, level: 'beginner',
+    note: 'برنامج منزلي 2 أيام — جسم كامل بدمبل ومطاط وعارضة سحب.',
+    tips: ['سخّن 5 دقائق قبل كل جلسة', 'راحة يوم على الأقل بين الجلستين', 'ركّز على الأداء الصحيح قبل زيادة الوزن'],
+    days: [
+      {
+        name: 'Full Body A',
+        focus: 'كامل',
+        description: 'جسم كامل — دفع وسحب وأرجل',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: 'دفئ الكتف والمفاصل' },
+          { name: 'Bodyweight Squat', duration: '2×10', note: 'تنشيط الأرجل' },
+        ],
+        exercises: [
+          { name: 'Push-Up',                    sets: 4, reps: '10-15', rest: '60s', note: 'صدر مستقيم — نزول بطيء' },
+          { name: 'Dumbbell Row',                sets: 3, reps: '10-12', rest: '60s', note: 'كوع للسقف' },
+          { name: 'Dumbbell Goblet Squat',       sets: 3, reps: '12',    rest: '90s', note: 'ظهر مستقيم' },
+          { name: 'Dumbbell Shoulder Press',     sets: 3, reps: '10-12', rest: '60s', note: 'اضغط للأعلى بالكامل' },
+          { name: 'Plank',                       sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch',       duration: '30s hold', note: '' },
+          { name: 'Seated Hamstring Stretch',    duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body B',
+        focus: 'كامل',
+        description: 'جسم كامل — سحب وأرداف وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle',      duration: '3 min', note: 'تحريك مفصل الورك' },
+          { name: 'Knee Push-Up',                duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up',                     sets: 4, reps: '5-8',   rest: '90s', note: 'ابدأ من امتداد كامل' },
+          { name: 'Dumbbell Romanian Deadlift',  sets: 3, reps: '12',    rest: '90s', note: 'ركبة خفيف — ظهر مستقيم' },
+          { name: 'Dumbbell Reverse Lunge',      sets: 3, reps: '10 each', rest: '60s', note: '' },
+          { name: 'Dumbbell Curl',               sets: 3, reps: '12',    rest: '45s', note: '' },
+          { name: 'Mountain Climber',            sets: 3, reps: '30s',   rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose",                duration: '45s', note: '' },
+          { name: 'Standing Quad Stretch',       duration: '30s each', note: '' },
+        ],
+      },
+    ],
+  },
   3: {
     daysPerWeek: 3, duration: 50, level: 'beginner',
     note: 'برنامج منزلي فعّال — كل ما تحتاجه دمبل ومطاط وعارضة سحب.',
@@ -547,6 +595,53 @@ const FALLBACKS_HOME = {
 }
 
 const FALLBACKS_BW = {
+  2: {
+    daysPerWeek: 2, duration: 40, level: 'beginner',
+    note: 'برنامج وزن الجسم 2 أيام — جسم كامل بلا معدات.',
+    tips: ['راحة يوم على الأقل بين الجلستين', 'نزول بطيء في كل تكرار = نتائج أفضل', 'زد التكرارات تدريجياً كل أسبوع'],
+    days: [
+      {
+        name: 'Full Body A',
+        focus: 'كامل',
+        description: 'جسم كامل — دفع وأرجل وبطن',
+        warmup: [
+          { name: 'Jumping Jacks',   duration: '3 min', note: '' },
+          { name: 'Knee Push-Up',    duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up',         sets: 4, reps: '10-15', rest: '60s', note: 'نزول 3 ثوانٍ' },
+          { name: 'Pike Push-Up',    sets: 3, reps: '10',    rest: '60s', note: 'ورك للسماء — للكتف' },
+          { name: 'Bodyweight Squat',sets: 4, reps: '20',    rest: '60s', note: 'فخذ موازٍ للأرض' },
+          { name: 'Glute Bridge',    sets: 3, reps: '20',    rest: '45s', note: 'اضغط الأرداف في الأعلى' },
+          { name: 'Plank',           sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: '' },
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body B',
+        focus: 'كامل',
+        description: 'جسم كامل — سحب وقدرة وتحمّل',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Scapula Push-Up',        duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Pull-Up',           sets: 4, reps: '5-8',    rest: '90s', note: 'ابدأ من امتداد كامل' },
+          { name: 'Inverted Row',      sets: 3, reps: '10-12',  rest: '60s', note: 'طاولة أو عارضة منخفضة' },
+          { name: 'Jump Squat',        sets: 3, reps: '12',     rest: '60s', note: 'هبوط هادئ على أمشاط القدم' },
+          { name: 'Tricep Dip',        sets: 3, reps: '12',     rest: '45s', note: 'على كرسي ثابت' },
+          { name: 'Mountain Climber',  sets: 3, reps: '30s',    rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: "Child's Pose",             duration: '45s', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
   3: {
     daysPerWeek: 3, duration: 45, level: 'beginner',
     note: 'برنامج وزن الجسم فقط — لا تحتاج أي معدات.',
@@ -879,6 +974,15 @@ export async function POST(req) {
     .trim()
     .slice(0, 150)
 
+  // Build equipment-specific exercise constraint section
+  const exerciseList = getExerciseListForPrompt(safeEquip)
+  const exerciseConstraint = exerciseList
+    ? `\nALLOWED EXERCISES — use ONLY exercises from this list (do not invent exercises outside it):\n${exerciseList}\n`
+    : ''
+
+  // Build full system prompt with optional equipment constraint
+  const SYSTEM_PROMPT = SYSTEM_PROMPT_BASE + exerciseConstraint
+
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}
 - Level: ${levelMap[safeLevel]}
@@ -892,15 +996,33 @@ ${schema}`
   try {
     const { default: Anthropic } = await import('@anthropic-ai/sdk')
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
-    })
-    const raw = response.content[0].text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    const plan = JSON.parse(raw)
-    return NextResponse.json({ ...plan, ai: true })
+
+    // 30-second hard timeout — falls back to static program on timeout
+    const controller = new AbortController()
+    const timeoutId  = setTimeout(() => {
+      controller.abort()
+      console.warn('[ai-training] request timed out after 30s — using fallback')
+    }, 30_000)
+
+    let response
+    try {
+      response = await anthropic.messages.create(
+        { model: 'claude-haiku-4-5-20251001', max_tokens: 4096, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
+        { signal: controller.signal },
+      )
+    } finally {
+      clearTimeout(timeoutId)
+    }
+
+    const raw  = response.content[0].text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    const raw2 = raw.startsWith('{') ? raw : (raw.match(/\{[\s\S]*\}/) || [raw])[0]
+    const parsed = JSON.parse(raw2)
+
+    // Strict post-generation validation — replace any gym-only exercises in home/bodyweight plans
+    const { plan: validatedPlan, log } = validateAndFix(parsed, safeEquip)
+    if (log.length) console.warn(`[ai-training] equipment violations fixed (${safeEquip}):`, log.join(' | '))
+
+    return NextResponse.json({ ...validatedPlan, ai: true })
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
     const fb = getFallback(n, safeEquip)
