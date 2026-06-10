@@ -300,30 +300,40 @@ export default function RegisterPage() {
         </div>
 
         {/* Progress */}
-        <div className="mb-6">
+        <div className="mb-6" role="navigation" aria-label="خطوات الاستبيان">
           <div className="flex justify-between text-xs text-white/50 mb-2">
             <span>الخطوة {step + 1} من {STEPS.length}</span>
             <span>{pct}%</span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+          <div
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`تقدم الاستبيان: ${pct}%`}
+            className="w-full h-2 bg-white/10 rounded-full overflow-hidden"
+          >
             <div className="h-2 rounded-full bg-gradient-to-l from-emerald-400 to-primary-500 transition-all duration-500"
               style={{ width: `${pct + 20}%` }} />
           </div>
-          <div className="flex justify-between mt-3">
+          <ol className="flex justify-between mt-3 list-none p-0 m-0">
             {STEPS.map((s, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all
-                  ${i < step  ? 'bg-emerald-500 text-white'
-                  : i === step? 'bg-primary-500 text-white ring-4 ring-primary-500/30'
-                               : 'bg-white/10 text-white/40'}`}>
+              <li key={i} className="flex flex-col items-center gap-1">
+                <div
+                  aria-current={i === step ? 'step' : undefined}
+                  aria-label={`${i < step ? 'مكتملة: ' : i === step ? 'الحالية: ' : ''}${s.title}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all
+                    ${i < step  ? 'bg-emerald-500 text-white'
+                    : i === step? 'bg-primary-500 text-white ring-4 ring-primary-500/30'
+                                 : 'bg-white/10 text-white/40'}`}>
                   {i < step ? <CheckCircle2 className="w-4 h-4" /> : s.icon}
                 </div>
                 <span className={`text-xs hidden sm:block ${i === step ? 'text-white font-semibold' : 'text-white/40'}`}>
                   {s.title.split(' ')[0]}
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
 
         {/* Form card */}
