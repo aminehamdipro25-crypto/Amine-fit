@@ -1043,7 +1043,8 @@ export default function ClientDashboard() {
   if (!client) return null
 
   const hasPlan       = !!client.plan
-  const hasNutrition  = hasPlan && !!client.plan?.nutrition
+  const calcPlan      = client.nutritionCalcPlan
+  const hasNutrition  = (hasPlan && !!client.plan?.nutrition) || !!calcPlan
   const hasTraining   = hasPlan && !!client.plan?.training
 
   return (
@@ -1172,7 +1173,13 @@ export default function ClientDashboard() {
             </h3>
             <p className={`text-sm font-medium ${hasNutrition ? 'text-emerald-200' : 'text-white/20'}`}>
               {hasNutrition
-                ? `${client.plan.nutrition.calories} سعرة • ${client.plan.nutrition.meals?.length ?? 0} وجبات`
+                ? `${client.plan?.nutrition?.calories || calcPlan?.target || 0} سعرة • ${
+                    client.plan?.nutrition?.meals?.length
+                    ?? (calcPlan?.duration === 'day'
+                        ? calcPlan?.menu?.length
+                        : calcPlan?.days?.[0]?.menu?.length)
+                    ?? 0
+                  } وجبات`
                 : 'قيد الإعداد من المدرب'}
             </p>
             {hasNutrition ? (
