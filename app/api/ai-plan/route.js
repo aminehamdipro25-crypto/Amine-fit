@@ -36,8 +36,16 @@ const SYSTEM_PROMPT = `أنت مختص تغذية إكلينيكي معتمد و
 ذكر : BMR = (10×وزن كغ) + (6.25×طول سم) - (5×عمر) + 5
 أنثى: BMR = (10×وزن كغ) + (6.25×طول سم) - (5×عمر) - 161
 TDEE = BMR × معامل النشاط
-الهدف = TDEE + تعديل الهدف
 الحد الأدنى: 1500 سعرة للذكور / 1200 سعرة للإناث
+
+═══ منطق الهدف الذكي (إلزامي — يتجاوز الهدف المختار) ═══
+قارن الوزن الحالي بالوزن المستهدف:
+• وزن حالي > مستهدف → الهدف = TDEE − 500 (Recomposition) بصرف النظر عن الهدف المختار
+• وزن حالي < مستهدف → الهدف = TDEE + 300 (بناء)
+• متساويان → الهدف = TDEE + تعديل الهدف المختار
+البروتين = الوزن المستهدف × 2 غ/كغ
+الدهون = (السعرات المستهدفة × 0.25) ÷ 9 غ
+الكارب = (السعرات المستهدفة − بروتين×4 − دهون×9) ÷ 4 غ
 
 ═══ حصص الأطعمة المعيارية (ADA) ═══
 نشويات : أرز مطبوخ 65غ | توست 30غ | بطاطا 90غ | شوفان جاف 20غ | كسكس مطبوخ 65غ
@@ -67,8 +75,8 @@ const WEEK_NAMES = ['الأسبوع الأول', 'الأسبوع الثاني', 
 function localPlan(form) {
   const bmr      = calcBMR(form.gender, form.weight, form.height, form.age)
   const tdee     = calcTDEE(bmr, form.activity)
-  const target   = calcTarget(tdee, form.goal, form.gender)
-  const exOpts   = { age: form.age, bodyFatPct: form.bodyFatPct || null, weight: form.weight }
+  const target   = calcTarget(tdee, form.goal, form.gender, form.weight, form.targetWeight)
+  const exOpts   = { age: form.age, bodyFatPct: form.bodyFatPct || null, weight: form.weight, targetWeight: form.targetWeight || null }
   const ex       = calcExchanges(target, form.goal, form.avoided, exOpts)
   const water    = calcWaterGoal(form.weight, form.activity)
   const duration = form.duration || 'day'
