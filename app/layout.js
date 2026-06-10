@@ -105,6 +105,13 @@ export default function RootLayout({ children }) {
             gtag('config', '${GA_ID}');
           `}</Script>
         </>}
+        {/* Skip navigation — hidden until focused (keyboard accessibility) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#fbbf24] focus:text-black focus:font-extrabold focus:rounded-xl focus:shadow-lg"
+        >
+          انتقل إلى المحتوى الرئيسي
+        </a>
         <SwRegister />
         {children}
       </body>
