@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2 } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
+import { COUNTRIES } from '@/lib/countries'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition'
@@ -389,12 +390,26 @@ export default function CalculatorPage() {
             </div>
           </div>
 
-          {/* Row 3: Activity (full width) */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700">مستوى النشاط</label>
-            <select className={sel} value={form.activity} onChange={e => set('activity', e.target.value)}>
-              {ACTIVITY_FACTORS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
-            </select>
+          {/* Row 3: Activity + Country */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">مستوى النشاط</label>
+              <select className={sel} value={form.activity} onChange={e => set('activity', e.target.value)}>
+                {ACTIVITY_FACTORS.map(a => <option key={a.key} value={a.key}>{a.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">
+                البلد
+                <span className="mr-1.5 text-xs font-normal text-violet-500">يكيّف الأطعمة تلقائياً</span>
+              </label>
+              <select className={sel} value={form.country} onChange={e => set('country', e.target.value)}>
+                <option value="">— غير محدد (عالمي) —</option>
+                {COUNTRIES.map(c => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Goal */}

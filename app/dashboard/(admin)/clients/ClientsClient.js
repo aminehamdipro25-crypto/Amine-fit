@@ -8,6 +8,7 @@ import {
   Key, ExternalLink, Loader2, UserPlus, Mail, Phone, Lock, Dumbbell, LogOut as KickIcon,
   Calendar, CreditCard, RefreshCw, Star, TrendingUp, ClipboardList, Scale, Camera, Gift, Copy
 } from 'lucide-react'
+import { COUNTRIES } from '@/lib/countries'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
 function getOnlineStatus(info) {
@@ -1071,6 +1072,80 @@ function DetailRow({ icon: Icon, label, value, color = 'text-primary-600' }) {
   )
 }
 
+function EditableCountry({ clientId, initialValue, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [value,   setValue]   = useState(initialValue || '')
+  const [saving,  setSaving]  = useState(false)
+
+  const countryLabel = COUNTRIES.find(c => c.code === value)?.label
+
+  async function save() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/register/${clientId}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ country: value }),
+      })
+      if (res.ok) {
+        setEditing(false)
+        onSaved?.({ country: value })
+      }
+    } catch {}
+    setSaving(false)
+  }
+
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0">
+      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+        <span className="text-base leading-none">🌍</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-slate-400 font-medium">البلد / المنطقة</p>
+        {editing ? (
+          <div className="flex items-center gap-2 mt-1">
+            <select
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              className="flex-1 px-2 py-1.5 rounded-xl border border-primary-300 bg-white text-sm outline-none focus:border-primary-500 transition font-medium"
+            >
+              <option value="">— غير محدد —</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="px-3 py-1.5 rounded-xl bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 transition disabled:opacity-50 flex-shrink-0"
+            >
+              {saving ? '...' : 'حفظ'}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setValue(initialValue || '') }}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition flex-shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-slate-800 font-semibold flex-1">
+              {countryLabel || <span className="text-slate-400 font-normal">غير محدد — اضغط لتحديد البلد</span>}
+            </p>
+            <button
+              onClick={() => setEditing(true)}
+              className="text-[11px] font-bold text-primary-500 hover:text-primary-700 border border-primary-200 hover:border-primary-400 px-2 py-0.5 rounded-lg transition flex-shrink-0"
+            >
+              تعديل
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── Client Tasks Panel ──────────────────────────────────────────────────── */
 function ClientTasksPanel({ clientId }) {
   const [tasks,   setTasks]   = useState([])
@@ -1269,6 +1344,11 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
               <DetailRow icon={User}     label="الجنس"           value={{male:'ذكر',female:'أنثى'}[client.gender]} />
               <DetailRow icon={Activity} label="طبيعة العمل"     value={client.workActivity} />
               <DetailRow icon={Utensils} label="ميزان المطبخ"    value={{yes:'نعم',no:'لا'}[client.hasScale]} />
+              <EditableCountry
+                clientId={client.id}
+                initialValue={client.country || ''}
+                onSaved={fields => onUpdate(client.id, fields)}
+              />
             </div>
           </div>
 

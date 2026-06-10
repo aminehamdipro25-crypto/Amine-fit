@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star, RotateCcw } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
+import { COUNTRIES } from '@/lib/countries'
 
 const LS_FORM = 'af_reg_form'
 const LS_STEP = 'af_reg_step'
@@ -87,29 +88,6 @@ const STEPS = [
   { title: 'النمط الغذائي',                     icon: '🥗', sub: 'Dietary Habits' },
   { title: 'الحالة الصحية والنشاط البدني',     icon: '🏃', sub: 'Health & Activity' },
   { title: 'نمط الحياة والالتزام',              icon: '🌙', sub: 'Lifestyle & Commitment' },
-]
-
-const COUNTRIES = [
-  { code:'TN', label:'🇹🇳 تونس' },
-  { code:'MA', label:'🇲🇦 المغرب' },
-  { code:'DZ', label:'🇩🇿 الجزائر' },
-  { code:'LY', label:'🇱🇾 ليبيا' },
-  { code:'QA', label:'🇶🇦 قطر' },
-  { code:'SA', label:'🇸🇦 السعودية' },
-  { code:'AE', label:'🇦🇪 الإمارات' },
-  { code:'KW', label:'🇰🇼 الكويت' },
-  { code:'BH', label:'🇧🇭 البحرين' },
-  { code:'OM', label:'🇴🇲 عُمان' },
-  { code:'EG', label:'🇪🇬 مصر' },
-  { code:'JO', label:'🇯🇴 الأردن' },
-  { code:'LB', label:'🇱🇧 لبنان' },
-  { code:'SY', label:'🇸🇾 سوريا' },
-  { code:'IQ', label:'🇮🇶 العراق' },
-  { code:'YE', label:'🇾🇪 اليمن' },
-  { code:'SD', label:'🇸🇩 السودان' },
-  { code:'MR', label:'🇲🇷 موريتانيا' },
-  { code:'PS', label:'🇵🇸 فلسطين' },
-  { code:'OTHER', label:'🌍 دولة أخرى' },
 ]
 
 const INIT = {
