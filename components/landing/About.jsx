@@ -213,6 +213,8 @@ export default function About() {
             <div className="flex justify-center mt-5">
               <button
                 onClick={() => setShowAllCerts(v => !v)}
+                aria-expanded={showAllCerts}
+                aria-label={showAllCerts ? 'عرض أقل من الشهادات' : `عرض كل الشهادات (${certifications.length})`}
                 className="flex items-center gap-2 px-5 py-2.5 border border-white/10 text-white/40 font-bold text-sm rounded-xl hover:bg-white/5 hover:text-white transition">
                 {showAllCerts
                   ? <><ChevronUp className="w-4 h-4" /> عرض أقل</>

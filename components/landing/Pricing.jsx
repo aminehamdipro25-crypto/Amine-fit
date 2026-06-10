@@ -191,8 +191,13 @@ function PlanModal({ plan, onClose, zone }) {
   const discPct   = Math.round((1 - Number(dispPrice) / Number(dispOrig)) * 100)
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-      onClick={e => e.target === e.currentTarget && onClose()}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="plan-modal-title"
+      className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
       <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-4
         ${isGold ? 'bg-white' : 'bg-[#111]'}`}>
 
@@ -200,7 +205,7 @@ function PlanModal({ plan, onClose, zone }) {
         <div className={`px-7 pt-7 pb-5 relative ${isGold
           ? 'bg-gradient-to-br from-gold-400 to-amber-400'
           : 'bg-gradient-to-br from-[#0a0a0a] to-[#181818] border-b border-white/5'}`}>
-          <button onClick={onClose} className={`absolute top-4 left-4 p-2 rounded-xl transition
+          <button onClick={onClose} aria-label="إغلاق" className={`absolute top-4 left-4 p-2 rounded-xl transition
             ${isGold ? 'text-black/40 hover:bg-black/10' : 'text-white/30 hover:bg-white/5'}`}>
             <X className="w-5 h-5" />
           </button>
@@ -213,7 +218,7 @@ function PlanModal({ plan, onClose, zone }) {
                   {plan.badge}
                 </span>
               )}
-              <h2 className={`text-2xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.name}</h2>
+              <h2 id="plan-modal-title" className={`text-2xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{plan.name}</h2>
               <p className={`text-sm font-medium mt-0.5 ${isGold ? 'text-black/50' : 'text-white/40'}`}>{plan.tag}</p>
             </div>
           </div>

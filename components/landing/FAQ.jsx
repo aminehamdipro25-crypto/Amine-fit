@@ -40,18 +40,21 @@ const faqs = [
 function FAQItem({ q, a, open, toggle }) {
   return (
     <div
-      className={`border rounded-2xl overflow-hidden transition-colors cursor-pointer
+      className={`border rounded-2xl overflow-hidden transition-colors
         ${open ? 'border-gold-400/30 bg-white/5' : 'border-white/8 bg-white/[0.02] hover:border-white/15'}`}
-      onClick={toggle}
     >
-      <div className="flex items-center gap-4 px-6 py-5">
+      <button
+        onClick={toggle}
+        aria-expanded={open}
+        className="w-full flex items-center gap-4 px-6 py-5 text-right cursor-pointer"
+      >
         <span className={`font-extrabold text-sm flex-1 text-right leading-relaxed transition-colors
           ${open ? 'text-white' : 'text-white/70'}`}>
           {q}
         </span>
         <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-all duration-300
           ${open ? 'rotate-180 text-gold-400' : 'text-white/30'}`} />
-      </div>
+      </button>
       {open && (
         <div className="px-6 pb-5 border-t border-white/5">
           <p className="text-white/50 text-sm leading-relaxed font-medium pt-4 text-right">{a}</p>

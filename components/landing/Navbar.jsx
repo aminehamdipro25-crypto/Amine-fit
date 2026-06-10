@@ -49,7 +49,7 @@ export default function Navbar() {
               احجز الآن
             </a>
           </div>
-          <button onClick={() => setBanner(false)}
+          <button onClick={() => setBanner(false)} aria-label="إغلاق الإشعار"
             className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition">
             <X className="w-4 h-4" />
           </button>
@@ -101,8 +101,12 @@ export default function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(o => !o)}
-            className="md:hidden p-2 rounded-lg text-white/60 hover:text-white transition-colors">
+          <button
+            onClick={() => setMobileOpen(o => !o)}
+            aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-expanded={mobileOpen}
+            className="md:hidden p-2 rounded-lg text-white/60 hover:text-white transition-colors"
+          >
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>

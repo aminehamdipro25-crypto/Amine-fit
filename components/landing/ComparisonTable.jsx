@@ -36,15 +36,19 @@ export default function ComparisonTable() {
     <section className="py-16 bg-[#0a0a0a]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <button onClick={() => setOpen(v => !v)}
-          className="w-full flex items-center justify-center gap-3 py-4 border border-white/10 rounded-2xl text-white/50 hover:text-white hover:border-white/20 transition-all font-bold text-sm">
+        <button
+          onClick={() => setOpen(v => !v)}
+          aria-expanded={open}
+          aria-controls="comparison-table"
+          className="w-full flex items-center justify-center gap-3 py-4 border border-white/10 rounded-2xl text-white/50 hover:text-white hover:border-white/20 transition-all font-bold text-sm"
+        >
           <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
           مقارنة تفصيلية بين الباقات
           <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
+          <div id="comparison-table" className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10">

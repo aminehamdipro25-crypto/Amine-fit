@@ -63,7 +63,11 @@ export default function Results() {
         {/* Selector tabs */}
         <div className="flex justify-center gap-3 mb-10 flex-wrap">
           {results.map((r, i) => (
-            <button key={i} onClick={() => setActive(i)}
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              aria-pressed={active === i}
+              aria-label={`عرض نتائج ${r.initials} من ${r.city}`}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border transition-all
                 ${active === i
                   ? 'bg-gold-400 text-black border-gold-400'
