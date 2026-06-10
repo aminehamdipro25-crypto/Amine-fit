@@ -3,20 +3,26 @@ import { requireAdmin } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
-const SYSTEM_PROMPT_SINGLE = `أنت مساعد تغذية للمدرب. تلقّيت القائمة الغذائية الحالية. عدّلها بناءً على طلب المدرب وأعد JSON فقط بنفس هيكل menu array + حقل 'message' يصف ما تغيّر. لا تغير BMR أو TDEE أو الوحدات الإجمالية.
+const MACRO_RULES = `
+قواعد صارمة (لا استثناء):
+- احتفظ بقيم kcal/carbs/protein/fat لكل وجبة كما هي بالضبط — لا تحسبها من جديد أبداً
+- عند استبدال طعام: غيّر حقلي food وamount فقط، مع الحفاظ على نفس عدد الحصص (servings) ونفس المجموعة الغذائية (group)
+- لا تضف وجبات ولا تحذف وجبات — حافظ على نفس العدد
+- أعد JSON مضغوطاً فقط (بدون أي نص إضافي أو مسافات أو أسطر زائدة)`
+
+const SYSTEM_PROMPT_SINGLE = `أنت مساعد تغذية للمدرب. تلقّيت القائمة الغذائية الحالية. عدّلها بناءً على طلب المدرب وأعد JSON فقط بنفس هيكل menu array + حقل 'message' يصف ما تغيّر.
+${MACRO_RULES}
 
 هيكل الرد:
-{"menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}],"message":"..."}
-
-أعد JSON مضغوطاً فقط (بدون مسافات أو أسطر زائدة).`
+{"menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}],"message":"..."}`
 
 // For chunks of ≤3 days per call
 const SYSTEM_PROMPT_CHUNK = `أنت مساعد تغذية للمدرب. تلقّيت قوائم غذائية لعدة أيام. عدّلها جميعاً بناءً على طلب المدرب وأعد JSON فقط.
+${MACRO_RULES}
+طبّق نفس التعديل على جميع الأيام.
 
 هيكل الرد:
-{"days":[{"name":"اسم اليوم بدون تغيير","menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}]}],"message":"وصف موجز"}
-
-قواعد: طبّق نفس التعديل على جميع الأيام. حافظ على عدد الوجبات. أعد JSON مضغوطاً فقط (بدون مسافات أو أسطر زائدة).`
+{"days":[{"name":"اسم اليوم بدون تغيير","menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}]}],"message":"وصف موجز"}`
 
 export async function POST(req) {
   const deny = await requireAdmin()
@@ -96,11 +102,14 @@ export async function POST(req) {
     }
 
     // ── Single day ──────────────────────────────────────────────────────────
-    const ctxMsg = `القائمة الحالية:\n${JSON.stringify(menu)}\nالسعرات: ${plan?.target || '—'} — الوحدات: ${plan?.ex ? JSON.stringify(plan.ex) : '—'}`
+    // Send only the latest user request — full history risks the model
+    // mimicking prior text responses instead of returning JSON
+    const latestSingleMsg = messages.filter(m => m.role === 'user').at(-1)?.content || ''
     const conv = [
-      { role: 'user',      content: ctxMsg },
-      { role: 'assistant', content: 'فهمت القائمة. جاهز لتعديلها.' },
-      ...messages,
+      {
+        role: 'user',
+        content: `القائمة الحالية:\n${JSON.stringify(menu)}\nالسعرات المستهدفة: ${plan?.target || '—'}\n\nطلب التعديل: ${latestSingleMsg}`,
+      },
     ]
 
     const response = await client.messages.create({
@@ -110,8 +119,9 @@ export async function POST(req) {
       messages:   conv,
     })
 
-    const raw    = response.content[0].text.trim()
+    const rawText = response.content[0].text.trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    const raw    = rawText.startsWith('{') ? rawText : (rawText.match(/\{[\s\S]*\}/) || [rawText])[0]
     const result = JSON.parse(raw)
 
     return NextResponse.json({
