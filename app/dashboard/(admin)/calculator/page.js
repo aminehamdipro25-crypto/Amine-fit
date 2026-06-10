@@ -46,6 +46,8 @@ function StepCard({ num, title, children }) {
 
 const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'' }
 
+const LS_KEY = 'amine_calc_draft'
+
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
 
@@ -131,7 +133,50 @@ export default function CalculatorPage() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error'
   const [savedPlan, setSavedPlan] = useState(null) // plan fetched from Redis for picked client
+  const [initialized, setInitialized] = useState(false) // true after localStorage restore
+  const [draftRestored, setDraftRestored] = useState(false)
   const chatEndRef = useRef(null)
+
+  // ── Restore draft from localStorage on mount ─────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (raw) {
+        const draft = JSON.parse(raw)
+        if (draft.form)   setForm(draft.form)
+        if (draft.result) {
+          setRes(draft.result)
+          setIsAI(!!draft.isAI)
+          setChatMessages(draft.chatMessages || [])
+          setSelectedDay(draft.selectedDay  || 0)
+          setSelectedWeek(draft.selectedWeek || 0)
+          setDraftRestored(true)
+        }
+        if (draft.pickedClient) setPickedClient(draft.pickedClient)
+      }
+    } catch {}
+    setInitialized(true) // enable auto-save after restore
+  }, []) // mount only
+
+  // ── Auto-save draft to localStorage after each change ────────────────────
+  useEffect(() => {
+    if (!initialized) return
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        form, result, isAI, chatMessages, selectedDay, selectedWeek,
+        pickedClient: pickedClient
+          ? { id: pickedClient.id, name: pickedClient.name, email: pickedClient.email }
+          : null,
+      }))
+      if (result) localStorage.setItem('amineFitPlan', JSON.stringify(result))
+    } catch {}
+  }, [form, result, isAI, chatMessages, selectedDay, selectedWeek, pickedClient, initialized]) // eslint-disable-line
+
+  function clearDraft() {
+    setForm(INIT); setRes(null); setPickedClient(null); setSavedPlan(null)
+    setChatMessages([]); setChatInput(''); setSaveStatus(null); setDraftRestored(false)
+    try { localStorage.removeItem(LS_KEY); localStorage.removeItem('amineFitPlan') } catch {}
+  }
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setRes(null) }
 
@@ -333,7 +378,7 @@ export default function CalculatorPage() {
               </div>
               <div className="flex items-center gap-2">
                 {pickedClient && (
-                  <button onClick={() => { setPickedClient(null); setForm(INIT); setRes(null); setSavedPlan(null) }}
+                  <button onClick={clearDraft}
                     className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
                     <X className="w-3 h-3" /> مسح
                   </button>
@@ -482,7 +527,7 @@ export default function CalculatorPage() {
               </>
             )}
           </button>
-          <button onClick={() => { setForm(INIT); setRes(null); setPickedClient(null) }} title="إعادة تعيين"
+          <button onClick={clearDraft} title="إعادة تعيين وحذف المسودة"
             className="px-4 py-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition">
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -502,6 +547,18 @@ export default function CalculatorPage() {
           </div>
         )}
       </div>
+
+      {/* ── Draft restored banner ── */}
+      {draftRestored && result && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm">
+          <span className="text-amber-600">📂</span>
+          <span className="flex-1 font-medium text-amber-800">تم استعادة مسودتك السابقة تلقائياً</span>
+          <button onClick={clearDraft}
+            className="text-xs font-bold text-amber-600 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition">
+            مسح المسودة
+          </button>
+        </div>
+      )}
 
       {/* ── Results ── */}
       {result && (<>
