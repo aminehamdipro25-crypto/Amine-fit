@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Trash2, ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronUp, Plus, Play } from 'lucide-react'
 
 const FOCUS_OPTIONS = ['صدر', 'ظهر', 'كتف', 'ذراعين', 'أرجل', 'بطن', 'كارديو', 'كامل', 'صدر وكتف', 'ظهر وبايسبس']
 const FOCUS_ICONS   = { 'صدر':'🫀','ظهر':'🔙','كتف':'💪','ذراعين':'💪','أرجل':'🦵','بطن':'⚡','كارديو':'🏃','كامل':'⚡','صدر وكتف':'🫀','ظهر وبايسبس':'🔙' }
@@ -68,13 +68,26 @@ function ExerciseRow({ ex, idx, onChange, onRemove }) {
             placeholder="ملاحظة للعميل — اختياري"
             className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-gold-400 transition font-medium"
           />
-          <input
-            value={ex.videoUrl || ''}
-            onChange={e => onChange({ ...ex, videoUrl: e.target.value })}
-            placeholder="رابط YouTube للشرح — اختياري"
-            dir="ltr"
-            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-gold-400 transition font-medium"
-          />
+          <div className="flex gap-1.5">
+            <input
+              value={ex.videoUrl || ''}
+              onChange={e => onChange({ ...ex, videoUrl: e.target.value })}
+              placeholder="رابط YouTube للشرح — اختياري"
+              dir="ltr"
+              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-gold-400 transition font-medium"
+            />
+            {ex.name && (
+              <a
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' exercise tutorial')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="ابحث على YouTube"
+                className="flex items-center justify-center w-[34px] rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition flex-shrink-0 border border-red-100"
+              >
+                <Play className="w-3.5 h-3.5" fill="currentColor"/>
+              </a>
+            )}
+          </div>
         </div>
       )}
     </div>

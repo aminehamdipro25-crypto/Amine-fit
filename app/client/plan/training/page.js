@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  CheckCircle2, Dumbbell, Star, Flame, Wind, Play,
+  CheckCircle2, Dumbbell, Star, Flame, Wind, Play, X,
   ChevronLeft, ChevronRight, ChevronDown, Printer,
 } from 'lucide-react'
 
@@ -139,11 +139,40 @@ function getPlanDayIndex(date,schedule) { const i=schedule.indexOf(date.getDay()
 // Format: "4 جوان 2026"
 function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
 
-// ─── YouTube Thumbnail ────────────────────────────────────────────────────────
-function getThumb(url) {
+// ─── YouTube helpers ──────────────────────────────────────────────────────────
+function getVideoId(url) {
   if (!url) return null
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null
+  return m ? m[1] : null
+}
+function getThumb(url) {
+  const id = getVideoId(url)
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
+}
+
+// ─── Video Modal ──────────────────────────────────────────────────────────────
+function VideoModal({ videoId, onClose }) {
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`
+  return (
+    <div className="fixed inset-0 bg-black/85 z-[60] flex items-center justify-center p-4"
+      onClick={onClose}>
+      <div className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose}
+          className="flex items-center gap-1.5 text-white/50 hover:text-white mb-3 text-sm font-bold transition ml-auto">
+          <X className="w-4 h-4"/> إغلاق
+        </button>
+        <div className="relative w-full rounded-2xl overflow-hidden bg-black" style={{paddingBottom:'56.25%'}}>
+          <iframe
+            src={embedUrl}
+            className="absolute inset-0 w-full h-full"
+            frameBorder="0"
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Section Banner ───────────────────────────────────────────────────────────
@@ -171,16 +200,18 @@ function SectionBanner({type}) {
 
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
 function ExerciseRow({ex, isLast, number, onComplete}) {
-  const name      = normalizeName(ex.name)
-  const ytThumb   = getThumb(ex.videoUrl)
-  const numSets   = Math.max(1, Number(ex.sets) || 3)
+  const name       = normalizeName(ex.name)
+  const videoId    = getVideoId(ex.videoUrl)
+  const ytThumb    = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null
+  const numSets    = Math.max(1, Number(ex.sets) || 3)
   const targetReps = String(ex.reps || '')
 
   const isTimeBased = /\d+\s*s(ec)?$|amrap|hold/i.test(targetReps)
-  const showRest  = isTimeBased && !!ex.rest
+  const showRest   = isTimeBased && !!ex.rest
 
-  const [expanded, setExpanded] = useState(false)
-  const [sets, setSets] = useState(() =>
+  const [expanded,   setExpanded]   = useState(false)
+  const [showVideo,  setShowVideo]  = useState(false)
+  const [sets,       setSets]       = useState(() =>
     Array.from({length: numSets}, () => ({done:false, reps:'', weight:''}))
   )
   const [imgSrc, setImgSrc] = useState(ytThumb)
@@ -190,7 +221,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
 
   useEffect(() => { onComplete?.(allDone) }, [allDone]) // eslint-disable-line
 
-  // Fetch exercise illustration from wger.de if no YouTube thumbnail
+  // Fetch exercise illustration if no YouTube thumbnail
   useEffect(() => {
     if (ytThumb) { setImgSrc(ytThumb); return }
     const en = normalizeName(ex.name)
@@ -208,123 +239,171 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
     setSets(prev => prev.map((s,j) => j===i ? {...s, done:!s.done} : s))
   }
 
+  // YouTube search fallback URL for exercises with no image/video
+  const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((name||ex.name)+' exercise tutorial')}`
+  const hasVideo    = !!videoId
+
   return (
-    <div className={`transition-all duration-200 ${!isLast ? 'border-b border-slate-100' : ''}`}>
-
-      {/* ── Header row ── */}
-      <div
-        className="flex items-center gap-3 py-3 cursor-pointer select-none"
-        onClick={() => setExpanded(e=>!e)}>
-
-        {/* Square image — always visible, left-most */}
-        <div className="relative flex-shrink-0 w-[90px] h-[90px] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
-          {imgSrc
-            ? <img src={imgSrc} alt={name} className="w-full h-full object-cover" loading="lazy"
-                onError={() => setImgSrc(null)} />
-            : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                <Dumbbell className="w-6 h-6 text-slate-300"/>
-              </div>}
-          {ex.videoUrl && (
-            <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
-              onClick={e=>e.stopPropagation()}
-              className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity rounded-xl">
-              <Play className="w-5 h-5 text-white" fill="white"/>
-            </a>
-          )}
-          {/* Completion overlay */}
-          {allDone && (
-            <div className="absolute inset-0 bg-emerald-500/80 flex items-center justify-center">
-              <span className="text-white text-xl font-extrabold">✓</span>
-            </div>
-          )}
-        </div>
-
-        {/* Name + meta */}
-        <div className="flex-1 min-w-0">
-          <p className={`font-extrabold text-sm leading-tight transition-all
-            ${allDone ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
-            {name}
-          </p>
-          <p className="text-[11px] font-semibold mt-1 flex items-center gap-1.5 flex-wrap" dir="ltr">
-            {ex.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-700 font-extrabold">{ex.sets}</span></>}
-            {ex.sets && ex.reps && <span className="text-slate-200">·</span>}
-            {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
-            {showRest && <><span className="text-slate-200">·</span><span className="text-slate-400 text-[10px]">{ex.rest}</span></>}
-          </p>
-          {doneSets > 0 && !allDone && (
-            <p className="text-[10px] text-[#d97706] font-bold mt-1">{doneSets}/{numSets} sets done</p>
-          )}
-        </div>
-
-        {/* Badge number */}
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold
-          ${allDone ? 'bg-emerald-100 text-emerald-600'
-            : doneSets > 0 ? 'bg-amber-100 text-amber-600'
-            : 'bg-slate-100 text-slate-500'}`}>
-          {doneSets > 0 && !allDone ? `${doneSets}/${numSets}` : number}
-        </div>
-
-        <ChevronDown className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}/>
-      </div>
-
-      {/* ── Expanded: image left + set tracker right ── */}
-      {expanded && (
-        <div className="pb-3 px-1">
-          {ex.note && (
-            <p className="text-[10px] text-slate-400 mb-2 px-1 leading-relaxed">💡 {ex.note}</p>
-          )}
-          <div className="flex gap-2 items-stretch" dir="ltr">
-
-            {/* Large image — left */}
-            <div className="flex-shrink-0 w-[120px] rounded-xl overflow-hidden bg-slate-100 self-stretch min-h-[100px]">
-              {imgSrc
-                ? <img src={imgSrc} alt={name} className="w-full h-full object-cover"
-                    onError={() => setImgSrc(null)} />
-                : <div className="w-full h-full flex items-center justify-center">
-                    <Dumbbell className="w-8 h-8 text-slate-300"/>
-                  </div>}
-            </div>
-
-            {/* Set tracker — right */}
-            <div className="flex-1 rounded-xl overflow-hidden border border-slate-100">
-              <div className="grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 bg-slate-50 border-b border-slate-100">
-                <p className="text-[8px] font-extrabold text-slate-400 uppercase">#</p>
-                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
-                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">kg</p>
-                <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">✓</p>
-              </div>
-              {sets.map((s,i) => (
-                <div key={i} className={`grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 transition-colors
-                  ${i < sets.length-1 ? 'border-b border-slate-50' : ''}
-                  ${s.done ? 'bg-emerald-50/60' : 'bg-white'}`}>
-                  <p className={`text-[10px] font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
-                  <input
-                    type="number" inputMode="numeric"
-                    placeholder={targetReps || '—'}
-                    value={s.reps}
-                    onChange={e => updateSet(i,'reps',e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
-                  />
-                  <input
-                    type="number" inputMode="decimal"
-                    placeholder="—"
-                    value={s.weight}
-                    onChange={e => updateSet(i,'weight',e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
-                  />
-                  <button onClick={()=>toggleSet(i)}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
-                      ${s.done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24]'}`}>
-                    {s.done && <CheckCircle2 className="w-2.5 h-2.5 text-black"/>}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
+    <>
+      {showVideo && videoId && (
+        <VideoModal videoId={videoId} onClose={() => setShowVideo(false)} />
       )}
-    </div>
+
+      <div className={`transition-all duration-200 ${!isLast ? 'border-b border-slate-100' : ''}`}>
+
+        {/* ── Header row ── */}
+        <div
+          className="flex items-center gap-3 py-3 cursor-pointer select-none"
+          onClick={() => setExpanded(e=>!e)}>
+
+          {/* Square image / thumbnail */}
+          <div className="relative flex-shrink-0 w-[90px] h-[90px] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
+            {imgSrc
+              ? <img src={imgSrc} alt={name} className="w-full h-full object-cover" loading="lazy"
+                  onError={() => setImgSrc(null)} />
+              : <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+                  <Dumbbell className="w-6 h-6 text-slate-300"/>
+                  <span className="text-[8px] font-bold text-slate-300 text-center px-1 leading-tight">No image</span>
+                </div>}
+
+            {/* Play overlay — opens modal if video, opens YouTube search if no video */}
+            {hasVideo ? (
+              <button
+                onClick={e=>{ e.stopPropagation(); setShowVideo(true) }}
+                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity rounded-xl">
+                <Play className="w-5 h-5 text-white" fill="white"/>
+              </button>
+            ) : (
+              <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                onClick={e=>e.stopPropagation()}
+                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity rounded-xl">
+                <div className="flex flex-col items-center gap-1">
+                  <Play className="w-4 h-4 text-white" fill="white"/>
+                  <span className="text-[8px] font-bold text-white/80">Tutorial</span>
+                </div>
+              </a>
+            )}
+
+            {/* Completion overlay */}
+            {allDone && (
+              <div className="absolute inset-0 bg-emerald-500/80 flex items-center justify-center">
+                <span className="text-white text-xl font-extrabold">✓</span>
+              </div>
+            )}
+          </div>
+
+          {/* Name + meta */}
+          <div className="flex-1 min-w-0">
+            <p className={`font-extrabold text-sm leading-tight transition-all
+              ${allDone ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+              {name}
+            </p>
+            <p className="text-[11px] font-semibold mt-1 flex items-center gap-1.5 flex-wrap" dir="ltr">
+              {ex.sets && <><span className="text-slate-400">Sets:</span><span className="text-slate-700 font-extrabold">{ex.sets}</span></>}
+              {ex.sets && ex.reps && <span className="text-slate-200">·</span>}
+              {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
+              {showRest && <><span className="text-slate-200">·</span><span className="text-slate-400 text-[10px]">{ex.rest}</span></>}
+            </p>
+            {doneSets > 0 && !allDone && (
+              <p className="text-[10px] text-[#d97706] font-bold mt-1">{doneSets}/{numSets} sets done</p>
+            )}
+            {/* Tutorial pill */}
+            {hasVideo ? (
+              <button
+                onClick={e=>{ e.stopPropagation(); setShowVideo(true) }}
+                className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-full hover:bg-[#fbbf24]/20 transition active:scale-95">
+                <Play className="w-2.5 h-2.5" fill="currentColor"/> Tutorial
+              </button>
+            ) : (
+              <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                onClick={e=>e.stopPropagation()}
+                className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full hover:bg-slate-200 transition w-fit">
+                <Play className="w-2.5 h-2.5"/> Find Tutorial
+              </a>
+            )}
+          </div>
+
+          {/* Badge number */}
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-extrabold
+            ${allDone ? 'bg-emerald-100 text-emerald-600'
+              : doneSets > 0 ? 'bg-amber-100 text-amber-600'
+              : 'bg-slate-100 text-slate-500'}`}>
+            {doneSets > 0 && !allDone ? `${doneSets}/${numSets}` : number}
+          </div>
+
+          <ChevronDown className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}/>
+        </div>
+
+        {/* ── Expanded: image left + set tracker right ── */}
+        {expanded && (
+          <div className="pb-3 px-1">
+            {ex.note && (
+              <p className="text-[10px] text-slate-400 mb-2 px-1 leading-relaxed">💡 {ex.note}</p>
+            )}
+            <div className="flex gap-2 items-stretch" dir="ltr">
+
+              {/* Large image — left */}
+              <div className="flex-shrink-0 w-[120px] rounded-xl overflow-hidden bg-slate-100 self-stretch min-h-[100px] relative">
+                {imgSrc
+                  ? <img src={imgSrc} alt={name} className="w-full h-full object-cover"
+                      onError={() => setImgSrc(null)} />
+                  : <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-2">
+                      <Dumbbell className="w-8 h-8 text-slate-300"/>
+                      <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                        className="text-[9px] font-bold text-slate-400 text-center leading-tight hover:text-slate-600 transition underline">
+                        Find on YouTube
+                      </a>
+                    </div>}
+                {hasVideo && (
+                  <button
+                    onClick={() => setShowVideo(true)}
+                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity rounded-xl">
+                    <Play className="w-6 h-6 text-white" fill="white"/>
+                  </button>
+                )}
+              </div>
+
+              {/* Set tracker — right */}
+              <div className="flex-1 rounded-xl overflow-hidden border border-slate-100">
+                <div className="grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 bg-slate-50 border-b border-slate-100">
+                  <p className="text-[8px] font-extrabold text-slate-400 uppercase">#</p>
+                  <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">Reps</p>
+                  <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">kg</p>
+                  <p className="text-[8px] font-extrabold text-slate-400 uppercase text-center">✓</p>
+                </div>
+                {sets.map((s,i) => (
+                  <div key={i} className={`grid grid-cols-[18px_1fr_1fr_26px] gap-1 items-center px-2 py-1.5 transition-colors
+                    ${i < sets.length-1 ? 'border-b border-slate-50' : ''}
+                    ${s.done ? 'bg-emerald-50/60' : 'bg-white'}`}>
+                    <p className={`text-[10px] font-extrabold ${s.done ? 'text-emerald-600' : 'text-slate-400'}`}>{i+1}</p>
+                    <input
+                      type="number" inputMode="numeric"
+                      placeholder={targetReps || '—'}
+                      value={s.reps}
+                      onChange={e => updateSet(i,'reps',e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                    />
+                    <input
+                      type="number" inputMode="decimal"
+                      placeholder="—"
+                      value={s.weight}
+                      onChange={e => updateSet(i,'weight',e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
+                    />
+                    <button onClick={()=>toggleSet(i)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 mx-auto
+                        ${s.done ? 'bg-[#fbbf24] border-[#fbbf24] scale-105' : 'border-slate-200 hover:border-[#fbbf24]'}`}>
+                      {s.done && <CheckCircle2 className="w-2.5 h-2.5 text-black"/>}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
