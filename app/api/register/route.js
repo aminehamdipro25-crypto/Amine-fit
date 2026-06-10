@@ -4,6 +4,7 @@ import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/su
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendEmail } from '@/lib/mailer'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -202,7 +203,7 @@ export async function POST(req) {
         loginUrl: '/client/login',
       }, { status: 409 })
     }
-    console.error('[register FAILED]', err.message)
+    logger.critical('register', 'Registration failed', { err: err.message })
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

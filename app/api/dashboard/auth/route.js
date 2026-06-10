@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { createAdminSession, deleteAdminSession } from '@/lib/adminSession'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ export async function POST(req) {
     const { password } = await req.json()
     const correct = process.env.DASHBOARD_PASSWORD
     if (!correct) {
-      console.error('[admin auth] DASHBOARD_PASSWORD env var is not set')
+      logger.critical('admin-auth', 'DASHBOARD_PASSWORD env var is not set')
       return NextResponse.json({ error: 'خطأ في إعداد الخادم' }, { status: 500 })
     }
 
