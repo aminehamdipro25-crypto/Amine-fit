@@ -1,9 +1,12 @@
 import BlogContent from './BlogContent'
 import { posts } from '@/lib/blogPosts'
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+
 export const metadata = {
   title: 'المدونة — تغذية ولياقة بدنية | Amine-Fit',
   description: 'مقالات علمية في التغذية والتدريب الرياضي من المدرب أمين حمدي — مدرب شخصي معتمد في الدوحة، قطر.',
+  alternates: { canonical: `${baseUrl}/blog` },
 }
 
 export default function BlogPage() {

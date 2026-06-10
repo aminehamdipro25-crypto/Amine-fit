@@ -20,6 +20,12 @@ import Footer          from '@/components/landing/Footer'
 import WhatsAppButton  from '@/components/landing/WhatsAppButton'
 import ScrollToTop     from '@/components/landing/ScrollToTop'
 
+const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+
+export const metadata = {
+  alternates: { canonical: base },
+}
+
 export default function Home() {
   return (
     <>
