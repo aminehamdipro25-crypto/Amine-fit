@@ -3,36 +3,20 @@ import { requireAdmin } from '@/lib/adminAuth'
 
 export const dynamic = 'force-dynamic'
 
-// Single-day modification prompt
 const SYSTEM_PROMPT_SINGLE = `أنت مساعد تغذية للمدرب. تلقّيت القائمة الغذائية الحالية. عدّلها بناءً على طلب المدرب وأعد JSON فقط بنفس هيكل menu array + حقل 'message' يصف ما تغيّر. لا تغير BMR أو TDEE أو الوحدات الإجمالية.
 
-هيكل الرد المطلوب:
-{
-  "menu": [ { "name": "...", "time": "...", "icon": "...", "kcal": number, "carbs": number, "protein": number, "fat": number, "items": [ { "group": "...", "icon": "...", "servings": number, "food": "...", "amount": "..." } ] } ],
-  "message": "وصف موجز لما تغيّر في القائمة"
-}
+هيكل الرد:
+{"menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}],"message":"..."}
 
-أعد JSON فقط بدون أي نص إضافي.`
+أعد JSON مضغوطاً فقط (بدون مسافات أو أسطر زائدة).`
 
-// Multi-day modification prompt — all days in ONE call
-const SYSTEM_PROMPT_MULTI = `أنت مساعد تغذية للمدرب. تلقّيت قوائم غذائية لعدة أيام/أسابيع. عدّلها جميعاً بناءً على طلب المدرب في استجابة واحدة وأعد JSON فقط.
+// For chunks of ≤3 days per call
+const SYSTEM_PROMPT_CHUNK = `أنت مساعد تغذية للمدرب. تلقّيت قوائم غذائية لعدة أيام. عدّلها جميعاً بناءً على طلب المدرب وأعد JSON فقط.
 
-هيكل الرد المطلوب:
-{
-  "days": [
-    {
-      "name": "اسم اليوم أو الأسبوع (بدون تغيير)",
-      "menu": [ { "name": "...", "time": "...", "icon": "...", "kcal": number, "carbs": number, "protein": number, "fat": number, "items": [ { "group": "...", "icon": "...", "servings": number, "food": "...", "amount": "..." } ] } ]
-    }
-  ],
-  "message": "وصف موجز للتعديلات المُطبَّقة"
-}
+هيكل الرد:
+{"days":[{"name":"اسم اليوم بدون تغيير","menu":[{"name":"...","time":"...","icon":"...","kcal":0,"carbs":0,"protein":0,"fat":0,"items":[{"group":"...","icon":"...","servings":0,"food":"...","amount":"..."}]}]}],"message":"وصف موجز"}
 
-قواعد:
-- طبّق نفس التعديل على جميع الأيام بشكل متسق
-- حافظ على نفس عدد الوجبات لكل يوم
-- لا تغير إجماليات السعرات الكلية بشكل كبير
-- أعد JSON فقط بدون أي نص خارجه`
+قواعد: طبّق نفس التعديل على جميع الأيام. حافظ على عدد الوجبات. أعد JSON مضغوطاً فقط (بدون مسافات أو أسطر زائدة).`
 
 export async function POST(req) {
   const deny = await requireAdmin()
@@ -47,7 +31,7 @@ export async function POST(req) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    const msg = '⚠️ ANTHROPIC_API_KEY غير مضبوط في Vercel — أضفه في Environment Variables لتفعيل تعديل الخطة.'
+    const msg = '⚠️ ANTHROPIC_API_KEY غير مضبوط في Vercel — أضفه في Environment Variables.'
     return NextResponse.json(isMulti ? { allMenus, message: msg } : { menu, message: msg })
   }
 
@@ -56,47 +40,60 @@ export async function POST(req) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     if (isMulti) {
-      // Single API call for ALL days — avoids N sequential calls that timeout on Vercel
-      const contextMsg = `قوائم جميع الأيام:\n${JSON.stringify(allMenus)}\n\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'} سعرة`
-      const conversation = [
-        { role: 'user',      content: contextMsg },
-        { role: 'assistant', content: 'فهمت قوائم جميع الأيام. جاهز لتعديلها.' },
-        ...messages,
-      ]
-      const resp = await client.messages.create({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 7000,
-        system:     SYSTEM_PROMPT_MULTI,
-        messages:   conversation,
-      })
-      const rawText = resp.content[0].text.trim()
-        .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-
-      let parsed
-      try { parsed = JSON.parse(rawText) }
-      catch {
-        // Truncated or malformed JSON — return original with a helpful message
-        return NextResponse.json({
-          allMenus,
-          message: '⚠️ الرد كان طويلاً جداً — جرّب طلباً أبسط أو استخدم خطة يوم واحد للتعديلات التفصيلية.',
-        })
+      // Split days into chunks of 3 → process chunks in parallel
+      // Max 3 concurrent calls (safe for rate limits) × small output per call (reliable JSON)
+      const CHUNK = 3
+      const chunks = []
+      for (let i = 0; i < allMenus.length; i += CHUNK) {
+        chunks.push(allMenus.slice(i, i + CHUNK))
       }
 
-      const resultDays = Array.isArray(parsed.days) ? parsed.days : []
+      const chunkResults = await Promise.all(
+        chunks.map(async (chunk) => {
+          const ctxMsg = `القوائم:\n${JSON.stringify(chunk)}\nالسعرات المستهدفة: ${plan?.target || 'غير محدد'}`
+          const conv = [
+            { role: 'user',      content: ctxMsg },
+            { role: 'assistant', content: 'جاهز لتعديل هذه الأيام.' },
+            ...messages,
+          ]
+          const resp = await client.messages.create({
+            model:      'claude-haiku-4-5-20251001',
+            max_tokens: 2500,
+            system:     SYSTEM_PROMPT_CHUNK,
+            messages:   conv,
+          })
+          const raw = resp.content[0].text.trim()
+            .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+          try {
+            const p = JSON.parse(raw)
+            return {
+              days:    Array.isArray(p.days) ? p.days : chunk,
+              message: p.message || '',
+            }
+          } catch {
+            return { days: chunk, message: '' } // keep originals on parse failure
+          }
+        })
+      )
+
+      const mergedDays = chunkResults.flatMap(r => r.days)
+      const successMsg = chunkResults.find(r => r.message)?.message
+        || 'تم تعديل القائمة لجميع الأيام.'
+
       return NextResponse.json({
         allMenus: allMenus.map((orig, i) => ({
           name: orig.name,
-          menu: resultDays[i]?.menu || orig.menu,
+          menu: mergedDays[i]?.menu || orig.menu,
         })),
-        message: parsed.message || 'تم تعديل القائمة لجميع الأيام.',
+        message: successMsg,
       })
     }
 
     // ── Single day ──────────────────────────────────────────────────────────
-    const contextMsg = `القائمة الغذائية الحالية:\n${JSON.stringify(menu, null, 2)}\n\nمعلومات إضافية:\n- السعرات المستهدفة: ${plan?.target || 'غير محدد'} سعرة\n- الوحدات الإجمالية: ${plan?.ex ? JSON.stringify(plan.ex) : 'غير محددة'}`
-    const conversation = [
-      { role: 'user',      content: contextMsg },
-      { role: 'assistant', content: 'فهمت القائمة الغذائية الحالية. أنا جاهز لتعديلها بناءً على طلبك.' },
+    const ctxMsg = `القائمة الحالية:\n${JSON.stringify(menu)}\nالسعرات: ${plan?.target || '—'} — الوحدات: ${plan?.ex ? JSON.stringify(plan.ex) : '—'}`
+    const conv = [
+      { role: 'user',      content: ctxMsg },
+      { role: 'assistant', content: 'فهمت القائمة. جاهز لتعديلها.' },
       ...messages,
     ]
 
@@ -104,7 +101,7 @@ export async function POST(req) {
       model:      'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       system:     SYSTEM_PROMPT_SINGLE,
-      messages:   conversation,
+      messages:   conv,
     })
 
     const raw    = response.content[0].text.trim()
