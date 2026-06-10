@@ -15,7 +15,7 @@ export default function LegalLayout({ children }) {
           <span className="text-white font-extrabold text-sm uppercase">Amine<span className="text-gold-400">Fit</span></span>
         </Link>
       </header>
-      <main className="max-w-3xl mx-auto px-6 py-12">{children}</main>
+      <main id="main-content" className="max-w-3xl mx-auto px-6 py-12">{children}</main>
     </div>
   )
 }
