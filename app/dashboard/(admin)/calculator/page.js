@@ -44,7 +44,7 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'' }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'', manualAdj:'', weeklyRate:'' }
 
 const LS_KEY = 'amine_calc_draft'
 
@@ -197,6 +197,8 @@ export default function CalculatorPage() {
       duration:     'day',
       meals:        5,
       country:      c.country        || '',
+      manualAdj:    '',
+      weeklyRate:   '',
     })
     setPickedClient(c)
     setShowPicker(false)
@@ -471,6 +473,66 @@ export default function CalculatorPage() {
             </div>
           </div>
 
+          {/* ── Precision Goal Control ──────────────────────────────────────── */}
+          <div className="space-y-2 p-3 rounded-xl bg-slate-50/80 border border-slate-200">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold text-slate-700">تخصيص دقيق للسعرات</span>
+              <span className="text-[10px] bg-violet-100 text-violet-600 font-bold px-2 py-0.5 rounded-full">يتجاوز الهدف أعلاه إذا مُلئ</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Manual adj */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-600">عجز/فائض يدوي (سعرة/يوم)</label>
+                <input
+                  type="number" min="-1000" max="1000" step="50"
+                  placeholder="مثال: −500 أو +300"
+                  value={form.manualAdj}
+                  onChange={e => { setForm(f => ({ ...f, manualAdj: e.target.value, weeklyRate: '' })); setRes(null) }}
+                  className={`${inp} ${form.manualAdj && (Math.abs(+form.manualAdj) > 1000) ? 'border-red-400' : ''}`}
+                />
+                {form.manualAdj !== '' && !isNaN(+form.manualAdj) && Math.abs(+form.manualAdj) <= 1000 && (
+                  <p className="text-[10px] text-violet-600 font-medium">
+                    ≈ {(Math.abs(+form.manualAdj) * 7 / 7700).toFixed(2)} كغ/أسبوع · {Math.abs(+form.manualAdj) * 30 / 7700 > 0 ? (Math.abs(+form.manualAdj) * 30 / 7700).toFixed(1) : 0} كغ/شهر
+                  </p>
+                )}
+                {form.manualAdj !== '' && Math.abs(+form.manualAdj) > 1000 && (
+                  <p className="text-[10px] text-red-500 font-bold">⚠️ الحد الأقصى الآمن ±1000 سعرة/يوم</p>
+                )}
+              </div>
+              {/* Weekly rate */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-600">معدل تغيير الوزن (كغ/أسبوع)</label>
+                <input
+                  type="number" min="-1" max="1" step="0.05"
+                  placeholder="مثال: −0.5 أو +0.3"
+                  value={form.weeklyRate}
+                  onChange={e => { setForm(f => ({ ...f, weeklyRate: e.target.value, manualAdj: '' })); setRes(null) }}
+                  className={`${inp} ${form.weeklyRate && Math.abs(+form.weeklyRate) > 1 ? 'border-red-400' : ''}`}
+                />
+                {form.weeklyRate !== '' && !isNaN(+form.weeklyRate) && Math.abs(+form.weeklyRate) <= 1 && (
+                  <p className="text-[10px] text-violet-600 font-medium">
+                    ≈ {Math.round(Math.abs(+form.weeklyRate) * 7700 / 7)} سعرة/يوم · {(Math.abs(+form.weeklyRate) * 4.3).toFixed(1)} كغ/شهر
+                  </p>
+                )}
+                {form.weeklyRate !== '' && Math.abs(+form.weeklyRate) > 1 && (
+                  <p className="text-[10px] text-red-500 font-bold">⚠️ الحد الأقصى الآمن ±1 كغ/أسبوع</p>
+                )}
+              </div>
+            </div>
+            {/* Auto mode hint */}
+            {!form.manualAdj && !form.weeklyRate && (
+              <p className="text-[10px] text-slate-500">
+                {form.targetWeight && +form.weight > 0 && +form.targetWeight > 0
+                  ? +form.weight > +form.targetWeight
+                    ? `🤖 وضع تلقائي: عجز −500 سعرة/يوم (الوزن الحالي ${form.weight} كغ > المستهدف ${form.targetWeight} كغ)`
+                    : +form.weight < +form.targetWeight
+                      ? `🤖 وضع تلقائي: فائض +300 سعرة/يوم (الوزن الحالي ${form.weight} كغ < المستهدف ${form.targetWeight} كغ)`
+                      : `🤖 وضع تلقائي: الأوزان متساوية — يُطبَّق الهدف المختار`
+                  : '💡 بدون تخصيص: يُطبَّق الهدف المختار أعلاه مباشرة'}
+              </p>
+            )}
+          </div>
+
           {/* Duration */}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700">مدة البرنامج</label>
@@ -666,8 +728,17 @@ export default function CalculatorPage() {
             <p>TDEE = BMR × {getActivity(form.activity).pa} = <strong className="text-primary-600">{result.tdee}</strong> سعرة</p>
             {(() => {
               const adj = result.target - result.tdee
+              const src = form.manualAdj
+                ? `عجز/فائض يدوي: ${+form.manualAdj > 0 ? '+' : ''}${form.manualAdj} سعرة/يوم`
+                : form.weeklyRate
+                  ? `معدل أسبوعي: ${form.weeklyRate} كغ/أسبوع → ${adj > 0 ? '+' : ''}${adj} سعرة/يوم`
+                  : form.targetWeight && form.weight
+                    ? +form.weight > +form.targetWeight ? 'تلقائي: عجز (وزن حالي > مستهدف)' : +form.weight < +form.targetWeight ? 'تلقائي: فائض (وزن حالي < مستهدف)' : getGoal(form.goal).label
+                    : getGoal(form.goal).label
               return (
-                <p>السعرات المستهدفة = {result.tdee} {adj >= 0 ? '+' : '−'} {Math.abs(adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة
+                <p>
+                  السعرات المستهدفة = {result.tdee} {adj >= 0 ? '+' : '−'} {Math.abs(adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة
+                  {' '}<span className="text-violet-500 font-medium">({src})</span>
                   {' '}<span className="text-slate-400">(الحد الأدنى: {form.gender === 'male' ? '1500' : '1200'} سعرة)</span>
                 </p>
               )

@@ -70,11 +70,16 @@ const WEEK_NAMES = ['الأسبوع الأول', 'الأسبوع الثاني', 
 
 // ── Local fallback: uses the rule-based engine ───────────────────────────────
 function localPlan(form) {
-  const bmr      = calcBMR(form.gender, form.weight, form.height, form.age)
-  const tdee     = calcTDEE(bmr, form.activity)
-  const target   = calcTarget(tdee, form.goal, form.gender, form.weight, form.targetWeight)
-  const exOpts   = { age: form.age, bodyFatPct: form.bodyFatPct || null, weight: form.weight, targetWeight: form.targetWeight || null }
-  const ex       = calcExchanges(target, form.goal, form.avoided, exOpts)
+  const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
+  const tdee   = calcTDEE(bmr, form.activity)
+  const target = calcTarget(tdee, form.goal, form.gender, {
+    manualAdj:     form.manualAdj    || null,
+    weeklyRate:    form.weeklyRate   || null,
+    currentWeight: form.weight,
+    targetWeight:  form.targetWeight || null,
+  })
+  const exOpts = { age: form.age, bodyFatPct: form.bodyFatPct || null, weight: form.weight, targetWeight: form.targetWeight || null }
+  const ex     = calcExchanges(target, form.goal, form.avoided, exOpts)
   const water    = calcWaterGoal(form.weight, form.activity)
   const duration = form.duration || 'day'
   const meals    = +form.meals
@@ -136,6 +141,10 @@ export async function POST(req) {
   const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
   const safePreferred = String(form.preferred || '').slice(0, 200) || 'لا يوجد'
   const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
+  const adjNum  = form.manualAdj  ? Math.max(-1000, Math.min(1000, Math.round(+form.manualAdj)))   : null
+  const rateNum = form.weeklyRate ? Math.max(-1,    Math.min(1,    +form.weeklyRate))               : null
+  const adjLine = adjNum  != null ? `العجز/الفائض اليومي المحدد يدوياً: ${adjNum} سعرة/يوم\n` :
+                  rateNum != null ? `معدل الوزن الأسبوعي المستهدف: ${rateNum} كغ/أسبوع → عجز/فائض: ${Math.round(rateNum * 7700 / 7)} سعرة/يوم\n` : ''
 
   const regionSection = region !== 'global' ? `المنطقة: ${regionLabel}
 الأطعمة المحلية المفضلة: ${regionHint}
@@ -180,7 +189,7 @@ export async function POST(req) {
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
 مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
 الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${regionSection}الأطعمة المفضلة: ${safePreferred}
+${adjLine}${regionSection}الأطعمة المفضلة: ${safePreferred}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات يومياً: ${form.meals}
 
@@ -218,7 +227,7 @@ ${weekSchema}`
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
 مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
 الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${regionSection}الأطعمة المفضلة: ${safePreferred}
+${adjLine}${regionSection}الأطعمة المفضلة: ${safePreferred}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
