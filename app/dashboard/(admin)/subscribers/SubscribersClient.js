@@ -32,8 +32,10 @@ function PreviewButton({ clientId, clientName }) {
 }
 
 export default function SubscribersClient({ subscribers }) {
-  const withPlan    = subscribers.filter(c => c.plan?.nutrition?.calories || c.plan?.training?.daysPerWeek)
-  const withoutPlan = subscribers.filter(c => !c.plan?.nutrition?.calories && !c.plan?.training?.daysPerWeek)
+  const _hasN = c => !!(c.plan?.nutrition?.calories || c.nutritionCalcPlan)
+  const _hasT = c => !!(Array.isArray(c.plan?.training?.days) && c.plan.training.days.length > 0)
+  const withPlan    = subscribers.filter(c => _hasN(c) || _hasT(c))
+  const withoutPlan = subscribers.filter(c => !_hasN(c) && !_hasT(c))
 
   return (
     <div className="space-y-6">
@@ -82,8 +84,8 @@ export default function SubscribersClient({ subscribers }) {
               </thead>
               <tbody>
                 {subscribers.map(c => {
-                  const hasNutrition = !!c.plan?.nutrition?.calories
-                  const hasTraining  = !!c.plan?.training?.daysPerWeek
+                  const hasNutrition = _hasN(c)
+                  const hasTraining  = _hasT(c)
                   return (
                     <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
                       <td className="px-5 py-4">
