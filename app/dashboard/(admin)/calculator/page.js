@@ -603,7 +603,7 @@ export default function CalculatorPage() {
             const fiberRecommended = result.ex.fiber?.recommended || (age > 50 ? 30 : 25)
             // FFM protein target if body fat was provided
             const proteinTarget = result.ex.proteinTarget
-            const goalAdj = getGoal(form.goal).adj
+            const goalAdj = result.target - result.tdee
             const weeklyChange = Math.abs(goalAdj) > 0 ? (Math.abs(goalAdj) * 7 / 7700).toFixed(2) : null
             const weightDiff = form.targetWeight ? Math.abs(+form.weight - +form.targetWeight) : null
             const weeksToGoal = weeklyChange && weightDiff > 0 ? Math.round(weightDiff / weeklyChange) : null
@@ -664,9 +664,14 @@ export default function CalculatorPage() {
               : <p>BMR = (10 × {form.weight}) + (6.25 × {form.height}) − (5 × {form.age}) − 161 = <strong className="text-primary-600">{result.bmr}</strong> سعرة</p>
             }
             <p>TDEE = BMR × {getActivity(form.activity).pa} = <strong className="text-primary-600">{result.tdee}</strong> سعرة</p>
-            <p>السعرات المستهدفة = {result.tdee} {getGoal(form.goal).adj >= 0 ? '+' : '−'} {Math.abs(getGoal(form.goal).adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة
-              {' '}<span className="text-slate-400">(الحد الأدنى: {form.gender === 'male' ? '1500' : '1200'} سعرة)</span>
-            </p>
+            {(() => {
+              const adj = result.target - result.tdee
+              return (
+                <p>السعرات المستهدفة = {result.tdee} {adj >= 0 ? '+' : '−'} {Math.abs(adj)} = <strong className="text-primary-600">{result.target}</strong> سعرة
+                  {' '}<span className="text-slate-400">(الحد الأدنى: {form.gender === 'male' ? '1500' : '1200'} سعرة)</span>
+                </p>
+              )
+            })()}
           </div>
         </StepCard>
 
