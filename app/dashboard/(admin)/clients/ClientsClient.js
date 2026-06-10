@@ -1614,9 +1614,13 @@ export default function ClientsClient({ error }) {
     <>
       {/* Toast notification */}
       {toast && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm transition-all
-          ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
-          onClick={() => setToast(null)}>
+        <div
+          role="alert"
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+          onClick={() => setToast(null)}
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm transition-all cursor-pointer
+            ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}
+        >
           {toast.type === 'error' ? '✗' : '✓'} {toast.msg}
         </div>
       )}

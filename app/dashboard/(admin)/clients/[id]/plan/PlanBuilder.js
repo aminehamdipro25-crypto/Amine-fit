@@ -834,10 +834,14 @@ function AIGenerateModal({ form, setForm, onGenerate, onClose, loading }) {
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 function Toast({ msg, onClose }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#0a0a0a] text-white px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-fade-in">
+    <div
+      role="alert"
+      aria-live="polite"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#0a0a0a] text-white px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold animate-fade-in"
+    >
       <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
       {msg}
-      <button onClick={onClose} className="mr-2 text-white/40 hover:text-white/80 transition"><X className="w-3.5 h-3.5" /></button>
+      <button onClick={onClose} aria-label="إغلاق الإشعار" className="mr-2 text-white/40 hover:text-white/80 transition"><X className="w-3.5 h-3.5" /></button>
     </div>
   )
 }
