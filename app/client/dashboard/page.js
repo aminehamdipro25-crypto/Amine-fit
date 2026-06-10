@@ -1018,18 +1018,28 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/client/me')
-      .then(async r => {
-        if (r.status === 401) { router.push('/client/login'); return null }
+    let mounted = true
+    async function fetchClient() {
+      try {
+        const r = await fetch('/api/client/me')
+        if (!mounted) return
+        if (r.status === 401) { router.push('/client/login'); return }
         if (r.status === 403) {
           const d = await r.json()
           router.push(`/client/login?suspended=1&msg=${encodeURIComponent(d.error || 'تم تعليق حسابك')}`)
-          return null
+          return
         }
-        return r.json()
-      })
-      .then(d => { if (d) setClient(d) })
-      .finally(() => setLoading(false))
+        const d = await r.json()
+        if (mounted && d) setClient(d)
+      } catch {} finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    fetchClient()
+    const poll = setInterval(fetchClient, 30000)
+    const onVisible = () => { if (!document.hidden) fetchClient() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { mounted = false; clearInterval(poll); document.removeEventListener('visibilitychange', onVisible) }
   }, [router])
 
   if (loading) {
@@ -1044,7 +1054,7 @@ export default function ClientDashboard() {
 
   const hasPlan       = !!client.plan
   const calcPlan      = client.nutritionCalcPlan
-  const hasNutrition  = (hasPlan && !!client.plan?.nutrition) || !!calcPlan
+  const hasNutrition  = !!(client.plan?.nutrition?.calories) || !!(calcPlan?.target)
   const hasTraining   = hasPlan && Array.isArray(client.plan?.training?.days) && client.plan.training.days.length > 0
 
   return (
