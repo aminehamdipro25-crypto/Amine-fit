@@ -49,18 +49,19 @@ export default function Sidebar({ open, collapsed, onClose }) {
                 <p className="text-white/25 text-[11px] mt-0.5 font-medium">لوحة المدرب</p>
               </div>
             </div>
-            <button onClick={onClose} className="lg:hidden text-white/25 hover:text-white p-1 transition">
+            <button onClick={onClose} aria-label="إغلاق القائمة" className="lg:hidden text-white/25 hover:text-white p-1 transition">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
+          <nav aria-label="القائمة الرئيسية للوحة التحكم" className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
             <p className="text-white/20 text-[10px] uppercase tracking-widest px-3 mb-4 font-bold">القائمة</p>
             {navItems.map(({ href, icon: Icon, label, badge }) => {
               const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
               return (
                 <Link key={href} href={href}
+                  aria-current={active ? 'page' : undefined}
                   onClick={() => typeof window !== 'undefined' && window.innerWidth < 1024 && onClose()}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
                     ${active
