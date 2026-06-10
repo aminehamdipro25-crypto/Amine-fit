@@ -74,8 +74,13 @@ function AddClientModal({ onClose, onAdded }) {
   const inp = "w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gold-400 transition font-medium"
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      onClick={e => e.target === e.currentTarget && onClose()}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-client-modal-title"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -83,11 +88,11 @@ function AddClientModal({ onClose, onAdded }) {
               <UserPlus className="w-5 h-5 text-black" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-slate-900">إضافة عميل جديد</h2>
+              <h2 id="add-client-modal-title" className="text-lg font-extrabold text-slate-900">إضافة عميل جديد</h2>
               <p className="text-xs text-slate-400 font-medium">سيتمكن العميل من تسجيل الدخول فوراً</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition">
+          <button onClick={onClose} aria-label="إغلاق" className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition">
             <X className="w-5 h-5" />
           </button>
         </div>
