@@ -11,7 +11,7 @@ const STR_MAX = 500  // max length for text fields
 
 function sanitizeStr(v, max = STR_MAX) {
   if (v === undefined || v === null) return ''
-  return String(v).trim().slice(0, max)
+  return String(v).replace(/[\r\n]/g, ' ').trim().slice(0, max)
 }
 
 export async function POST(req) {

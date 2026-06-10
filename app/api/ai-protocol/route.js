@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 // ── Heart Rate Zone calculator (Tanaka formula — more accurate than 220-age) ──
 function calcZones(age) {
   const maxHR = Math.round(208 - 0.7 * (parseInt(age) || 30))

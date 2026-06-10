@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const METHOD_LABELS = {
   d17:        'تطبيق D17 (البريد التونسي)',
   post:       'مكتب البريد — إيداع نقدي',

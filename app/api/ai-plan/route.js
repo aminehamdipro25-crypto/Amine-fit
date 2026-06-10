@@ -6,6 +6,8 @@ import {
   getRegion, REGION_FOOD_HINTS, REGION_LABELS,
 } from '@/lib/nutritionEngine'
 
+export const dynamic = 'force-dynamic'
+
 const ACTIVITY_LABELS = {
   sedentary:  'خامل (عمل مكتبي، لا رياضة) — معامل 1.20',
   light:      'خفيف (رياضة 1-3 أيام/أسبوع) — معامل 1.375',

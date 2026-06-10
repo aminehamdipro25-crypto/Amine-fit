@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { updateStatus, updateSubmission, deleteSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
 
+export const dynamic = 'force-dynamic'
+
 // Fields the admin is allowed to patch on a client profile
 const EDITABLE_FIELDS = ['country', 'preferredFoods', 'dislikedFoods', 'weight', 'height', 'targetWeight', 'bodyFatPct']
 

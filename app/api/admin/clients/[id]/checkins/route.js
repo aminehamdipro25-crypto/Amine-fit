@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny

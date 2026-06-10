@@ -4,6 +4,8 @@ import { createAdminSession, deleteAdminSession } from '@/lib/adminSession'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req) {
   try {
     // Rate-limit: 5 attempts per 15 min per IP

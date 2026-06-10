@@ -1,4 +1,7 @@
 import { isRateLimited } from '@/lib/rateLimit'
+import crypto from 'crypto'
+
+export const dynamic = 'force-dynamic'
 
 // ── Meta WhatsApp Cloud API — بوت رد تلقائي ─────────────────────────────────
 // الإعداد في Vercel (Environment Variables):
@@ -112,8 +115,23 @@ export async function GET(req) {
 
 // ── POST: Receive and auto-reply ─────────────────────────────────────────────
 export async function POST(req) {
+  // Verify Meta signature (X-Hub-Signature-256) when WHATSAPP_APP_SECRET is set
+  const rawBytes = await req.arrayBuffer()
+  const appSecret = process.env.WHATSAPP_APP_SECRET
+  if (appSecret) {
+    const sig      = req.headers.get('x-hub-signature-256') || ''
+    const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(Buffer.from(rawBytes)).digest('hex')
+    try {
+      if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+        return new Response('Forbidden', { status: 403 })
+      }
+    } catch {
+      return new Response('Forbidden', { status: 403 })
+    }
+  }
+
   let body
-  try { body = await req.json() } catch { return new Response('OK', { status: 200 }) }
+  try { body = JSON.parse(Buffer.from(rawBytes).toString()) } catch { return new Response('OK', { status: 200 }) }
 
   // Extract first incoming text message from webhook payload
   const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]

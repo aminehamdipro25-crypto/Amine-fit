@@ -4,6 +4,8 @@ import { requireAdmin } from '@/lib/adminAuth'
 import { hashPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny

@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { deleteClientSession } from '@/lib/clientSession'
 import crypto from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 function getSecret() {
   return process.env.AUTH_SECRET || ''
 }

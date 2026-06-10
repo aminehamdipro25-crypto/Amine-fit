@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Not configured' }, { status: 503 })

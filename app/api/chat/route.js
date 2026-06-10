@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const SYSTEM = `أنت مساعد ذكي لموقع Amine-Fit. اسمك "مساعد أمين".
 
 قواعد الرد الإلزامية:

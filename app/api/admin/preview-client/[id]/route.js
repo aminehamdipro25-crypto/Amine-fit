@@ -4,6 +4,8 @@ import { createToken } from '@/lib/clientAuth'
 import { requireAdmin } from '@/lib/adminAuth'
 import { createPreviewSession } from '@/lib/clientSession'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny

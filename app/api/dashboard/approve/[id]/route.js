@@ -4,6 +4,8 @@ import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
 import { sendEmail } from '@/lib/mailer'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny

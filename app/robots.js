@@ -7,6 +7,6 @@ export default function robots() {
         disallow: ['/dashboard', '/client/', '/api/'],
       },
     ],
-    sitemap: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.vercel.app'}/sitemap.xml`,
+    sitemap: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'}/sitemap.xml`,
   }
 }

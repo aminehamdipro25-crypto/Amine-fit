@@ -3,6 +3,8 @@ import crypto from 'crypto'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/
 
 function generateOTP() {

@@ -10,10 +10,18 @@ export function generateStaticParams() {
 export function generateMetadata({ params }) {
   const post = getPostBySlug(params.slug)
   if (!post) return {}
+  const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
   return {
     title: post.title,
     description: post.excerpt,
-    openGraph: { title: post.title, description: post.excerpt },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.date,
+      authors: ['أمين حمدي'],
+      url: `${base}/blog/${post.slug}`,
+    },
   }
 }
 
@@ -88,8 +96,26 @@ export default function BlogPost({ params }) {
   const post = getPostBySlug(params.slug)
   if (!post) notFound()
 
+  const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: { '@type': 'Person', name: 'أمين حمدي', url: base },
+    publisher: { '@type': 'Organization', name: 'Amine-Fit', url: base },
+    url: `${base}/blog/${post.slug}`,
+    inLanguage: 'ar',
+  }
+
   return (
     <div className="min-h-screen bg-white" dir="rtl">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       {/* Hero */}
       <div className="bg-[#0a0a0a] text-white py-16 px-4">
         <div className="max-w-2xl mx-auto">

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 const PLANS = {
   training: { name: 'برنامج التدريب', price:  5000, desc: 'برنامج تدريب مخصص' },         // 50 TND
   monthly:  { name: 'الباقة الشهرية', price: 12500, desc: 'تغذية + تدريب + متابعة' },    // 125 TND

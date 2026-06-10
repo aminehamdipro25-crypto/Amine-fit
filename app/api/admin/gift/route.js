@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import crypto from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 const GIFT_PREFIX = 'gift_code:'
 const PLAN_INFO = {
   training: { name: 'برنامج التدريب',  price: '50',  duration: 30  },

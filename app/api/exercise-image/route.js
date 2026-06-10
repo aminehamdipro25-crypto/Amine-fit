@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 // All paths verified with HTTP HEAD against yuhonas/free-exercise-db main branch
 const BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'
 const IMG  = f => `${BASE}${f}/0.jpg`

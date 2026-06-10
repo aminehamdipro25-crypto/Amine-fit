@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 
+export const dynamic = 'force-dynamic'
+
 // 2 MB base64 size limit (~2.7 MB raw base64 string)
 const MAX_DATA_URI_SIZE = 2.7 * 1024 * 1024
 
