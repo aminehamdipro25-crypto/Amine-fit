@@ -35,27 +35,26 @@ export async function POST(req) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     if (isMulti) {
-      // Process each day/week independently in parallel — avoids JSON truncation from huge single response
-      const results = await Promise.all(
-        allMenus.map(async (dayData) => {
-          const contextMsg = `القائمة الغذائية ليوم/أسبوع: ${dayData.name}\n${JSON.stringify(dayData.menu, null, 2)}\n\nمعلومات إضافية:\n- السعرات المستهدفة: ${plan?.target || 'غير محدد'} سعرة`
-          const conversation = [
-            { role: 'user', content: contextMsg },
-            { role: 'assistant', content: 'فهمت القائمة الغذائية. أنا جاهز لتعديلها بناءً على طلبك.' },
-            ...messages,
-          ]
-          const resp = await client.messages.create({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 2048,
-            system: SYSTEM_PROMPT_SINGLE,
-            messages: conversation,
-          })
-          const raw = resp.content[0].text.trim()
-            .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-          const parsed = JSON.parse(raw)
-          return { name: dayData.name, menu: parsed.menu || dayData.menu, message: parsed.message }
+      // Process each day sequentially to avoid concurrent connection rate limits
+      const results = []
+      for (const dayData of allMenus) {
+        const contextMsg = `القائمة الغذائية ليوم/أسبوع: ${dayData.name}\n${JSON.stringify(dayData.menu, null, 2)}\n\nمعلومات إضافية:\n- السعرات المستهدفة: ${plan?.target || 'غير محدد'} سعرة`
+        const conversation = [
+          { role: 'user', content: contextMsg },
+          { role: 'assistant', content: 'فهمت القائمة الغذائية. أنا جاهز لتعديلها بناءً على طلبك.' },
+          ...messages,
+        ]
+        const resp = await client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT_SINGLE,
+          messages: conversation,
         })
-      )
+        const raw = resp.content[0].text.trim()
+          .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+        const parsed = JSON.parse(raw)
+        results.push({ name: dayData.name, menu: parsed.menu || dayData.menu, message: parsed.message })
+      }
 
       return NextResponse.json({
         allMenus: results.map(r => ({ name: r.name, menu: r.menu })),
@@ -87,8 +86,13 @@ export async function POST(req) {
       message: result.message || 'تم تعديل القائمة.',
     })
   } catch (err) {
-    console.error('AI chat error:', err.message)
-    const msg = `⚠️ خطأ في الاتصال بـ Claude: ${err.message}`
+    console.error('AI chat error:', err.status, err.message)
+    const isRateLimit = err.status === 429
+      || err.message?.toLowerCase().includes('rate_limit')
+      || err.message?.toLowerCase().includes('rate limit')
+    const msg = isRateLimit
+      ? '⏳ المساعد مشغول حالياً — انتظر لحظة وأعد المحاولة.'
+      : '⚠️ تعذّر الاتصال بالمساعد — حاول مرة أخرى.'
     return NextResponse.json(isMulti ? { allMenus, message: msg } : { menu, message: msg })
   }
 }
