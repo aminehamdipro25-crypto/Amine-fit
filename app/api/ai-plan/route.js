@@ -300,16 +300,25 @@ function localPlan(form) {
   const avoided  = form.avoided
   const base     = { bmr: Math.round(bmr), tdee, target, ex, water, form, date: new Date().toISOString(), ai: false }
 
+  const wp = Array.isArray(form.weeklyProtein) ? form.weeklyProtein : null
+
   if (duration === 'week') {
-    const days = DAY_NAMES.map((name, i) => ({ name, menu: generateMenu(ex, meals, pref, avoided, i) }))
+    const days = DAY_NAMES.map((name, i) => ({
+      name,
+      menu: generateMenu(ex, meals, pref, avoided, i, wp?.[i] || 'mixed'),
+    }))
     return { ...base, days, duration: 'week' }
   }
   if (duration === 'month') {
-    const weeks = WEEK_NAMES.map((name, i) => ({ name, menu: generateMenu(ex, meals, pref, avoided, i * 3) }))
+    // For month plans, cycle through weeklyProtein if set
+    const weeks = WEEK_NAMES.map((name, i) => ({
+      name,
+      menu: generateMenu(ex, meals, pref, avoided, i * 3, wp?.[i % 7] || 'mixed'),
+    }))
     return { ...base, weeks, duration: 'month' }
   }
   // day (default)
-  const menu = generateMenu(ex, meals, pref, avoided, 0)
+  const menu = generateMenu(ex, meals, pref, avoided, 0, wp?.[0] || 'mixed')
   return { ...base, menu, duration: 'day' }
 }
 
