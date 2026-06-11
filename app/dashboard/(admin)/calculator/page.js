@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2 } from 'lucide-react'
+import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2, Pencil, Check } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
 import { COUNTRIES } from '@/lib/countries'
 
@@ -207,6 +207,25 @@ export default function CalculatorPage() {
   const [savedPlan, setSavedPlan] = useState(null) // plan fetched from Redis for picked client
   const [initialized, setInitialized] = useState(false) // true after localStorage restore
   const [draftRestored, setDraftRestored] = useState(false)
+
+  // ── Inline editing for food items ────────────────────────────────────────
+  const [editKey, setEditKey] = useState(null) // "mealI-itemI"
+  const [editVal, setEditVal] = useState('')
+  const [itemEdits, setItemEdits] = useState({}) // persists edits for current result
+
+  useEffect(() => { setItemEdits({}) }, [result])
+
+  function startEdit(key, currentVal) {
+    setEditKey(key)
+    setEditVal(currentVal)
+  }
+  function commitEdit(key) {
+    setItemEdits(e => ({ ...e, [key]: editVal }))
+    setEditKey(null)
+  }
+  function getDisplayFood(key, originalFood) {
+    return itemEdits[key] ?? originalFood
+  }
 
   // ── Restore draft from localStorage on mount ─────────────────────────────
   useEffect(() => {
@@ -1003,14 +1022,46 @@ export default function CalculatorPage() {
                   <span className="font-extrabold text-primary-700 text-sm">{nm.kcal} سعرة</span>
                 </div>
                 <div className="divide-y divide-slate-100">
-                  {/* Regular food items */}
-                  {nm.items.map((item, j) => (
-                    <div key={j} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{item.icon}</span>
-                        <div>
-                          <p className="font-semibold text-slate-800 text-sm">{item.food}</p>
-                          <p className="text-xs text-slate-400">
+                  {/* Regular food items — click food name to edit */}
+                  {nm.items.map((item, j) => {
+                    const key         = `${i}-${j}`
+                    const isEditing   = editKey === key
+                    const displayFood = getDisplayFood(key, item.food)
+                    const wasEdited   = itemEdits[key] !== undefined
+                    return (
+                    <div key={j} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/50 group">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-lg flex-shrink-0">{item.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                autoFocus
+                                value={editVal}
+                                onChange={e => setEditVal(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') commitEdit(key); if (e.key === 'Escape') setEditKey(null) }}
+                                onBlur={() => commitEdit(key)}
+                                className="flex-1 text-sm font-semibold border border-primary-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-primary-200 text-slate-800 bg-primary-50"
+                              />
+                              <button onMouseDown={() => commitEdit(key)} className="text-emerald-600 hover:text-emerald-700">
+                                <Check className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <p className={`font-semibold text-sm truncate ${wasEdited ? 'text-primary-700' : 'text-slate-800'}`}>
+                                {displayFood}
+                              </p>
+                              <button
+                                onClick={() => startEdit(key, displayFood)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-primary-500 flex-shrink-0"
+                                title="تعديل الاسم"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                          <p className="text-xs text-slate-400 mt-0.5">
                             {item.group} — {item.servings} حصة
                             {item.cooking_method && item.cooking_method !== 'None' && (
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
@@ -1018,11 +1069,11 @@ export default function CalculatorPage() {
                           </p>
                         </div>
                       </div>
-                      <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+                      <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex-shrink-0 mr-2">
                         {item.amount}
                       </span>
                     </div>
-                  ))}
+                  )})}
                   {/* ── Salad card — visually distinct ── */}
                   {nm.salad?.has_salad && nm.salad.vegetables?.length > 0 && (
                     <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 border-t-2 border-emerald-200">
