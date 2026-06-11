@@ -55,11 +55,14 @@ const _NUT = ['لوز', 'كاجو', 'جوز', 'فستق', 'بذر كتان', 'ب
 
 function normalizeMeal(meal) {
   if (!meal || !Array.isArray(meal.items)) return meal
-  const cleanItems = []
-  const vegNames   = []
-  const nutParts   = []
-  let   vegGrams   = 0
-  let   nutGrams   = 0
+  const cleanItems  = []
+  const vegNames    = []
+  const nutParts    = []
+  let   vegGrams    = 0
+  let   nutGrams    = 0
+  let   vegServings = 0
+  let   nutServings = 0
+  let   vegPrep     = null  // detected from food names
 
   for (const item of meal.items) {
     const g = item.group || ''
@@ -68,30 +71,51 @@ function normalizeMeal(meal) {
     const isNut = _NUT.some(k => f.includes(k))
 
     if (isVeg) {
+      // Detect preparation method from food name keywords
+      if (!vegPrep) {
+        if (f.includes('مشوي') || f.includes('مشوية') || f.includes('مشوو') || g.includes('مشوي')) vegPrep = 'خضار مشوية'
+        else if (f.includes('بخار') || f.includes('مطهو') || f.includes('مسلوق'))                  vegPrep = 'خضار على البخار'
+      }
       vegNames.push(f)
       const m = String(item.amount || '').match(/^(\d+)/)
-      vegGrams += m ? +m[1] : 80
+      vegGrams    += m ? +m[1] : 80
+      vegServings += item.servings || 1
     } else if (isNut) {
       nutParts.push(f)
       const m = String(item.amount || '').match(/^(\d+)/)
-      nutGrams += m ? +m[1] : 0
+      nutGrams    += m ? +m[1] : 0
+      nutServings += item.servings || 1
     } else {
-      cleanItems.push(item)
+      // Egg count formatting: "بيضة مسلوقة" × 3 → "3 بيضات مسلوقة"
+      let processed = item
+      if (f.includes('بيضة') && (item.servings || 1) > 1) {
+        const count  = item.servings
+        const suffix = f.replace(/^بيضة\s*/u, '').trim()
+        const plural = count === 2 ? 'بيضتان' : `${count} بيضات`
+        processed = { ...item, food: suffix ? `${plural} ${suffix}` : plural }
+      }
+      cleanItems.push(processed)
     }
   }
 
   const result = { ...meal, items: cleanItems }
 
   if (vegNames.length > 0) {
-    const prev = meal.salad || {}
+    const prev        = meal.salad || {}
+    // Respect AI-provided preparation if specific; otherwise use detected or default
+    const preparation = (prev.preparation && !prev.preparation.includes('طازجة بزيت'))
+      ? prev.preparation
+      : (vegPrep || prev.preparation || 'سلطة طازجة بزيت الزيتون والليمون')
     result.salad = {
       has_salad:   true,
       vegetables:  prev.has_salad ? (prev.vegetables || vegNames) : vegNames,
-      preparation: prev.preparation || 'سلطة طازجة بزيت الزيتون والليمون',
+      preparation,
       grams:       prev.grams || vegGrams || vegNames.length * 80,
+      kcal:        (vegServings || vegNames.length) * 25,  // ADA: 25 kcal / vegetable serving
     }
   } else if (meal.salad) {
-    result.salad = meal.salad
+    const s      = meal.salad
+    result.salad = { ...s, kcal: s.kcal || (s.vegetables?.length || 1) * 25 }
   }
 
   if (nutParts.length > 0) {
@@ -100,9 +124,12 @@ function normalizeMeal(meal) {
       has_nuts: true,
       type:     prev.has_nuts ? (prev.type || nutParts.join(' + ')) : nutParts.join(' + '),
       grams:    nutGrams || prev.grams || 30,
+      kcal:     (nutServings || 1) * 45,  // ADA fat exchange: 45 kcal / serving
     }
   } else if (meal.nuts) {
-    result.nuts = meal.nuts
+    const n      = meal.nuts
+    const grams  = n.grams || 30
+    result.nuts  = { ...n, kcal: n.kcal || Math.round(grams * 6) }  // ~6 kcal/g for mixed nuts
   }
 
   return result
@@ -1086,11 +1113,18 @@ export default function CalculatorPage() {
                           <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة'} · خضروات مجمَّعة</p>
                         </div>
                       </div>
-                      {nm.salad.grams > 0 && (
-                        <span className="font-bold text-emerald-700 text-sm bg-emerald-200 border border-emerald-300 px-3 py-1 rounded-full flex-shrink-0">
-                          {nm.salad.grams} غ
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {nm.salad.grams > 0 && (
+                          <span className="font-bold text-emerald-700 text-sm bg-emerald-200 border border-emerald-300 px-3 py-1 rounded-full">
+                            {nm.salad.grams} غ
+                          </span>
+                        )}
+                        {nm.salad.kcal > 0 && (
+                          <span className="font-medium text-emerald-600 text-xs bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            {nm.salad.kcal} سعرة
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                   {/* ── Nuts card — visually distinct ── */}
@@ -1100,14 +1134,21 @@ export default function CalculatorPage() {
                         <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">🥜</div>
                         <div>
                           <p className="font-bold text-amber-800 text-sm">{nm.nuts.type}</p>
-                          <p className="text-xs text-amber-600 mt-0.5">دهون صحية مجمَّعة</p>
+                          <p className="text-xs text-amber-600 mt-0.5">مكسرات · دهون صحية</p>
                         </div>
                       </div>
-                      {nm.nuts.grams > 0 && (
-                        <span className="font-bold text-amber-700 text-sm bg-amber-200 border border-amber-300 px-3 py-1 rounded-full flex-shrink-0">
-                          {nm.nuts.grams} غ
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {nm.nuts.grams > 0 && (
+                          <span className="font-bold text-amber-700 text-sm bg-amber-200 border border-amber-300 px-3 py-1 rounded-full">
+                            {nm.nuts.grams} غ
+                          </span>
+                        )}
+                        {nm.nuts.kcal > 0 && (
+                          <span className="font-medium text-amber-600 text-xs bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                            {nm.nuts.kcal} سعرة
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
