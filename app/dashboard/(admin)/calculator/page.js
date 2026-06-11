@@ -48,6 +48,66 @@ const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'m
 
 const LS_KEY = 'amine_calc_draft'
 
+// ── Client-side meal normalizer — runs at render time regardless of data source ──
+// Guarantees correct grouping for any plan (AI, local engine, or cached old data)
+const _VEG = ['طماطم', 'خيار', 'فلفل', 'خس', 'جزر', 'بروكلي', 'كوسة', 'كوسا', 'سبانخ', 'باذنجان', 'قرنبيط', 'فاصوليا خضراء', 'كرفس', 'ملفوف', 'فجل', 'زعتر']
+const _NUT = ['لوز', 'كاجو', 'جوز', 'فستق', 'بذر كتان', 'بذر شيا', 'سمسم', 'بذر عباد']
+
+function normalizeMeal(meal) {
+  if (!meal || !Array.isArray(meal.items)) return meal
+  const cleanItems = []
+  const vegNames   = []
+  const nutParts   = []
+  let   vegGrams   = 0
+  let   nutGrams   = 0
+
+  for (const item of meal.items) {
+    const g = item.group || ''
+    const f = item.food  || ''
+    const isVeg = g.includes('خضروات') || _VEG.some(k => f.includes(k))
+    const isNut = _NUT.some(k => f.includes(k))
+
+    if (isVeg) {
+      vegNames.push(f)
+      const m = String(item.amount || '').match(/^(\d+)/)
+      vegGrams += m ? +m[1] : 80
+    } else if (isNut) {
+      nutParts.push(f)
+      const m = String(item.amount || '').match(/^(\d+)/)
+      nutGrams += m ? +m[1] : 0
+    } else {
+      cleanItems.push(item)
+    }
+  }
+
+  const result = { ...meal, items: cleanItems }
+
+  if (vegNames.length > 0) {
+    const prev = meal.salad || {}
+    result.salad = {
+      has_salad:   true,
+      vegetables:  prev.has_salad ? (prev.vegetables || vegNames) : vegNames,
+      preparation: prev.preparation || 'سلطة طازجة بزيت الزيتون والليمون',
+      grams:       prev.grams || vegGrams || vegNames.length * 80,
+    }
+  } else if (meal.salad) {
+    result.salad = meal.salad
+  }
+
+  if (nutParts.length > 0) {
+    const prev = meal.nuts || {}
+    result.nuts = {
+      has_nuts: true,
+      type:     prev.has_nuts ? (prev.type || nutParts.join(' + ')) : nutParts.join(' + '),
+      grams:    nutGrams || prev.grams || 30,
+    }
+  } else if (meal.nuts) {
+    result.nuts = meal.nuts
+  }
+
+  return result
+}
+
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
 
@@ -841,30 +901,42 @@ export default function CalculatorPage() {
             </div>
           )}
           <div className="space-y-3">
-            {(currentMenu || []).map((meal, i) => (
+            {(currentMenu || []).map((meal, i) => {
+              const nm = normalizeMeal(meal)
+              return (
               <div key={i} className="border border-slate-100 rounded-2xl p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{meal.icon}</span>
+                    <span className="text-2xl">{nm.icon}</span>
                     <div>
-                      <p className="font-bold text-slate-800 text-sm">{meal.name}</p>
-                      <p className="text-xs text-slate-400">{meal.time}</p>
+                      <p className="font-bold text-slate-800 text-sm">{nm.name}</p>
+                      <p className="text-xs text-slate-400">{nm.time}</p>
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="font-extrabold text-primary-700 text-sm">{meal.kcal} سعرة</p>
-                    <p className="text-xs text-slate-400">ك:{meal.carbs}غ ب:{meal.protein}غ د:{meal.fat}غ</p>
+                    <p className="font-extrabold text-primary-700 text-sm">{nm.kcal} سعرة</p>
+                    <p className="text-xs text-slate-400">ك:{nm.carbs}غ ب:{nm.protein}غ د:{nm.fat}غ</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {meal.items.map((item, j) => (
+                  {nm.items.map((item, j) => (
                     <span key={j} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-xs font-semibold bg-slate-50 border-slate-200 text-slate-700">
                       {item.icon} {item.servings} × {item.group}
                     </span>
                   ))}
+                  {nm.salad?.has_salad && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-xs font-semibold bg-emerald-50 border-emerald-200 text-emerald-700">
+                      🥗 سلطة خضار
+                    </span>
+                  )}
+                  {nm.nuts?.has_nuts && nm.nuts.type !== 'None' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-xs font-semibold bg-amber-50 border-amber-200 text-amber-700">
+                      🥜 مكسرات
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
 
           {/* ── Total day macros verification strip ── */}
@@ -916,20 +988,23 @@ export default function CalculatorPage() {
             </div>
           )}
           <div className="space-y-4">
-            {(currentMenu || []).map((meal, i) => (
+            {(currentMenu || []).map((meal, i) => {
+              const nm = normalizeMeal(meal)
+              return (
               <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{meal.icon}</span>
+                    <span className="text-xl">{nm.icon}</span>
                     <div>
-                      <span className="font-bold text-slate-800 text-sm">{meal.name}</span>
-                      <span className="text-xs text-slate-400 mr-2">{meal.time}</span>
+                      <span className="font-bold text-slate-800 text-sm">{nm.name}</span>
+                      <span className="text-xs text-slate-400 mr-2">{nm.time}</span>
                     </div>
                   </div>
-                  <span className="font-extrabold text-primary-700 text-sm">{meal.kcal} سعرة</span>
+                  <span className="font-extrabold text-primary-700 text-sm">{nm.kcal} سعرة</span>
                 </div>
-                <div className="divide-y divide-slate-50">
-                  {meal.items.map((item, j) => (
+                <div className="divide-y divide-slate-100">
+                  {/* Regular food items */}
+                  {nm.items.map((item, j) => (
                     <div key={j} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/50">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{item.icon}</span>
@@ -948,45 +1023,45 @@ export default function CalculatorPage() {
                       </span>
                     </div>
                   ))}
-                  {/* Salad group */}
-                  {meal.salad?.has_salad && meal.salad.vegetables?.length > 0 && (
-                    <div className="flex items-center justify-between px-4 py-3 bg-emerald-50/40">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">🥗</span>
+                  {/* ── Salad card — visually distinct ── */}
+                  {nm.salad?.has_salad && nm.salad.vegetables?.length > 0 && (
+                    <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 border-t-2 border-emerald-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-xl flex-shrink-0">🥗</div>
                         <div>
-                          <p className="font-semibold text-emerald-800 text-sm">
-                            {meal.salad.preparation || 'سلطة'}: {meal.salad.vegetables.join(' + ')}
+                          <p className="font-bold text-emerald-800 text-sm">
+                            {nm.salad.vegetables.join(' + ')}
                           </p>
-                          <p className="text-xs text-emerald-600">خضروات مجمَّعة</p>
+                          <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة'} · خضروات مجمَّعة</p>
                         </div>
                       </div>
-                      {meal.salad.grams > 0 && (
-                        <span className="font-bold text-emerald-700 text-sm bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full">
-                          {meal.salad.grams} غ
+                      {nm.salad.grams > 0 && (
+                        <span className="font-bold text-emerald-700 text-sm bg-emerald-200 border border-emerald-300 px-3 py-1 rounded-full flex-shrink-0">
+                          {nm.salad.grams} غ
                         </span>
                       )}
                     </div>
                   )}
-                  {/* Nuts group */}
-                  {meal.nuts?.has_nuts && meal.nuts.type && meal.nuts.type !== 'None' && (
-                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50/40">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">🥜</span>
+                  {/* ── Nuts card — visually distinct ── */}
+                  {nm.nuts?.has_nuts && nm.nuts.type && nm.nuts.type !== 'None' && (
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border-t-2 border-amber-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">🥜</div>
                         <div>
-                          <p className="font-semibold text-amber-800 text-sm">{meal.nuts.type}</p>
-                          <p className="text-xs text-amber-600">دهون صحية — عنصر مستقل</p>
+                          <p className="font-bold text-amber-800 text-sm">{nm.nuts.type}</p>
+                          <p className="text-xs text-amber-600 mt-0.5">دهون صحية مجمَّعة</p>
                         </div>
                       </div>
-                      {meal.nuts.grams > 0 && (
-                        <span className="font-bold text-amber-700 text-sm bg-amber-100 border border-amber-200 px-3 py-1 rounded-full">
-                          {meal.nuts.grams} غ
+                      {nm.nuts.grams > 0 && (
+                        <span className="font-bold text-amber-700 text-sm bg-amber-200 border border-amber-300 px-3 py-1 rounded-full flex-shrink-0">
+                          {nm.nuts.grams} غ
                         </span>
                       )}
                     </div>
                   )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </StepCard>
 
