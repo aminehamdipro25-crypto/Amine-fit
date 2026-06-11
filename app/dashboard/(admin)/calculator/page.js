@@ -865,6 +865,26 @@ export default function CalculatorPage() {
               </div>
             ))}
           </div>
+
+          {/* ── Total day macros verification strip ── */}
+          {(() => {
+            const tdm = result.duration === 'day'
+              ? result.total_day_macros
+              : result.days?.[selectedDay]?.total_day_macros
+            if (!tdm) return null
+            const diff = Math.abs((tdm.calories || 0) - (result.target || 0))
+            const ok   = diff <= 5
+            return (
+              <div className={`mt-4 p-3 rounded-xl border text-xs font-bold flex flex-wrap gap-3 items-center ${ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'}`}>
+                <span>{ok ? '✅' : '⚠️'} التحقق الذاتي من الإجماليات:</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🔥 {tdm.calories} سعرة</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">💪 {tdm.protein} غ بروتين</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🌾 {tdm.carbs} غ كارب</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🥑 {tdm.fat} غ دهون</span>
+                {!ok && <span className="text-amber-700 mr-auto">فارق {diff} سعرة عن الهدف</span>}
+              </div>
+            )
+          })()}
         </StepCard>
 
         {/* Step 4 — Detailed Menu in Grams */}
@@ -914,7 +934,12 @@ export default function CalculatorPage() {
                         <span className="text-lg">{item.icon}</span>
                         <div>
                           <p className="font-semibold text-slate-800 text-sm">{item.food}</p>
-                          <p className="text-xs text-slate-400">{item.group} — {item.servings} حصة</p>
+                          <p className="text-xs text-slate-400">
+                            {item.group} — {item.servings} حصة
+                            {item.cooking_method && item.cooking_method !== 'None' && (
+                              <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
+                            )}
+                          </p>
                         </div>
                       </div>
                       <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
@@ -922,6 +947,42 @@ export default function CalculatorPage() {
                       </span>
                     </div>
                   ))}
+                  {/* Salad group */}
+                  {meal.salad?.has_salad && meal.salad.vegetables?.length > 0 && (
+                    <div className="flex items-center justify-between px-4 py-3 bg-emerald-50/40">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🥗</span>
+                        <div>
+                          <p className="font-semibold text-emerald-800 text-sm">
+                            {meal.salad.preparation || 'سلطة'}: {meal.salad.vegetables.join(' + ')}
+                          </p>
+                          <p className="text-xs text-emerald-600">خضروات مجمَّعة</p>
+                        </div>
+                      </div>
+                      {meal.salad.grams > 0 && (
+                        <span className="font-bold text-emerald-700 text-sm bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full">
+                          {meal.salad.grams} غ
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Nuts group */}
+                  {meal.nuts?.has_nuts && meal.nuts.type && meal.nuts.type !== 'None' && (
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50/40">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">🥜</span>
+                        <div>
+                          <p className="font-semibold text-amber-800 text-sm">{meal.nuts.type}</p>
+                          <p className="text-xs text-amber-600">دهون صحية — عنصر مستقل</p>
+                        </div>
+                      </div>
+                      {meal.nuts.grams > 0 && (
+                        <span className="font-bold text-amber-700 text-sm bg-amber-100 border border-amber-200 px-3 py-1 rounded-full">
+                          {meal.nuts.grams} غ
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

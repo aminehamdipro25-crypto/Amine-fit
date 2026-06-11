@@ -80,6 +80,22 @@ TDEE = BMR × معامل النشاط
 • مجموع الكارب والدهون بنفس دقة البروتين
 • حقل amount: اذكر الوزن بالغرام أولاً ثم الوحدة المنزلية المكافئة — مثال: "90 غ (3 شرائح توست)" أو "65 غ (5 ملاعق كسكس مطبوخ)"
 
+═══ منهجية التفكير الحسابي والتحقق الذاتي (إلزامي) ═══
+قبل كتابة JSON نهائي لكل يوم، نفِّذ هذه الخطوات الحسابية بدقة رياضية:
+① حساب الماكروز اليومية:
+  بروتين(غ) = وزن_مستهدف×2 (أو وزن_حالي×1.8 إن لم يُحدَّد)
+  دهون(غ) = سعرات_كلية × 0.25 ÷ 9
+  كارب(غ) = (سعرات_كلية − بروتين×4 − دهون×9) ÷ 4
+② توزيع السعرات على الوجبات بالنسب: فطور 22% | وجبة خفيفة 12% | غداء 38% | عشاء 28%
+③ لكل وجبة: احسب حصص التبادل ثم الغرامات الدقيقة لكل مكون
+④ حدِّد cooking_method لكل عنصر بروتيني ونشوي وضمِّنه في حقل food
+⑤ التحقق الذاتي قبل الإخراج: اجمع (kcal, protein, carbs, fat) لجميع وجبات اليوم
+  • إذا |∑kcal − target| > 5 → عدِّل أصغر وجبة قبل الإخراج
+  • إذا |∑protein − target_protein| > 2 → عدِّل كمية البروتين الرئيسي
+  • إذا |∑carbs − target_carbs| > 3 → عدِّل حصص النشويات
+⑥ سجِّل الإجماليات المُصحَّحة في حقل total_day_macros
+⑦ أخرج JSON النهائي المصحَّح فقط — أي نص خارج JSON يُبطل الاستجابة برمجياً
+
 ═══ توزيع البروتين الأسبوعي (إذا حُدِّد) ═══
 • التزم بمصدر البروتين المحدد لكل يوم تحديداً — لا تستبدله ولا تضف مصادر أخرى
 • الهدف اليومي (سعرات + ماكروز) يبقى ثابتاً دائماً بغض النظر عن مصدر البروتين
@@ -209,8 +225,10 @@ export async function POST(req) {
       "name": "الفطور", "time": "07:30", "icon": "🌅",
       "kcal": number, "carbs": number, "protein": number, "fat": number,
       "items": [
-        { "group": "النشويات", "icon": "🌾", "servings": number, "food": "توست كامل", "amount": "90 غ (3 شرائح)" }
-      ]
+        { "group": "النشويات", "icon": "🌾", "servings": number, "food": "توست كامل محمص", "amount": "90 غ (3 شرائح)", "cooking_method": "محمص" }
+      ],
+      "salad": { "has_salad": false, "vegetables": ["طماطم", "خيار"], "preparation": "سلطة طازجة", "grams": 150 },
+      "nuts": { "has_nuts": false, "type": "None", "grams": 0 }
     }
   ]`
 
@@ -221,18 +239,19 @@ export async function POST(req) {
 
     // ── WEEK PLAN — use Sonnet (higher output limit) to generate all 7 days ──
     if (duration === 'week') {
+      const dayMacrosSchema = `{ "calories": number, "protein": number, "carbs": number, "fat": number }`
       const weekSchema = `{
   "bmr": number, "tdee": number, "target": number,
   "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
   "duration": "week",
   "days": [
-    { "name": "الأحد",     "menu": ${menuSchema} },
-    { "name": "الاثنين",   "menu": ${menuSchema} },
-    { "name": "الثلاثاء",  "menu": ${menuSchema} },
-    { "name": "الأربعاء",  "menu": ${menuSchema} },
-    { "name": "الخميس",    "menu": ${menuSchema} },
-    { "name": "الجمعة",    "menu": ${menuSchema} },
-    { "name": "السبت",     "menu": ${menuSchema} }
+    { "name": "الأحد",     "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "الاثنين",   "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "الثلاثاء",  "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "الأربعاء",  "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "الخميس",    "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "الجمعة",    "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
+    { "name": "السبت",     "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} }
   ]
 }`
 
@@ -264,12 +283,14 @@ ${weekSchema}`
 
       const response = await anthropic.messages.create({
         model:      'claude-sonnet-4-6',
-        max_tokens: 8192,
+        max_tokens: 14000,
+        thinking:   { type: 'adaptive' },
         system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         messages:   [{ role: 'user', content: weekPrompt }],
       })
 
-      const raw  = response.content[0].text.trim()
+      const textBlock = response.content.find(b => b.type === 'text')
+      const raw  = (textBlock?.text || '').trim()
         .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       const plan = JSON.parse(raw)
       if (plan.target) plan.target = Math.max(floor, plan.target)
@@ -281,6 +302,7 @@ ${weekSchema}`
   "bmr": number, "tdee": number, "target": number,
   "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
   "duration": "day",
+  "total_day_macros": { "calories": number, "protein": number, "carbs": number, "fat": number },
   "menu": ${menuSchema}
 }`
 
@@ -300,12 +322,13 @@ ${daySchema}`
 
     const response = await anthropic.messages.create({
       model:      'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 5000,
       system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages:   [{ role: 'user', content: dayPrompt }],
     })
 
-    const raw  = response.content[0].text.trim()
+    const textBlock = response.content.find(b => b.type === 'text')
+    const raw  = (textBlock?.text || '').trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
