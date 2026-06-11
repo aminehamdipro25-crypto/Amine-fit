@@ -20,9 +20,17 @@ const MONTHS_MAGHREBI = [
 ]
 function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
 
-// ─── Week navigator — locked to current week and forward only ─────────────────
-function WeekNav({ today, selectedDate, onSelect }) {
+// ─── Week navigator — anchored to planDate, can't go before plan issue week ────
+function WeekNav({ today, planDate, selectedDate, onSelect }) {
   const [weekOffset, setWeekOffset] = useState(0)
+
+  // How many weeks back from today's week to planDate's week (negative or 0)
+  const minOffset = useMemo(() => {
+    if (!planDate) return 0
+    const todayWeek = getWeekStart(today).getTime()
+    const planWeek  = getWeekStart(planDate).getTime()
+    return Math.round((planWeek - todayWeek) / (7 * 24 * 60 * 60 * 1000))
+  }, [today, planDate])
 
   const weekStart = useMemo(() => {
     const ws = getWeekStart(today); ws.setDate(ws.getDate() + weekOffset * 7); return ws
@@ -35,7 +43,7 @@ function WeekNav({ today, selectedDate, onSelect }) {
     return `${MONTHS_MAGHREBI[mid.getMonth()]} ${mid.getFullYear()}`
   }, [days])
 
-  const canGoBack = weekOffset > 0
+  const canGoBack = weekOffset > minOffset
 
   return (
     <div className="no-print rounded-2xl px-4 py-4 select-none" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 100%)' }}>
@@ -366,7 +374,7 @@ export default function NutritionPlan() {
 
       {/* ── Week calendar (hidden in print) ── */}
       {isWeeklyCalc && (
-        <WeekNav today={today} selectedDate={selectedDate} onSelect={handleSelectDate} />
+        <WeekNav today={today} planDate={calcPlan?.date ? new Date(calcPlan.date) : today} selectedDate={selectedDate} onSelect={handleSelectDate} />
       )}
 
       {/* ── Month week tabs ── */}

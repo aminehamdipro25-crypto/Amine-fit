@@ -55,7 +55,7 @@ function planCacheKey(form) {
     wp: JSON.stringify(form.weeklyProtein || null),
   })
   const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 20)
-  return `ai_plan_v4:${hash}`
+  return `ai_plan_v5:${hash}`
 }
 
 const ACTIVITY_LABELS = {
@@ -305,7 +305,7 @@ function localPlan(form) {
   if (duration === 'week') {
     const days = DAY_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i, wp?.[i] || 'mixed'),
+      menu: generateMenu(ex, meals, pref, avoided, i * 11, wp?.[i] || 'mixed'),
     }))
     return { ...base, days, duration: 'week' }
   }
@@ -313,7 +313,7 @@ function localPlan(form) {
     // For month plans, cycle through weeklyProtein if set
     const weeks = WEEK_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i * 3, wp?.[i % 7] || 'mixed'),
+      menu: generateMenu(ex, meals, pref, avoided, i * 13, wp?.[i % 7] || 'mixed'),
     }))
     return { ...base, weeks, duration: 'month' }
   }

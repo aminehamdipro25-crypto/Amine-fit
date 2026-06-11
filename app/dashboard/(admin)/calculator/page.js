@@ -103,9 +103,9 @@ function normalizeMeal(meal) {
   if (vegNames.length > 0) {
     const prev        = meal.salad || {}
     // Respect AI-provided preparation if specific; otherwise use detected or default
-    const preparation = (prev.preparation && !prev.preparation.includes('طازجة بزيت'))
+    const preparation = (prev.preparation && prev.preparation !== 'سلطة طازجة')
       ? prev.preparation
-      : (vegPrep || prev.preparation || 'سلطة طازجة بزيت الزيتون والليمون')
+      : (vegPrep || 'سلطة طازجة')
     result.salad = {
       has_salad:   true,
       vegetables:  prev.has_salad ? (prev.vegetables || vegNames) : vegNames,
@@ -960,7 +960,7 @@ export default function CalculatorPage() {
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="font-extrabold text-primary-700 text-sm">{nm.kcal} سعرة</p>
+                    <p className="font-extrabold text-primary-700 text-sm">{nm.kcal} Kcal</p>
                     <p className="text-xs text-slate-400">ك:{nm.carbs}غ ب:{nm.protein}غ د:{nm.fat}غ</p>
                   </div>
                 </div>
@@ -1046,7 +1046,7 @@ export default function CalculatorPage() {
                       <span className="text-xs text-slate-400 mr-2">{nm.time}</span>
                     </div>
                   </div>
-                  <span className="font-extrabold text-primary-700 text-sm">{nm.kcal} سعرة</span>
+                  <span className="font-extrabold text-primary-700 text-sm">{nm.kcal} Kcal</span>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {/* Regular food items — click food name to edit */}
@@ -1091,7 +1091,7 @@ export default function CalculatorPage() {
                           <p className="text-xs text-slate-400 mt-0.5">
                             {item.group} — {item.servings} حصة
                             {item.kcal > 0 && (
-                              <span className="mr-1 text-primary-500 font-semibold">· {item.kcal} ك</span>
+                              <span className="mr-1 text-primary-500 font-semibold">· {item.kcal} Kcal</span>
                             )}
                             {item.cooking_method && item.cooking_method !== 'None' && (
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
@@ -1155,7 +1155,7 @@ export default function CalculatorPage() {
                           )}
                           {nm.salad.kcal > 0 && (
                             <span className="font-medium text-emerald-600 text-xs bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-                              {nm.salad.kcal} سعرة
+                              {nm.salad.kcal} Kcal
                             </span>
                           )}
                         </div>
@@ -1213,7 +1213,7 @@ export default function CalculatorPage() {
                           )}
                           {nm.nuts.kcal > 0 && (
                             <span className="font-medium text-amber-600 text-xs bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
-                              {nm.nuts.kcal} سعرة
+                              {nm.nuts.kcal} Kcal
                             </span>
                           )}
                         </div>
