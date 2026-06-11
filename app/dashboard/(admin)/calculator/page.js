@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2 } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
@@ -123,9 +123,6 @@ export default function CalculatorPage() {
   const [result, setRes] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isAI, setIsAI] = useState(false)
-  const [chatMessages, setChatMessages] = useState([])
-  const [chatInput, setChatInput] = useState('')
-  const [chatLoading, setChatLoading] = useState(false)
   const [selectedDay, setSelectedDay] = useState(0)
   const [selectedWeek, setSelectedWeek] = useState(0)
   const [showPicker, setShowPicker]   = useState(false)
@@ -135,7 +132,6 @@ export default function CalculatorPage() {
   const [savedPlan, setSavedPlan] = useState(null) // plan fetched from Redis for picked client
   const [initialized, setInitialized] = useState(false) // true after localStorage restore
   const [draftRestored, setDraftRestored] = useState(false)
-  const chatEndRef = useRef(null)
 
   // ── Restore draft from localStorage on mount ─────────────────────────────
   useEffect(() => {
@@ -147,7 +143,6 @@ export default function CalculatorPage() {
         if (draft.result) {
           setRes(draft.result)
           setIsAI(!!draft.isAI)
-          setChatMessages(draft.chatMessages || [])
           setSelectedDay(draft.selectedDay  || 0)
           setSelectedWeek(draft.selectedWeek || 0)
           setDraftRestored(true)
@@ -163,18 +158,18 @@ export default function CalculatorPage() {
     if (!initialized) return
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
-        form, result, isAI, chatMessages, selectedDay, selectedWeek,
+        form, result, isAI, selectedDay, selectedWeek,
         pickedClient: pickedClient
           ? { id: pickedClient.id, name: pickedClient.name, email: pickedClient.email }
           : null,
       }))
       if (result) localStorage.setItem('amineFitPlan', JSON.stringify(result))
     } catch {}
-  }, [form, result, isAI, chatMessages, selectedDay, selectedWeek, pickedClient, initialized]) // eslint-disable-line
+  }, [form, result, isAI, selectedDay, selectedWeek, pickedClient, initialized]) // eslint-disable-line
 
   function clearDraft() {
     setForm(INIT); setRes(null); setPickedClient(null); setSavedPlan(null)
-    setChatMessages([]); setChatInput(''); setSaveStatus(null); setDraftRestored(false)
+    setSaveStatus(null); setDraftRestored(false)
     try { localStorage.removeItem(LS_KEY); localStorage.removeItem('amineFitPlan') } catch {}
   }
 
@@ -215,7 +210,6 @@ export default function CalculatorPage() {
     if (!savedPlan) return
     setRes(savedPlan)
     if (savedPlan.form) setForm(savedPlan.form)
-    setChatMessages([])
     setSelectedDay(0)
     setSelectedWeek(0)
     setSaveStatus(null)
@@ -226,7 +220,6 @@ export default function CalculatorPage() {
 
   const valid = +form.age > 0 && +form.weight > 0 && +form.height > 0
 
-  // currentMenu depends on result — defined at component level so sendChatMessage can access it
   const currentMenu = result
     ? (result.duration === 'day'
         ? result.menu
@@ -235,15 +228,10 @@ export default function CalculatorPage() {
           : result.weeks?.[selectedWeek]?.menu)
     : null
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages, chatLoading])
-
   async function calculate() {
     if (!valid || loading) return
     setLoading(true)
     setRes(null)
-    setChatMessages([])
     setSelectedDay(0)
     setSelectedWeek(0)
     setSaveStatus(null)
@@ -284,63 +272,6 @@ export default function CalculatorPage() {
       setSaveStatus('error')
     } finally {
       setSaveLoading(false)
-    }
-  }
-
-  const [lastModified, setLastModified] = useState(false) // true after a successful chat modification
-
-  async function sendChatMessage() {
-    if (!chatInput.trim() || chatLoading) return
-    const userMsg = chatInput.trim()
-    setChatInput('')
-    const newMessages = [...chatMessages, { role: 'user', content: userMsg }]
-    setChatMessages(newMessages)
-    setChatLoading(true)
-    setLastModified(false)
-    try {
-      const isMulti = result.duration !== 'day'
-      const allMenus = isMulti
-        ? (result.duration === 'week'
-            ? result.days.map(d => ({ name: d.name, menu: d.menu }))
-            : result.weeks.map(w => ({ name: w.name, menu: w.menu })))
-        : null
-
-      const requestBody = isMulti
-        ? { plan: result, allMenus, messages: newMessages }
-        : { plan: result, menu: currentMenu, messages: newMessages }
-
-      const res = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      })
-      const data = await res.json()
-
-      let changed = false
-      if (isMulti && data.allMenus) {
-        if (result.duration === 'week') {
-          setRes(r => ({
-            ...r,
-            days: r.days.map((d, i) => ({ ...d, menu: data.allMenus[i]?.menu || d.menu })),
-          }))
-        } else {
-          setRes(r => ({
-            ...r,
-            weeks: r.weeks.map((w, i) => ({ ...w, menu: data.allMenus[i]?.menu || w.menu })),
-          }))
-        }
-        changed = data.changed === true
-      } else if (!isMulti && data.menu) {
-        setRes(r => ({ ...r, menu: data.menu }))
-        changed = data.changed === true
-      }
-
-      if (changed) setLastModified(true)
-      setChatMessages(prev => [...prev, { role: 'assistant', content: data.message }])
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'حدث خطأ في الاتصال — لم تتغير الخطة.' }])
-    } finally {
-      setChatLoading(false)
     }
   }
 
@@ -557,9 +488,9 @@ export default function CalculatorPage() {
           {/* Preferred / avoided / meals */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">✅ الأطعمة المفضلة</label>
-              <input className={inp} placeholder="دجاج، أرز، تونة..." value={form.preferred} onChange={e => set('preferred', e.target.value)} />
-              <p className="text-xs text-slate-400">ستُدرج كأولوية في القائمة</p>
+              <label className="text-sm font-semibold text-slate-700">📋 قائمة الأطعمة المسموحة</label>
+              <input className={inp} placeholder="دجاج، أرز، تونة، بيض، زبادي..." value={form.preferred} onChange={e => set('preferred', e.target.value)} />
+              <p className="text-xs text-slate-400">الخطة ستستخدم هذه الأطعمة فقط — اتركها فارغة للتنويع التلقائي</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-red-600">🚫 الأطعمة الممنوعة</label>
@@ -965,85 +896,6 @@ export default function CalculatorPage() {
               ✓ الخطة الأسبوعية منشورة — يستطيع العميل رؤيتها الآن في منصته مع التقويم الأسبوعي
             </div>
           )}
-        </div>
-
-        {/* ── AI Chat Section ── */}
-        <div className="bg-white rounded-2xl border-2 border-violet-200 shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-violet-50 to-white border-b border-violet-100">
-            <div className="w-9 h-9 bg-violet-600 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-violet-800 text-sm">محادثة مع الذكاء الاصطناعي — تعديل البرنامج</h3>
-              <p className="text-xs text-violet-500">
-                للمدرب فقط • لا تظهر في تقرير العميل
-                {result.duration !== 'day' && <span className="mr-1 text-violet-700 font-semibold">• ✦ التعديلات تُطبَّق على جميع {result.duration === 'week' ? 'أيام الأسبوع' : 'أسابيع الشهر'}</span>}
-              </p>
-            </div>
-            <span className="mr-auto text-[10px] font-extrabold bg-violet-100 text-violet-700 px-2 py-1 rounded-full">🔒 خاص</span>
-          </div>
-          {/* Messages area */}
-          <div className="p-4 min-h-[100px] max-h-72 overflow-y-auto bg-slate-50/40 space-y-3" id="chat-messages">
-            {chatMessages.length === 0 && (
-              <div className="text-center py-6 text-slate-400">
-                <p className="text-sm font-medium">البرنامج جاهز — يمكنك الآن طلب أي تعديل</p>
-                <p className="text-xs mt-1 text-slate-300">مثال: "قلل الكربوهيدرات في الفطور" — "استبدل الدجاج بالتونة في الغداء"</p>
-              </div>
-            )}
-            {chatMessages.map((msg, i) => (
-              <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-violet-600 text-white rounded-br-sm'
-                    : 'bg-white border border-violet-100 text-slate-700 rounded-bl-sm shadow-sm'
-                }`}>
-                  {msg.role === 'assistant' && <p className="text-[10px] text-violet-500 font-bold mb-1">Claude AI</p>}
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {chatLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-violet-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-                  <div className="flex gap-1">{[0,1,2].map(i => <div key={i} className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}} />)}</div>
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
-          {/* Modified banner — appears after a successful chat edit */}
-          {lastModified && pickedClient && (
-            <div className="mx-3 mb-2 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-sm">
-              <span className="text-emerald-600 text-lg">✅</span>
-              <span className="flex-1 font-semibold text-emerald-800">القائمة عُدِّلت — انقر لنشر التعديلات على منصة العميل</span>
-              <button
-                onClick={async () => { await savePlan(); setLastModified(false) }}
-                disabled={saveLoading}
-                className="flex-shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-extrabold transition">
-                {saveLoading ? 'جاري النشر...' : '🚀 نشر الآن'}
-              </button>
-            </div>
-          )}
-          {lastModified && !pickedClient && (
-            <div className="mx-3 mb-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-700 font-semibold">
-              ✅ القائمة عُدِّلت بنجاح — اختر عميلاً من الأعلى لنشرها على منصته
-            </div>
-          )}
-          {/* Input */}
-          <div className="flex gap-2 p-3 border-t border-violet-100 bg-white">
-            <input
-              className="flex-1 px-4 py-2.5 rounded-xl border border-violet-200 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition"
-              placeholder="اطلب تعديلاً على البرنامج..."
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !chatLoading && sendChatMessage()}
-              disabled={chatLoading}
-            />
-            <button onClick={sendChatMessage} disabled={chatLoading || !chatInput.trim()}
-              className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-sm font-bold transition">
-              إرسال
-            </button>
-          </div>
         </div>
 
       </>)}

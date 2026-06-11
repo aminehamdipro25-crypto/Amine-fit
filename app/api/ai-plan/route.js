@@ -59,7 +59,7 @@ TDEE = BMR × معامل النشاط
 
 ═══ قواعد صارمة ═══
 1. الأطعمة الممنوعة: احذفها تماماً وعوّض من مجموعات أخرى
-2. الأطعمة المفضلة: استخدمها أولاً في الوجبات المناسبة
+2. قائمة الأطعمة المسموحة: إذا قُدِّمت قائمة → استخدمها حصراً ولا تضف أي طعام خارجها | إذا لم تُقدَّم → اختر أطعمة متنوعة مناسبة
 3. التنويع: لا تكرر نفس الطعام في وجبتين متتاليتين
 4. المنطق: الزبدة/المكسرات = فطور فقط | زيت الزيتون = غداء/عشاء | العسل = ضمن النشويات
 5. الكميات: احسبها بدقة (عدد الوحدات × غرام/وحدة)
@@ -139,8 +139,12 @@ export async function POST(req) {
   const regionHint  = REGION_FOOD_HINTS[region] || ''
 
   const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
-  const safePreferred = String(form.preferred || '').slice(0, 200) || 'لا يوجد'
+  const safePreferred = String(form.preferred || '').slice(0, 500).trim() || 'لا يوجد'
   const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
+  const hasFoodList   = safePreferred !== 'لا يوجد'
+  const foodListLine  = hasFoodList
+    ? `قائمة الأطعمة المسموحة (استخدم هذه الأطعمة فقط — لا تضف أي طعام خارجها): ${safePreferred}`
+    : `قائمة الأطعمة: غير محددة (اختر أطعمة متنوعة مناسبة)`
   const adjNum  = form.manualAdj  ? Math.max(-1000, Math.min(1000, Math.round(+form.manualAdj)))   : null
   const rateNum = form.weeklyRate ? Math.max(-1,    Math.min(1,    +form.weeklyRate))               : null
   const adjLine = adjNum  != null ? `العجز/الفائض اليومي المحدد يدوياً: ${adjNum} سعرة/يوم\n` :
@@ -189,7 +193,7 @@ export async function POST(req) {
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
 مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
 الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${adjLine}${regionSection}الأطعمة المفضلة: ${safePreferred}
+${adjLine}${regionSection}${foodListLine}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات يومياً: ${form.meals}
 
@@ -201,7 +205,7 @@ ${weekSchema}`
       const response = await anthropic.messages.create({
         model:      'claude-sonnet-4-6',
         max_tokens: 8192,
-        system:     SYSTEM_PROMPT,
+        system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         messages:   [{ role: 'user', content: weekPrompt }],
       })
 
@@ -227,7 +231,7 @@ ${weekSchema}`
 الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
 مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
 الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${adjLine}${regionSection}الأطعمة المفضلة: ${safePreferred}
+${adjLine}${regionSection}${foodListLine}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
@@ -237,7 +241,7 @@ ${daySchema}`
     const response = await anthropic.messages.create({
       model:      'claude-haiku-4-5-20251001',
       max_tokens: 4096,
-      system:     SYSTEM_PROMPT,
+      system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages:   [{ role: 'user', content: dayPrompt }],
     })
 
