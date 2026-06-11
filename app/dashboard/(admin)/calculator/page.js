@@ -284,7 +284,7 @@ export default function CalculatorPage() {
           ? { id: pickedClient.id, name: pickedClient.name, email: pickedClient.email }
           : null,
       }))
-      if (result) localStorage.setItem('amineFitPlan', JSON.stringify(result))
+      // amineFitPlan is written only by openReport() with edits applied
     } catch {}
   }, [form, result, isAI, selectedDay, selectedWeek, pickedClient, initialized]) // eslint-disable-line
 
