@@ -44,12 +44,27 @@ function StepCard({ num, title, children }) {
   )
 }
 
-const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'', manualAdj:'', weeklyRate:'' }
+const INIT = { name:'', age:'', weight:'', height:'', gender:'male', activity:'moderate', goal:'maintain', preferred:'', avoided:'', targetWeight:'', bodyFatPct:'', duration:'day', meals:5, country:'', manualAdj:'', weeklyRate:'', weeklyProtein: null }
 
 const LS_KEY = 'amine_calc_draft'
 
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
+
+const WEEK_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+
+const PROTEIN_TYPES = [
+  { key: 'mixed',      icon: '🔄', label: 'مختلط' },
+  { key: 'chicken',   icon: '🍗', label: 'دجاج' },
+  { key: 'fish',      icon: '🐟', label: 'سمك' },
+  { key: 'red_meat',  icon: '🥩', label: 'لحم أحمر' },
+  { key: 'liver',     icon: '🫀', label: 'كبدة' },
+  { key: 'tuna',      icon: '🐠', label: 'تونة' },
+  { key: 'eggs',      icon: '🥚', label: 'بيض' },
+  { key: 'plant',     icon: '🌿', label: 'نباتي (بقوليات)' },
+  { key: 'eggs_plant',icon: '🥚', label: 'بيض + بقوليات' },
+  { key: 'dairy',     icon: '🧀', label: 'ألبان + جبن' },
+]
 
 function ClientPicker({ onSelect }) {
   const [clients, setClients]   = useState([])
@@ -484,6 +499,59 @@ export default function CalculatorPage() {
               ))}
             </div>
           </div>
+
+          {/* ── Weekly Protein Distribution — week plans only ── */}
+          {form.duration === 'week' && (
+            <div className="space-y-3 p-4 rounded-xl bg-emerald-50/60 border border-emerald-200">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-emerald-800">🥩 توزيع البروتين الأسبوعي</span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">اختياري — لمراعاة ميزانية العميل</span>
+                {form.weeklyProtein?.some(p => p !== 'mixed') && (
+                  <button onClick={() => set('weeklyProtein', null)} className="text-[10px] text-slate-400 hover:text-red-500 mr-auto transition">✕ إعادة تعيين</button>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">حدِّد مصدر البروتين لكل يوم — يُعيد النظام حساب الماكروز تلقائياً (كربوهيدرات البقوليات + دهون البيض) للحفاظ على الهدف اليومي</p>
+              <div className="grid grid-cols-7 gap-1.5">
+                {WEEK_DAYS.map((day, i) => {
+                  const val = form.weeklyProtein?.[i] || 'mixed'
+                  const pt  = PROTEIN_TYPES.find(p => p.key === val) || PROTEIN_TYPES[0]
+                  return (
+                    <div key={i} className={`flex flex-col items-center gap-1 rounded-xl p-2 border-2 transition-all ${val !== 'mixed' ? 'border-emerald-400 bg-white shadow-sm' : 'border-slate-200 bg-white/60'}`}>
+                      <p className="text-[10px] font-bold text-slate-600">{day}</p>
+                      <span className="text-lg leading-none">{pt.icon}</span>
+                      <select
+                        value={val}
+                        onChange={e => {
+                          const arr = [...(form.weeklyProtein || Array(7).fill('mixed'))]
+                          arr[i] = e.target.value
+                          set('weeklyProtein', arr)
+                        }}
+                        className="w-full text-[9px] py-1 px-0.5 rounded-lg border border-slate-200 bg-white text-slate-700 outline-none focus:border-emerald-400 text-center leading-tight">
+                        {PROTEIN_TYPES.map(p => <option key={p.key} value={p.key}>{p.icon} {p.label}</option>)}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Summary chips */}
+              {form.weeklyProtein?.some(p => p !== 'mixed') && (() => {
+                const counts = {}
+                form.weeklyProtein.forEach(p => {
+                  const lbl = PROTEIN_TYPES.find(pt => pt.key === p)?.label || 'مختلط'
+                  counts[lbl] = (counts[lbl] || 0) + 1
+                })
+                return (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {Object.entries(counts).map(([lbl, n]) => (
+                      <span key={lbl} className="text-[10px] font-bold bg-white border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full">
+                        {n} × {lbl}
+                      </span>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
 
           {/* Preferred / avoided / meals */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
