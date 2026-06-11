@@ -55,7 +55,7 @@ function planCacheKey(form) {
     wp: JSON.stringify(form.weeklyProtein || null),
   })
   const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 20)
-  return `ai_plan_cache:${hash}`
+  return `ai_plan_v2:${hash}`
 }
 
 const ACTIVITY_LABELS = {
@@ -191,6 +191,130 @@ const PROTEIN_LABELS = {
   plant:       'نباتي: بقوليات (حمص/عدس/فول/لوبيا) — احسب كربوهيدراتها واخفض النشويات الأخرى بالمقدار المكافئ',
   eggs_plant:  'بيض + بقوليات — احسب دهون البيض وكارب البقوليات، وعوِّض في النشويات والدهون',
   dairy:       'ألبان + جبن قريش/بلدي — احسب كارب الألبان ضمن الكارب اليومي',
+}
+
+// ── Post-processing: enforce structural rules regardless of model output ──────
+// These run after JSON parsing to guarantee correct structure even when the model
+// ignores prompt instructions about salad grouping, nut consolidation, or geography.
+
+const VEG_KEYWORDS = ['طماطم', 'خيار', 'فلفل', 'خس', 'جزر', 'بروكلي', 'كوسة', 'كوسا', 'سبانخ', 'باذنجان', 'قرنبيط', 'فاصوليا خضراء', 'كرفس', 'ملفوف', 'فجل', 'زعتر']
+const NUT_KEYWORDS  = ['لوز', 'كاجو', 'جوز', 'فستق', 'بذر كتان', 'بذر شيا', 'سمسم', 'بذر عباد']
+
+const GEO_REPLACEMENTS = {
+  maghreb: [
+    ['سمك السلمون المشوي', 'سردين مشوي'],
+    ['سمك السلمون',        'سردين مشوي'],
+    ['سمك سلمون مشوي',    'سردين مشوي'],
+    ['سمك سلمون',          'سردين'],
+    ['سلمون مشوي',         'سردين مشوي'],
+    ['سلمون',              'سردين'],
+    ['كينوا',              'أرز مطبوخ'],
+    ['أفوكادو',            'زيت زيتون'],
+  ],
+  gulf: [
+    ['كسكس مطبوخ',  'أرز بسمتي مطبوخ'],
+    ['كسكس',        'أرز بسمتي مطبوخ'],
+    ['هريسة',       'طحينية'],
+    ['كينوا',       'أرز بسمتي'],
+    ['أفوكادو',     'زيت زيتون'],
+  ],
+  egypt: [
+    ['سمك السلمون', 'سمك بلطي مشوي'],
+    ['سمك سلمون',  'سمك بلطي مشوي'],
+    ['سلمون',      'سمك بلطي'],
+    ['كسكس',       'أرز مطبوخ'],
+    ['كينوا',      'أرز مطبوخ'],
+  ],
+}
+
+function applyGeoFix(text, region) {
+  if (!text || !region || !GEO_REPLACEMENTS[region]) return text
+  let out = text
+  for (const [banned, replacement] of GEO_REPLACEMENTS[region]) {
+    out = out.replace(new RegExp(banned, 'g'), replacement)
+  }
+  return out
+}
+
+function isVegetableItem(item) {
+  const group = item.group || ''
+  const food  = item.food  || ''
+  if (group.includes('خضروات') || group.toLowerCase().includes('vegetable')) return true
+  return VEG_KEYWORDS.some(k => food.includes(k))
+}
+
+function isNutItem(item) {
+  const food = item.food || ''
+  return NUT_KEYWORDS.some(k => food.includes(k))
+}
+
+function parseGrams(amount) {
+  const m = String(amount || '').match(/^(\d+(?:\.\d+)?)/)
+  return m ? parseFloat(m[1]) : 0
+}
+
+function fixMeal(meal, region) {
+  if (!meal || !Array.isArray(meal.items)) return meal
+
+  const cleanItems = []
+  const vegNames   = []
+  const nutParts   = []
+  let   nutGrams   = 0
+
+  for (const item of meal.items) {
+    const fixedFood = region ? applyGeoFix(item.food, region) : item.food
+    const fixed     = fixedFood !== item.food ? { ...item, food: fixedFood } : item
+
+    if (isVegetableItem(fixed)) {
+      vegNames.push(fixed.food)
+    } else if (isNutItem(fixed)) {
+      nutParts.push(fixed.food)
+      nutGrams += parseGrams(fixed.amount)
+    } else {
+      cleanItems.push(fixed)
+    }
+  }
+
+  const result = { ...meal, items: cleanItems }
+
+  // Merge extracted vegetables → salad
+  if (vegNames.length > 0) {
+    const prev    = meal.salad || {}
+    const allVegs = [...new Set([...(prev.vegetables || []), ...vegNames])]
+    result.salad  = {
+      has_salad:   true,
+      vegetables:  allVegs,
+      preparation: prev.preparation || 'سلطة طازجة بزيت الزيتون والليمون',
+      grams:       prev.grams || allVegs.length * 80,
+    }
+  } else if (meal.salad) {
+    result.salad = meal.salad
+  }
+
+  // Merge extracted nuts → nuts object
+  if (nutParts.length > 0) {
+    const prev   = meal.nuts || {}
+    const joined = nutParts.join(' + ')
+    result.nuts  = {
+      has_nuts: true,
+      type:     joined,
+      grams:    nutGrams || prev.grams || 30,
+    }
+  } else if (meal.nuts) {
+    result.nuts = meal.nuts
+  }
+
+  return result
+}
+
+function postProcess(plan, region) {
+  if (!plan) return plan
+  const fixMenu = menu => Array.isArray(menu) ? menu.map(m => fixMeal(m, region)) : menu
+
+  if (plan.duration === 'week' && Array.isArray(plan.days)) {
+    return { ...plan, days: plan.days.map(d => ({ ...d, menu: fixMenu(d.menu) })) }
+  }
+  return plan.menu ? { ...plan, menu: fixMenu(plan.menu) } : plan
 }
 
 // ── Local fallback: uses the rule-based engine ───────────────────────────────
@@ -372,7 +496,7 @@ ${weekSchema}`
         .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       const plan = JSON.parse(raw)
       if (plan.target) plan.target = Math.max(floor, plan.target)
-      const weekResult = { ...plan, form, date: new Date().toISOString(), ai: true, duration: 'week' }
+      const weekResult = { ...postProcess(plan, region), form, date: new Date().toISOString(), ai: true, duration: 'week' }
       await cacheSet(cacheKey, weekResult)
       return NextResponse.json(weekResult)
     }
@@ -417,7 +541,7 @@ ${daySchema}`
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
-    const dayResult = { ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
+    const dayResult = { ...postProcess(plan, region), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
     await cacheSet(cacheKey, dayResult)
     return NextResponse.json(dayResult)
 
