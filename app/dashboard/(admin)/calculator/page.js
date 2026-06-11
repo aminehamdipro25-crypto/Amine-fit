@@ -780,7 +780,7 @@ export default function CalculatorPage() {
         <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${isAI ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
           {isAI ? <><Sparkles className="w-4 h-4" /> تم التوليد بالذكاء الاصطناعي Claude</> : <><Calculator className="w-4 h-4" /> تم التوليد بالمحرك المحلي (المجاني)</>}
           {isAI && result.cached && <span className="mr-auto text-xs font-normal text-violet-400 bg-violet-100 px-2 py-0.5 rounded-full">من الكاش (24 ساعة)</span>}
-          {!isAI && !result.aiError && <span className="mr-auto text-xs font-normal text-slate-400">{result.duration === 'month' ? 'الشهر بالمحرك المحلي — اليوم والأسبوع بـ Claude AI' : 'أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI'}</span>}
+          {!isAI && !result.aiError && <span className="mr-auto text-xs font-normal text-slate-400">{result.duration === 'day' ? 'أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI لليوم الواحد' : 'الأسبوع والشهر بالمحرك المحلي المجاني'}</span>}
           {result.aiError && <span className="mr-auto text-xs font-normal text-red-500">خطأ AI: {result.aiError}</span>}
         </div>
 

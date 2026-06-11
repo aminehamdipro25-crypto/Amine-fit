@@ -376,8 +376,8 @@ export async function POST(req) {
 
   const duration = form.duration || 'day'
 
-  // Month plans → always use local engine (too large for AI)
-  if (duration === 'month') {
+  // Week & Month plans → always use local engine (free)
+  if (duration === 'week' || duration === 'month') {
     return NextResponse.json(postProcess(localPlan(form)))
   }
 
