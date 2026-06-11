@@ -372,9 +372,49 @@ export default function CalculatorPage() {
     }
   }
 
+  // Apply itemEdits to the result before exporting to PDF or saving to client
+  function buildExportResult() {
+    if (!result || Object.keys(itemEdits).length === 0) return result
+    function applyToMenu(menu) {
+      return (menu || []).map((meal, i) => {
+        const items = meal.items || []
+        // Build display-index → raw-index map (normalizeMeal removes veg/nut items)
+        const displayToRaw = []
+        items.forEach((item, ri) => {
+          const f = item.food || '', g = item.group || ''
+          if (!g.includes('خضروات') && !_VEG.some(k => f.includes(k)) && !_NUT.some(k => f.includes(k))) {
+            displayToRaw.push(ri)
+          }
+        })
+        const newItems = [...items]
+        displayToRaw.forEach((rawIdx, di) => {
+          const k = `${i}-${di}`
+          if (itemEdits[k] !== undefined) newItems[rawIdx] = { ...newItems[rawIdx], food: itemEdits[k] }
+        })
+        const nk = `n${i}`
+        return {
+          ...meal,
+          items: newItems,
+          nuts: meal.nuts && itemEdits[nk] !== undefined ? { ...meal.nuts, type: itemEdits[nk] } : meal.nuts,
+        }
+      })
+    }
+    if (result.menu) return { ...result, menu: applyToMenu(result.menu) }
+    if (result.days) {
+      const days = result.days.map((d, i) => i === selectedDay ? { ...d, menu: applyToMenu(d.menu) } : d)
+      return { ...result, days }
+    }
+    if (result.weeks) {
+      const weeks = result.weeks.map((w, i) => i === selectedWeek ? { ...w, menu: applyToMenu(w.menu) } : w)
+      return { ...result, weeks }
+    }
+    return result
+  }
+
   function openReport() {
     if (!result) return
-    localStorage.setItem('amineFitPlan', JSON.stringify(result))
+    const exportResult = buildExportResult()
+    localStorage.setItem('amineFitPlan', JSON.stringify(exportResult))
     window.open('/plan-report', '_blank')
   }
 
@@ -386,7 +426,7 @@ export default function CalculatorPage() {
       const res = await fetch(`/api/admin/clients/${pickedClient.id}/calc-plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: result }),
+        body: JSON.stringify({ plan: buildExportResult() }),
       })
       setSaveStatus(res.ok ? 'saved' : 'error')
     } catch {

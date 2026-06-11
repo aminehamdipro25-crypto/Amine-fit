@@ -529,8 +529,9 @@ ${adjLine}${regionSection}${foodListLine}
 ${daySchema}`
 
     const response = await anthropic.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 5000,
+      model:      'claude-sonnet-4-6',
+      max_tokens: 7000,
+      thinking:   { type: 'adaptive' },
       system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages:   [{ role: 'user', content: dayPrompt }],
     })
