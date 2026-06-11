@@ -306,11 +306,23 @@ export default function PlanReport() {
                         <span>د: {meal.fat}غ</span>
                       </div>
                       {meal.items.map((item, j) => (
-                        <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: j < meal.items.length - 1 ? '1px dashed #f0f0f0' : 'none', display: 'flex', justifyContent: 'space-between' }}>
+                        <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: '1px dashed #f0f0f0', display: 'flex', justifyContent: 'space-between' }}>
                           <span>{item.icon} {item.food}</span>
                           <span style={{ color: '#888', fontSize: 11 }}>{item.amount}</span>
                         </div>
                       ))}
+                      {meal.salad?.vegetables?.length > 0 && (
+                        <div style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: '1px dashed #f0f0f0', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>🥗 {meal.salad.vegetables.join(' + ')}</span>
+                          <span style={{ color: '#888', fontSize: 11 }}>{meal.salad.grams ? `${meal.salad.grams} غ` : ''}</span>
+                        </div>
+                      )}
+                      {meal.nuts?.type && (
+                        <div style={{ fontSize: 12, color: '#444', padding: '3px 0', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>🥜 {meal.nuts.type}</span>
+                          <span style={{ color: '#888', fontSize: 11 }}>{meal.nuts.grams ? `${meal.nuts.grams} غ` : ''}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -353,6 +365,30 @@ export default function PlanReport() {
                           </Td>
                         </tr>
                       ))}
+                      {meal.salad?.vegetables?.length > 0 && (
+                        <tr style={{ borderBottom: '1px solid #f0f0f0', background: '#f0fdf4' }}>
+                          <Td>🥗 خضروات</Td>
+                          <Td bold>{meal.salad.vegetables.join(' + ')}</Td>
+                          <Td center>—</Td>
+                          <Td center>
+                            <span style={{ background: '#dcfce7', color: '#15803d', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
+                              {meal.salad.grams ? `${meal.salad.grams} غ` : '—'}
+                            </span>
+                          </Td>
+                        </tr>
+                      )}
+                      {meal.nuts?.type && (
+                        <tr style={{ borderBottom: '1px solid #f0f0f0', background: '#fefce8' }}>
+                          <Td>🥜 مكسرات</Td>
+                          <Td bold>{meal.nuts.type}</Td>
+                          <Td center>—</Td>
+                          <Td center>
+                            <span style={{ background: '#fef9c3', color: '#854d0e', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
+                              {meal.nuts.grams ? `${meal.nuts.grams} غ` : '—'}
+                            </span>
+                          </Td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                   <div style={{ background: '#fffbf0', padding: '8px 20px', display: 'flex', gap: 20, fontSize: 11, color: '#888' }}>

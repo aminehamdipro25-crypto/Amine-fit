@@ -148,12 +148,32 @@ function MealCard({ meal, idx, open, onToggle }) {
 }
 
 // ─── Normalize calculator-format meal ─────────────────────────────────────────
+// server-side fixMeal() extracts vegetables → meal.salad and nuts → meal.nuts
+// so we must re-include them here, otherwise meals with only veg/nuts show empty
 function normCalcMeal(m) {
+  const baseItems = (m.items || []).map(i => ({ food: i.food, amount: i.amount }))
+
+  const saladItems = []
+  if (m.salad?.vegetables?.length > 0) {
+    saladItems.push({
+      food:   '🥗 ' + m.salad.vegetables.join(' + '),
+      amount: m.salad.grams ? `${m.salad.grams} غ` : '',
+    })
+  }
+
+  const nutsItems = []
+  if (m.nuts?.type) {
+    nutsItems.push({
+      food:   '🥜 ' + m.nuts.type,
+      amount: m.nuts.grams ? `${m.nuts.grams} غ` : '',
+    })
+  }
+
   return {
     name:     m.name,
     time:     m.time,
     calories: m.kcal,
-    items:    (m.items || []).map(i => ({ food: i.food, amount: i.amount })),
+    items:    [...baseItems, ...saladItems, ...nutsItems],
     macros:   { protein: m.protein, carbs: m.carbs, fats: m.fat },
   }
 }
