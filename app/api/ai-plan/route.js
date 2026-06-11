@@ -200,42 +200,6 @@ const PROTEIN_LABELS = {
 const VEG_KEYWORDS = ['طماطم', 'خيار', 'فلفل', 'خس', 'جزر', 'بروكلي', 'كوسة', 'كوسا', 'سبانخ', 'باذنجان', 'قرنبيط', 'فاصوليا خضراء', 'كرفس', 'ملفوف', 'فجل', 'زعتر']
 const NUT_KEYWORDS  = ['لوز', 'كاجو', 'جوز', 'فستق', 'بذر كتان', 'بذر شيا', 'سمسم', 'بذر عباد']
 
-const GEO_REPLACEMENTS = {
-  maghreb: [
-    ['سمك السلمون المشوي', 'سردين مشوي'],
-    ['سمك السلمون',        'سردين مشوي'],
-    ['سمك سلمون مشوي',    'سردين مشوي'],
-    ['سمك سلمون',          'سردين'],
-    ['سلمون مشوي',         'سردين مشوي'],
-    ['سلمون',              'سردين'],
-    ['كينوا',              'أرز مطبوخ'],
-    ['أفوكادو',            'زيت زيتون'],
-  ],
-  gulf: [
-    ['كسكس مطبوخ',  'أرز بسمتي مطبوخ'],
-    ['كسكس',        'أرز بسمتي مطبوخ'],
-    ['هريسة',       'طحينية'],
-    ['كينوا',       'أرز بسمتي'],
-    ['أفوكادو',     'زيت زيتون'],
-  ],
-  egypt: [
-    ['سمك السلمون', 'سمك بلطي مشوي'],
-    ['سمك سلمون',  'سمك بلطي مشوي'],
-    ['سلمون',      'سمك بلطي'],
-    ['كسكس',       'أرز مطبوخ'],
-    ['كينوا',      'أرز مطبوخ'],
-  ],
-}
-
-function applyGeoFix(text, region) {
-  if (!text || !region || !GEO_REPLACEMENTS[region]) return text
-  let out = text
-  for (const [banned, replacement] of GEO_REPLACEMENTS[region]) {
-    out = out.replace(new RegExp(banned, 'g'), replacement)
-  }
-  return out
-}
-
 function isVegetableItem(item) {
   const group = item.group || ''
   const food  = item.food  || ''
@@ -253,7 +217,7 @@ function parseGrams(amount) {
   return m ? parseFloat(m[1]) : 0
 }
 
-function fixMeal(meal, region) {
+function fixMeal(meal) {
   if (!meal || !Array.isArray(meal.items)) return meal
 
   const cleanItems = []
@@ -262,16 +226,13 @@ function fixMeal(meal, region) {
   let   nutGrams   = 0
 
   for (const item of meal.items) {
-    const fixedFood = region ? applyGeoFix(item.food, region) : item.food
-    const fixed     = fixedFood !== item.food ? { ...item, food: fixedFood } : item
-
-    if (isVegetableItem(fixed)) {
-      vegNames.push(fixed.food)
-    } else if (isNutItem(fixed)) {
-      nutParts.push(fixed.food)
-      nutGrams += parseGrams(fixed.amount)
+    if (isVegetableItem(item)) {
+      vegNames.push(item.food)
+    } else if (isNutItem(item)) {
+      nutParts.push(item.food)
+      nutGrams += parseGrams(item.amount)
     } else {
-      cleanItems.push(fixed)
+      cleanItems.push(item)
     }
   }
 
@@ -307,9 +268,9 @@ function fixMeal(meal, region) {
   return result
 }
 
-function postProcess(plan, region) {
+function postProcess(plan) {
   if (!plan) return plan
-  const fixMenu = menu => Array.isArray(menu) ? menu.map(m => fixMeal(m, region)) : menu
+  const fixMenu = menu => Array.isArray(menu) ? menu.map(m => fixMeal(m)) : menu
 
   if (plan.duration === 'week' && Array.isArray(plan.days)) {
     return { ...plan, days: plan.days.map(d => ({ ...d, menu: fixMenu(d.menu) })) }
@@ -496,7 +457,7 @@ ${weekSchema}`
         .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       const plan = JSON.parse(raw)
       if (plan.target) plan.target = Math.max(floor, plan.target)
-      const weekResult = { ...postProcess(plan, region), form, date: new Date().toISOString(), ai: true, duration: 'week' }
+      const weekResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: 'week' }
       await cacheSet(cacheKey, weekResult)
       return NextResponse.json(weekResult)
     }
@@ -541,7 +502,7 @@ ${daySchema}`
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
-    const dayResult = { ...postProcess(plan, region), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
+    const dayResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
     await cacheSet(cacheKey, dayResult)
     return NextResponse.json(dayResult)
 
