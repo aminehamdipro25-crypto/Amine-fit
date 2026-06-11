@@ -55,7 +55,7 @@ function planCacheKey(form) {
     wp: JSON.stringify(form.weeklyProtein || null),
   })
   const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 20)
-  return `ai_plan_v3:${hash}`
+  return `ai_plan_v4:${hash}`
 }
 
 const ACTIVITY_LABELS = {

@@ -1090,6 +1090,9 @@ export default function CalculatorPage() {
                           )}
                           <p className="text-xs text-slate-400 mt-0.5">
                             {item.group} — {item.servings} حصة
+                            {item.kcal > 0 && (
+                              <span className="mr-1 text-primary-500 font-semibold">· {item.kcal} ك</span>
+                            )}
                             {item.cooking_method && item.cooking_method !== 'None' && (
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
                             )}
@@ -1101,56 +1104,122 @@ export default function CalculatorPage() {
                       </span>
                     </div>
                   )})}
-                  {/* ── Salad card — visually distinct ── */}
-                  {nm.salad?.has_salad && nm.salad.vegetables?.length > 0 && (
-                    <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 border-t-2 border-emerald-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-xl flex-shrink-0">🥗</div>
-                        <div>
-                          <p className="font-bold text-emerald-800 text-sm">
-                            {nm.salad.vegetables.join(' + ')}
-                          </p>
-                          <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة'} · خضروات مجمَّعة</p>
+                  {/* ── Salad card — editable ── */}
+                  {nm.salad?.has_salad && nm.salad.vegetables?.length > 0 && (() => {
+                    const sk          = `s${i}`
+                    const isEditingS  = editKey === sk
+                    const saladDisplay = getDisplayFood(sk, nm.salad.vegetables.join(' + '))
+                    const saladEdited = itemEdits[sk] !== undefined
+                    return (
+                      <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 border-t-2 border-emerald-200 group/salad">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-xl flex-shrink-0">🥗</div>
+                          <div className="flex-1 min-w-0">
+                            {isEditingS ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  autoFocus
+                                  value={editVal}
+                                  onChange={e => setEditVal(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter') commitEdit(sk); if (e.key === 'Escape') setEditKey(null) }}
+                                  onBlur={() => commitEdit(sk)}
+                                  className="flex-1 text-sm font-bold border border-emerald-400 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-emerald-200 text-emerald-800 bg-white"
+                                  placeholder="مثال: طماطم + خيار + فلفل"
+                                />
+                                <button onMouseDown={() => commitEdit(sk)} className="text-emerald-600 hover:text-emerald-700 flex-shrink-0">
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <p className={`font-bold text-sm truncate ${saladEdited ? 'text-emerald-600' : 'text-emerald-800'}`}>
+                                  {saladDisplay}
+                                </p>
+                                <button
+                                  onClick={() => startEdit(sk, saladDisplay)}
+                                  className="opacity-0 group-hover/salad:opacity-100 transition-opacity text-emerald-300 hover:text-emerald-600 flex-shrink-0"
+                                  title="تعديل الخضروات"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                            <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة'} · خضروات مجمَّعة</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0 mr-2">
+                          {nm.salad.grams > 0 && (
+                            <span className="font-bold text-emerald-700 text-sm bg-emerald-200 border border-emerald-300 px-3 py-1 rounded-full">
+                              {nm.salad.grams} غ
+                            </span>
+                          )}
+                          {nm.salad.kcal > 0 && (
+                            <span className="font-medium text-emerald-600 text-xs bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                              {nm.salad.kcal} سعرة
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {nm.salad.grams > 0 && (
-                          <span className="font-bold text-emerald-700 text-sm bg-emerald-200 border border-emerald-300 px-3 py-1 rounded-full">
-                            {nm.salad.grams} غ
-                          </span>
-                        )}
-                        {nm.salad.kcal > 0 && (
-                          <span className="font-medium text-emerald-600 text-xs bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            {nm.salad.kcal} سعرة
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {/* ── Nuts card — visually distinct ── */}
-                  {nm.nuts?.has_nuts && nm.nuts.type && nm.nuts.type !== 'None' && (
-                    <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border-t-2 border-amber-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">🥜</div>
-                        <div>
-                          <p className="font-bold text-amber-800 text-sm">{nm.nuts.type}</p>
-                          <p className="text-xs text-amber-600 mt-0.5">مكسرات · دهون صحية</p>
+                    )
+                  })()}
+                  {/* ── Nuts card — editable ── */}
+                  {nm.nuts?.has_nuts && nm.nuts.type && nm.nuts.type !== 'None' && (() => {
+                    const nk          = `n${i}`
+                    const isEditingN  = editKey === nk
+                    const nutsDisplay = getDisplayFood(nk, nm.nuts.type)
+                    const nutsEdited  = itemEdits[nk] !== undefined
+                    return (
+                      <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border-t-2 border-amber-200 group/nuts">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">🥜</div>
+                          <div className="flex-1 min-w-0">
+                            {isEditingN ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  autoFocus
+                                  value={editVal}
+                                  onChange={e => setEditVal(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter') commitEdit(nk); if (e.key === 'Escape') setEditKey(null) }}
+                                  onBlur={() => commitEdit(nk)}
+                                  className="flex-1 text-sm font-bold border border-amber-400 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-amber-200 text-amber-800 bg-white"
+                                  placeholder="مثال: لوز + كاجو + جوز"
+                                />
+                                <button onMouseDown={() => commitEdit(nk)} className="text-amber-600 hover:text-amber-700 flex-shrink-0">
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <p className={`font-bold text-sm truncate ${nutsEdited ? 'text-amber-600' : 'text-amber-800'}`}>
+                                  {nutsDisplay}
+                                </p>
+                                <button
+                                  onClick={() => startEdit(nk, nutsDisplay)}
+                                  className="opacity-0 group-hover/nuts:opacity-100 transition-opacity text-amber-300 hover:text-amber-600 flex-shrink-0"
+                                  title="تعديل المكسرات"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                            <p className="text-xs text-amber-600 mt-0.5">مكسرات · دهون صحية</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0 mr-2">
+                          {nm.nuts.grams > 0 && (
+                            <span className="font-bold text-amber-700 text-sm bg-amber-200 border border-amber-300 px-3 py-1 rounded-full">
+                              {nm.nuts.grams} غ
+                            </span>
+                          )}
+                          {nm.nuts.kcal > 0 && (
+                            <span className="font-medium text-amber-600 text-xs bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                              {nm.nuts.kcal} سعرة
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {nm.nuts.grams > 0 && (
-                          <span className="font-bold text-amber-700 text-sm bg-amber-200 border border-amber-300 px-3 py-1 rounded-full">
-                            {nm.nuts.grams} غ
-                          </span>
-                        )}
-                        {nm.nuts.kcal > 0 && (
-                          <span className="font-medium text-amber-600 text-xs bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
-                            {nm.nuts.kcal} سعرة
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                    )
+                  })()}
                 </div>
               </div>
             )})}
