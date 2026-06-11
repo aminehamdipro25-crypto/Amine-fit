@@ -55,7 +55,7 @@ function planCacheKey(form) {
     wp: JSON.stringify(form.weeklyProtein || null),
   })
   const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 20)
-  return `ai_plan_v6:${hash}`
+  return `ai_plan_v7:${hash}`
 }
 
 const ACTIVITY_LABELS = {
@@ -136,10 +136,15 @@ TDEE = BMR × معامل النشاط
 ▌ قاعدة 3: ما يُدرج في "items" فقط
 ✅ نشويات: أرز، خبز، كسكس، بطاطا، شوفان، توست، معكرونة
 ✅ بروتين رئيسي: دجاج، سمك، تونة، لحم، كبدة، بيض، بقوليات، جبن
-✅ ألبان: حليب، لبن رائب، جبن قريش
+✅ ألبان (3 خيارات فقط): حليب خالي الدسم | زبادي خالي الدسم | لبن رائب — لا غيرها أبداً
 ✅ دهن سائل: زيت زيتون فقط (ليس المكسرات)
 ✅ فاكهة: كل الفواكه
 ✅ تمر وعسل: ضمن مجموعة النشويات
+
+▌ قاعدة 4 [حرجة — صفر استثناء]:
+❌ ممنوع كتابة "فاكهة بحجم اليد" أو "فاكهة" أو أي وصف حجم ضمن مجموعة منتجات الألبان
+❌ ممنوع كتابة وصف حجم ("بحجم اليد"، "قطعة") كاسم طعام — اكتب اسم الطعام الفعلي
+❌ ممنوع وضع بروتين حيواني (دجاج/سمك/لحم) في وجبة الفطور — الفطور للبيض والجبن فقط
 
 ══════════════════════════════════════════════
 منهجية الحساب والتحقق الذاتي (إلزامي)
@@ -197,8 +202,28 @@ const PROTEIN_LABELS = {
 // These run after JSON parsing to guarantee correct structure even when the model
 // ignores prompt instructions about salad grouping, nut consolidation, or geography.
 
-const VEG_KEYWORDS = ['طماطم', 'خيار', 'فلفل', 'خس', 'جزر', 'بروكلي', 'كوسة', 'كوسا', 'سبانخ', 'باذنجان', 'قرنبيط', 'فاصوليا خضراء', 'كرفس', 'ملفوف', 'فجل', 'زعتر']
+const VEG_KEYWORDS  = ['طماطم', 'خيار', 'فلفل', 'خس', 'جزر', 'بروكلي', 'كوسة', 'كوسا', 'سبانخ', 'باذنجان', 'قرنبيط', 'فاصوليا خضراء', 'كرفس', 'ملفوف', 'فجل', 'زعتر']
 const NUT_KEYWORDS  = ['لوز', 'كاجو', 'جوز', 'فستق', 'بذر كتان', 'بذر شيا', 'سمسم', 'بذر عباد']
+const FRUIT_WORDS   = ['فاكهة', 'موز', 'تفاح', 'برتقال', 'مانجو', 'بطيخ', 'فراولة', 'كيوي', 'عنب', 'رمان', 'خوخ', 'إجاص', 'جوافة', 'بحجم']
+const DAIRY_VALID   = ['حليب', 'زبادي', 'لبن', 'جبن قريش', 'لبنة']
+const MEAT_KEYWORDS = ['دجاج', 'سمك', 'لحم', 'كبدة', 'تونة', 'بيض', 'بيضة', 'جمبري', 'هامور', 'سردين', 'مرجان']
+
+// Detect and fix items where the AI assigned a food to the wrong group
+function repairItem(item) {
+  const f = item.food  || ''
+  const g = item.group || ''
+
+  // Fruit-like food in dairy slot → replace with proper dairy food
+  if (g.includes('ألبان') && FRUIT_WORDS.some(k => f.includes(k))) {
+    return { ...item, food: 'زبادي خالي الدسم', amount: '245 غ (كوب)', icon: '🥛' }
+  }
+  // Dairy group but clearly a meat item → move to protein group
+  if (g.includes('ألبان') && MEAT_KEYWORDS.some(k => f.includes(k))) {
+    return { ...item, group: 'اللحوم والبروتين', icon: '🍖' }
+  }
+  // Fruit group but fruit keywords missing (likely wrong name) — leave as-is
+  return item
+}
 
 function isVegetableItem(item) {
   const group = item.group || ''
@@ -225,7 +250,8 @@ function fixMeal(meal) {
   const nutParts   = []
   let   nutGrams   = 0
 
-  for (const item of meal.items) {
+  for (const rawItem of meal.items) {
+    const item = repairItem(rawItem)
     if (isVegetableItem(item)) {
       vegNames.push(item.food)
     } else if (isNutItem(item)) {
@@ -300,25 +326,25 @@ function localPlan(form) {
   const avoided  = form.avoided
   const base     = { bmr: Math.round(bmr), tdee, target, ex, water, form, date: new Date().toISOString(), ai: false }
 
-  const wp = Array.isArray(form.weeklyProtein) ? form.weeklyProtein : null
+  const wp      = Array.isArray(form.weeklyProtein) ? form.weeklyProtein : null
+  const country = form.country || ''
 
   if (duration === 'week') {
     const days = DAY_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i * 11, wp?.[i] || 'mixed'),
+      menu: generateMenu(ex, meals, pref, avoided, i * 11, wp?.[i] || 'mixed', country),
     }))
     return { ...base, days, duration: 'week' }
   }
   if (duration === 'month') {
-    // For month plans, cycle through weeklyProtein if set
     const weeks = WEEK_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i * 13, wp?.[i % 7] || 'mixed'),
+      menu: generateMenu(ex, meals, pref, avoided, i * 13, wp?.[i % 7] || 'mixed', country),
     }))
     return { ...base, weeks, duration: 'month' }
   }
   // day (default)
-  const menu = generateMenu(ex, meals, pref, avoided, 0, wp?.[0] || 'mixed')
+  const menu = generateMenu(ex, meals, pref, avoided, 0, wp?.[0] || 'mixed', country)
   return { ...base, menu, duration: 'day' }
 }
 
