@@ -275,6 +275,9 @@ function postProcess(plan) {
   if (plan.duration === 'week' && Array.isArray(plan.days)) {
     return { ...plan, days: plan.days.map(d => ({ ...d, menu: fixMenu(d.menu) })) }
   }
+  if (plan.duration === 'month' && Array.isArray(plan.weeks)) {
+    return { ...plan, weeks: plan.weeks.map(w => ({ ...w, menu: fixMenu(w.menu) })) }
+  }
   return plan.menu ? { ...plan, menu: fixMenu(plan.menu) } : plan
 }
 
@@ -333,14 +336,14 @@ export async function POST(req) {
 
   // If no API key → use local engine immediately (no error)
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(localPlan(form))
+    return NextResponse.json(postProcess(localPlan(form)))
   }
 
   const duration = form.duration || 'day'
 
   // Month plans → always use local engine (too large for AI)
   if (duration === 'month') {
-    return NextResponse.json(localPlan(form))
+    return NextResponse.json(postProcess(localPlan(form)))
   }
 
   // ── Redis cache check (24h) — avoid repeat API calls for identical inputs ──
@@ -508,6 +511,6 @@ ${daySchema}`
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
-    return NextResponse.json({ ...localPlan(form) })
+    return NextResponse.json(postProcess(localPlan(form)))
   }
 }
