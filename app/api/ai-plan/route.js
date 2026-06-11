@@ -5,8 +5,58 @@ import {
   calcBMR, calcTDEE, calcTarget, calcExchanges, calcWaterGoal, generateMenu,
   getRegion, REGION_FOOD_HINTS, REGION_LABELS,
 } from '@/lib/nutritionEngine'
+import crypto from 'node:crypto'
 
 export const dynamic = 'force-dynamic'
+
+// ── Redis cache helpers ───────────────────────────────────────────────────────
+function redisCfg() {
+  const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+  return url && token ? { url: url.replace(/\/$/, ''), token } : null
+}
+
+async function cacheGet(key) {
+  const c = redisCfg()
+  if (!c) return null
+  try {
+    const res = await fetch(`${c.url}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${c.token}` },
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    if (!data.result) return null
+    const raw = typeof data.result === 'string' ? data.result : JSON.stringify(data.result)
+    return JSON.parse(raw)
+  } catch { return null }
+}
+
+async function cacheSet(key, value, ttl = 86400) {
+  const c = redisCfg()
+  if (!c) return
+  try {
+    await fetch(`${c.url}/pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['SET', key, JSON.stringify(value), 'EX', String(ttl)]]),
+      cache: 'no-store',
+    })
+  } catch { /* silent — cache miss is harmless */ }
+}
+
+function planCacheKey(form) {
+  const seed = JSON.stringify({
+    g: form.gender, w: form.weight, h: form.height, a: form.age,
+    act: form.activity, goal: form.goal, meals: form.meals,
+    c: form.country || '', pref: (form.preferred || '').slice(0, 200),
+    av: (form.avoided || '').slice(0, 100), dur: form.duration || 'day',
+    tw: form.targetWeight || '', bf: form.bodyFatPct || '',
+    adj: form.manualAdj || '', rate: form.weeklyRate || '',
+    wp: JSON.stringify(form.weeklyProtein || null),
+  })
+  const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 20)
+  return `ai_plan_cache:${hash}`
+}
 
 const ACTIVITY_LABELS = {
   sedentary:  'خامل (عمل مكتبي، لا رياضة) — معامل 1.20',
@@ -179,10 +229,10 @@ export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  // Rate-limit: max 30 AI plan generations per hour per admin session
+  // Rate-limit: max 8 AI plan generations per hour per admin session
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (await isRateLimited(`ai_plan:${ip}`, 30, 3600)) {
-    return NextResponse.json({ error: 'تجاوزت الحد المسموح — حاول لاحقاً' }, { status: 429 })
+  if (await isRateLimited(`ai_plan:${ip}`, 8, 3600)) {
+    return NextResponse.json({ error: 'تجاوزت الحد المسموح (8 خطط/ساعة) — حاول لاحقاً' }, { status: 429 })
   }
 
   const form = await req.json()
@@ -206,6 +256,13 @@ export async function POST(req) {
   // Month plans → always use local engine (too large for AI)
   if (duration === 'month') {
     return NextResponse.json(localPlan(form))
+  }
+
+  // ── Redis cache check (24h) — avoid repeat API calls for identical inputs ──
+  const cacheKey    = planCacheKey(form)
+  const cachedPlan  = await cacheGet(cacheKey)
+  if (cachedPlan) {
+    return NextResponse.json({ ...cachedPlan, cached: true, date: new Date().toISOString() })
   }
 
   // Build regional context for the prompt
@@ -315,7 +372,9 @@ ${weekSchema}`
         .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
       const plan = JSON.parse(raw)
       if (plan.target) plan.target = Math.max(floor, plan.target)
-      return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: 'week' })
+      const weekResult = { ...plan, form, date: new Date().toISOString(), ai: true, duration: 'week' }
+      await cacheSet(cacheKey, weekResult)
+      return NextResponse.json(weekResult)
     }
 
     // ── DAY PLAN — use Haiku (faster / cheaper) ───────────────────────────────
@@ -358,7 +417,9 @@ ${daySchema}`
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
-    return NextResponse.json({ ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' })
+    const dayResult = { ...plan, form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
+    await cacheSet(cacheKey, dayResult)
+    return NextResponse.json(dayResult)
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
