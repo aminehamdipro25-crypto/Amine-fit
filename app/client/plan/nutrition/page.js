@@ -124,7 +124,7 @@ function MealCard({ meal, idx, open, onToggle }) {
           {meal.description && (
             <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
           )}
-          {meal.items?.length > 0 && (
+          {meal.items?.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {meal.items.map((item, j) => (
                 <div key={j} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
@@ -133,6 +133,8 @@ function MealCard({ meal, idx, open, onToggle }) {
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="text-xs text-slate-400 mt-3 text-center py-2">يتم تحديث الخطة قريباً</p>
           )}
           {meal.macros && (meal.macros.protein || meal.macros.carbs || meal.macros.fats) && (
             <div className="flex gap-2 mt-4 flex-wrap">
