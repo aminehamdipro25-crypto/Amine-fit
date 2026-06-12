@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2, Pencil, Check } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
@@ -240,8 +240,18 @@ export default function CalculatorPage() {
   const [editKey, setEditKey] = useState(null) // "mealI-itemI"
   const [editVal, setEditVal] = useState('')
   const [itemEdits, setItemEdits] = useState({}) // persists edits for current result
+  const restoredEditsRef = useRef(null) // holds edits read from localStorage during restore
 
-  useEffect(() => { setItemEdits({}) }, [result])
+  // Reset edits when a NEW result is generated — but if we just restored from localStorage,
+  // apply the saved edits instead of clearing them.
+  useEffect(() => {
+    if (restoredEditsRef.current !== null) {
+      setItemEdits(restoredEditsRef.current)
+      restoredEditsRef.current = null
+    } else {
+      setItemEdits({})
+    }
+  }, [result])
 
   function startEdit(key, currentVal) {
     setEditKey(key)
@@ -263,6 +273,9 @@ export default function CalculatorPage() {
         const draft = JSON.parse(raw)
         if (draft.form)   setForm(draft.form)
         if (draft.result) {
+          if (draft.itemEdits && Object.keys(draft.itemEdits).length > 0) {
+            restoredEditsRef.current = draft.itemEdits
+          }
           setRes(draft.result)
           setIsAI(!!draft.isAI)
           setSelectedDay(draft.selectedDay  || 0)
@@ -281,13 +294,14 @@ export default function CalculatorPage() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
         form, result, isAI, selectedDay, selectedWeek,
+        itemEdits,
         pickedClient: pickedClient
           ? { id: pickedClient.id, name: pickedClient.name, email: pickedClient.email }
           : null,
       }))
       // amineFitPlan is written only by openReport() with edits applied
     } catch {}
-  }, [form, result, isAI, selectedDay, selectedWeek, pickedClient, initialized]) // eslint-disable-line
+  }, [form, result, isAI, selectedDay, selectedWeek, itemEdits, pickedClient, initialized]) // eslint-disable-line
 
   function clearDraft() {
     setForm(INIT); setRes(null); setPickedClient(null); setSavedPlan(null)
