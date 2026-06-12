@@ -187,6 +187,7 @@ export default function TrainingPlannerPage() {
   const [form, setForm] = useState(INIT)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [genError, setGenError] = useState(null)
 
   const [showPicker, setShowPicker]     = useState(false)
   const [pickedClient, setPickedClient] = useState(null)
@@ -231,6 +232,7 @@ export default function TrainingPlannerPage() {
     if (!valid || loading) return
     setLoading(true)
     setResult(null)
+    setGenError(null)
     setSaved(false)
     try {
       const res = await fetch('/api/ai-training', {
@@ -239,9 +241,13 @@ export default function TrainingPlannerPage() {
         body: JSON.stringify(form),
       })
       const plan = await res.json()
+      if (!res.ok || plan.error) {
+        setGenError(plan.error || 'خطأ في توليد البرنامج — حاول مجدداً')
+        return
+      }
       setResult(plan)
     } catch {
-      // silent fallback
+      setGenError('تعذّر الاتصال بالخادم — تحقق من الاتصال وحاول مجدداً')
     } finally {
       setLoading(false)
     }
@@ -500,6 +506,17 @@ export default function TrainingPlannerPage() {
                   )}
                 </button>
               </div>
+
+              {/* Error */}
+              {genError && !loading && (
+                <div className="mx-5 mb-5 bg-red-950/40 border border-red-800/50 rounded-xl p-4 flex items-start gap-3">
+                  <span className="text-red-400 text-xl flex-shrink-0">⚠️</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-red-300 text-sm">{genError}</p>
+                  </div>
+                  <button onClick={() => setGenError(null)} className="text-red-600 hover:text-red-400 flex-shrink-0 text-lg leading-none">×</button>
+                </div>
+              )}
 
               {/* Loading shimmer */}
               {loading && (
