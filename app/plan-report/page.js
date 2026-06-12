@@ -194,9 +194,13 @@ export default function PlanReport() {
             <MetricCard label="السعرات المستهدفة" value={`${target}`} unit="سعرة/يوم" color={goal.key === 'loss' ? '#dc2626' : goal.key === 'gain' ? '#16a34a' : '#6b7280'} />
           </div>
           <div style={{ marginTop: 14, fontSize: 13, color: '#777', textAlign: 'center' }}>
-            {goal.key === 'loss'   && `عجز ${Math.abs(tdee - target)} سعرة/يوم لخسارة الوزن`}
-            {goal.key === 'gain'   && `فائض ${target - tdee} سعرة/يوم لبناء العضلات`}
-            {goal.key === 'maintain' && 'الحفاظ على الوزن الحالي'}
+            {(() => {
+              const diff = target - tdee
+              const suffix = goal.key === 'loss' ? ' لخسارة الوزن' : goal.key === 'gain' ? ' لبناء العضلات' : ''
+              if (diff > 0) return `فائض +${diff} سعرة/يوم${suffix}`
+              if (diff < 0) return `عجز ${Math.abs(diff)} سعرة/يوم${suffix}`
+              return 'الحفاظ على الوزن الحالي'
+            })()}
           </div>
         </div>
 
