@@ -139,6 +139,40 @@ function getPlanDayIndex(date,schedule) { const i=schedule.indexOf(date.getDay()
 // Format: "4 جوان 2026"
 function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
 
+// Returns 0-based plan day index using startDate anchor, or null if it's a rest day.
+// Counts training-day occurrences from startDate to queryDate and wraps by planDaysCount.
+function getPlanDayFromStart(queryDate, schedule, startDateStr, planDaysCount) {
+  if (!startDateStr) return getPlanDayIndex(queryDate, schedule)  // legacy fallback
+
+  const d     = startOfDay(queryDate)
+  const start = startOfDay(new Date(startDateStr))
+
+  if (+d < +start) return null  // before plan was assigned
+
+  const dow = d.getDay()
+  if (!schedule.includes(dow)) return null  // not a training weekday
+
+  // Count training-day occurrences from start through d (inclusive)
+  let count = 0
+  const cursor = new Date(start)
+  while (+cursor <= +d) {
+    if (schedule.includes(cursor.getDay())) count++
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  if (count === 0) return null
+  return (count - 1) % planDaysCount
+}
+
+// Returns true if `date` is a training day given the plan's schedule and startDate.
+function isTrainingDay(date, schedule, startDateStr) {
+  if (startDateStr) {
+    const start = startOfDay(new Date(startDateStr))
+    if (+startOfDay(date) < +start) return false
+  }
+  return schedule.includes(date.getDay())
+}
+
 // ─── YouTube helpers ──────────────────────────────────────────────────────────
 function getVideoId(url) {
   if (!url) return null
@@ -408,7 +442,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
 }
 
 // ─── Week Navigator ───────────────────────────────────────────────────────────
-function WeekNavigator({today, selectedDate, onSelect, schedule}) {
+function WeekNavigator({today, selectedDate, onSelect, schedule, startDate}) {
   const [weekOffset, setWeekOffset] = useState(0)
 
   const weekStart = useMemo(() => {
@@ -439,7 +473,7 @@ function WeekNavigator({today, selectedDate, onSelect, schedule}) {
         {days.map((day,i) => {
           const isToday    = isSameDay(day,today)
           const isSelected = isSameDay(day,selectedDate)
-          const isTraining = getPlanDayIndex(day,schedule) !== null
+          const isTraining = isTrainingDay(day, schedule, startDate)
           return (
             <button key={i} onClick={()=>onSelect(startOfDay(day))}
               className={`flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 active:scale-95
@@ -650,9 +684,10 @@ export default function TrainingPlan() {
 
   const daysPerWeek = plan.days.length   // always trust actual saved days
   const schedule    = getSchedule(daysPerWeek)
+  const startDate   = plan.startDate || null  // ISO string set when admin uploads the plan
   const isToday     = isSameDay(selectedDate, today)
-  const planDayIdx  = getPlanDayIndex(selectedDate, schedule)
-  const currentDay  = (planDayIdx!==null && planDayIdx<plan.days.length) ? plan.days[planDayIdx] : null
+  const planDayIdx  = getPlanDayFromStart(selectedDate, schedule, startDate, plan.days.length)
+  const currentDay  = (planDayIdx !== null) ? plan.days[planDayIdx] : null
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 pb-8">
@@ -664,7 +699,7 @@ export default function TrainingPlan() {
       </div>
 
       {/* Week Navigator */}
-      <WeekNavigator today={today} selectedDate={selectedDate} onSelect={setSelectedDate} schedule={schedule}/>
+      <WeekNavigator today={today} selectedDate={selectedDate} onSelect={setSelectedDate} schedule={schedule} startDate={startDate}/>
 
       {/* Stats */}
       <StatsBar plan={plan}/>

@@ -226,7 +226,7 @@ export default function TrainingPlannerPage() {
       await fetch(`/api/register/${clientId}/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: { training: result } }),
+        body: JSON.stringify({ plan: { training: { ...result, startDate: new Date().toISOString() } } }),
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
