@@ -398,10 +398,14 @@ export default function CalculatorPage() {
           if (itemEdits[k] !== undefined) newItems[rawIdx] = { ...newItems[rawIdx], food: itemEdits[k] }
         })
         const nk = `n${i}`
+        const sk = `s${i}`
         return {
           ...meal,
           items: newItems,
           nuts: meal.nuts && itemEdits[nk] !== undefined ? { ...meal.nuts, type: itemEdits[nk] } : meal.nuts,
+          salad: meal.salad && itemEdits[sk] !== undefined
+            ? { ...meal.salad, vegetables: itemEdits[sk].split(/\s*\+\s*/).map(v => v.trim()).filter(Boolean) }
+            : meal.salad,
         }
       })
     }
