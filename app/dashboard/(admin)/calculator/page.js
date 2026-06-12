@@ -231,6 +231,7 @@ export default function CalculatorPage() {
   const [pickedClient, setPickedClient] = useState(null)
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saved' | 'error'
+  const [calcError, setCalcError]   = useState(null)
   const [savedPlan, setSavedPlan] = useState(null) // plan fetched from Redis for picked client
   const [initialized, setInitialized] = useState(false) // true after localStorage restore
   const [draftRestored, setDraftRestored] = useState(false)
@@ -290,7 +291,7 @@ export default function CalculatorPage() {
 
   function clearDraft() {
     setForm(INIT); setRes(null); setPickedClient(null); setSavedPlan(null)
-    setSaveStatus(null); setDraftRestored(false)
+    setSaveStatus(null); setDraftRestored(false); setCalcError(null)
     try { localStorage.removeItem(LS_KEY); localStorage.removeItem('amineFitPlan') } catch {}
   }
 
@@ -353,6 +354,7 @@ export default function CalculatorPage() {
     if (!valid || loading) return
     setLoading(true)
     setRes(null)
+    setCalcError(null)
     setSelectedDay(0)
     setSelectedWeek(0)
     setSaveStatus(null)
@@ -363,10 +365,14 @@ export default function CalculatorPage() {
         body: JSON.stringify(form),
       })
       const plan = await res.json()
+      if (!res.ok || plan.error) {
+        setCalcError(plan.error || 'خطأ في توليد الخطة — حاول مجدداً')
+        return
+      }
       setIsAI(!!plan.ai)
       setRes(plan)
     } catch {
-      // silent — should not happen since API always returns local fallback
+      setCalcError('تعذّر الاتصال بالخادم — تحقق من الاتصال وحاول مجدداً')
     } finally {
       setLoading(false)
     }
@@ -753,11 +759,25 @@ export default function CalculatorPage() {
             <div className="w-10 h-10 mx-auto bg-violet-100 rounded-full flex items-center justify-center animate-pulse">
               <Sparkles className="w-5 h-5 text-violet-600" />
             </div>
-            <p className="font-bold text-violet-700">الذكاء الاصطناعي يحلّل البيانات...</p>
+            <p className="font-bold text-violet-700">يحلّل البيانات ويبني الخطة...</p>
             <p className="text-xs text-slate-500">يحسب السعرات • يوزع وحدات التبادل • يبني القائمة الغذائية المثالية</p>
             <div className="flex justify-center gap-1 pt-1">
               {[0,1,2].map(i => <div key={i} className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />)}
             </div>
+          </div>
+        )}
+
+        {/* Error display */}
+        {calcError && !loading && (
+          <div className="mx-5 mb-5 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <span className="text-red-500 text-xl flex-shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold text-red-700 text-sm">{calcError}</p>
+              {calcError.includes('تجاوزت الحد') && (
+                <p className="text-xs text-red-500 mt-1">انتظر بضع دقائق قبل المحاولة مجدداً. الخطط الأسبوعية والشهرية لا تتأثر بهذا الحد.</p>
+              )}
+            </div>
+            <button onClick={() => setCalcError(null)} className="text-red-300 hover:text-red-500 flex-shrink-0 text-lg leading-none">×</button>
           </div>
         )}
       </div>
@@ -1299,7 +1319,7 @@ export default function CalculatorPage() {
           </div>
           {saveStatus === 'saved' && (
             <div className="px-4 py-2.5 bg-emerald-50 border-t border-emerald-200 text-xs text-emerald-700 font-medium">
-              ✓ الخطة الأسبوعية منشورة — يستطيع العميل رؤيتها الآن في منصته مع التقويم الأسبوعي
+              ✓ الخطة منشورة — يستطيع العميل رؤيتها الآن في صفحة الخطة الغذائية
             </div>
           )}
         </div>

@@ -352,12 +352,6 @@ export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  // Rate-limit: max 8 AI plan generations per hour per admin session
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (await isRateLimited(`ai_plan:${ip}`, 8, 3600)) {
-    return NextResponse.json({ error: 'تجاوزت الحد المسموح (8 خطط/ساعة) — حاول لاحقاً' }, { status: 429 })
-  }
-
   const form = await req.json()
 
   // Validate numeric fields before passing to engine
@@ -369,14 +363,14 @@ export async function POST(req) {
   }
   form.weight = weight; form.height = height; form.age = age
 
-  // If no API key → use local engine immediately (no error)
+  // If no API key → use local engine immediately (never rate-limit)
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(postProcess(localPlan(form)))
   }
 
   const duration = form.duration || 'day'
 
-  // Week & Month plans → always use local engine (free)
+  // Week & Month plans → always use local engine (never rate-limit)
   if (duration === 'week' || duration === 'month') {
     return NextResponse.json(postProcess(localPlan(form)))
   }
@@ -386,6 +380,12 @@ export async function POST(req) {
   const cachedPlan  = await cacheGet(cacheKey)
   if (cachedPlan) {
     return NextResponse.json({ ...cachedPlan, cached: true, date: new Date().toISOString() })
+  }
+
+  // Rate-limit: only for actual fresh Claude API calls (day plan, uncached)
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (await isRateLimited(`ai_plan:${ip}`, 20, 3600)) {
+    return NextResponse.json({ error: 'تجاوزت الحد المسموح (20 خطة/ساعة) — حاول لاحقاً' }, { status: 429 })
   }
 
   // Build regional context for the prompt
@@ -432,75 +432,7 @@ export async function POST(req) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const floor     = form.gender === 'male' ? 1500 : 1200
 
-    // ── WEEK PLAN — use Sonnet (higher output limit) to generate all 7 days ──
-    if (duration === 'week') {
-      const dayMacrosSchema = `{ "calories": number, "protein": number, "carbs": number, "fat": number }`
-      const weekSchema = `{
-  "bmr": number, "tdee": number, "target": number,
-  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
-  "duration": "week",
-  "days": [
-    { "name": "الأحد",     "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "الاثنين",   "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "الثلاثاء",  "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "الأربعاء",  "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "الخميس",    "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "الجمعة",    "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} },
-    { "name": "السبت",     "protein_source": "string", "total_day_macros": ${dayMacrosSchema}, "menu": ${menuSchema} }
-  ]
-}`
-
-      // Build weekly protein schedule section if trainer specified protein types per day
-      const hasCustomProtein = Array.isArray(form.weeklyProtein) && form.weeklyProtein.some(p => p && p !== 'mixed')
-      const weeklyProteinSection = hasCustomProtein
-        ? `\n═══ جدول البروتين الأسبوعي (إلزامي — التزم به يوماً بيوم) ═══\n` +
-          DAY_NAMES.map((day, i) => {
-            const key = form.weeklyProtein?.[i] || 'mixed'
-            return `• ${day}: ${PROTEIN_LABELS[key] || PROTEIN_LABELS.mixed}`
-          }).join('\n') + '\n'
-        : ''
-
-      const weekPrompt = `═══ بيانات العميل ═══
-الاسم: ${safeName}
-العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
-الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
-الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
-مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
-الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${adjLine}${regionSection}${foodListLine}
-الأطعمة الممنوعة: ${safeAvoided}
-عدد الوجبات يومياً: ${form.meals}
-${weeklyProteinSection}
-أنشئ خطة غذائية كاملة لمدة أسبوع (7 أيام) مع التنويع بين الأيام.
-استخدم الأطعمة المحلية الصحيحة للبلد المذكور.${hasCustomProtein ? '\nالتزم بجدول البروتين المحدد أعلاه وأعِد حساب الماكروز لكل يوم وفق مصدر بروتينه.' : ''}
-
-تذكير إلزامي قبل التوليد:
-🚫 الخضروات (طماطم/خيار/فلفل/خس...) → حقل salad فقط — ممنوع في items
-🚫 المكسرات (لوز/كاجو/جوز/فستق...) → حقل nuts فقط — ممنوع في items
-🚫 تونس/مغرب/جزائر: سمك السلمون محظور تماماً — استخدم سردين أو مرجان أو تونة
-${hasCustomProtein ? '🚫 أيام plant/eggs_plant: ممنوع أي بروتين حيواني في أي حقل\n' : ''}
-أعد JSON بالضبط (بدون أي نص خارجه):
-${weekSchema}`
-
-      const response = await anthropic.messages.create({
-        model:      'claude-sonnet-4-6',
-        max_tokens: 14000,
-        thinking:   { type: 'adaptive' },
-        system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages:   [{ role: 'user', content: weekPrompt }],
-      })
-
-      const textBlock = response.content.find(b => b.type === 'text')
-      const raw  = (textBlock?.text || '').trim()
-        .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-      const plan = JSON.parse(raw)
-      if (plan.target) plan.target = Math.max(floor, plan.target)
-      const weekResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: 'week' }
-      await cacheSet(cacheKey, weekResult)
-      return NextResponse.json(weekResult)
-    }
-
-    // ── DAY PLAN — use Haiku (faster / cheaper) ───────────────────────────────
+    // ── DAY PLAN ─────────────────────────────────────────────────────────────
     const daySchema = `{
   "bmr": number, "tdee": number, "target": number,
   "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
