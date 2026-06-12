@@ -30,10 +30,10 @@ async function redisCommand(cfg, command) {
 export async function POST(req) {
   try {
     const { email } = await req.json()
-    if (!email || !email.includes('@')) {
+    const normalized = (email || '').toLowerCase().trim()
+    if (!normalized || !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(normalized)) {
       return NextResponse.json({ error: 'بريد إلكتروني غير صالح' }, { status: 400 })
     }
-    const normalized = email.toLowerCase().trim()
 
     const cfg = getCfg()
     if (cfg) {

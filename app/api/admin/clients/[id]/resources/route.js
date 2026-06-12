@@ -24,7 +24,8 @@ export async function POST(req, { params }) {
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
 
-  const body = await req.json()
+  let body
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const { title, type, url, description, filename } = body
 
   if (!title?.trim()) {

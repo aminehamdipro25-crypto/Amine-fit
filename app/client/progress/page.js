@@ -38,25 +38,31 @@ export default function ProgressPage() {
   async function save() {
     if (!form.weight && !form.waist && !form.chest) return
     setSaving(true)
-    const res = await fetch('/api/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    const entry = await res.json()
-    setEntries(prev => [...prev, entry])
-    setForm({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
-    setShowForm(false)
-    setSaving(false)
+    try {
+      const res = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) return
+      const entry = await res.json()
+      if (entry && !entry.error) {
+        setEntries(prev => [...prev, entry])
+        setForm({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
+        setShowForm(false)
+      }
+    } catch {} finally {
+      setSaving(false)
+    }
   }
 
   async function remove(id) {
-    await fetch('/api/progress', {
+    const res = await fetch('/api/progress', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
-    setEntries(prev => prev.filter(e => e.id !== id))
+    if (res.ok) setEntries(prev => prev.filter(e => e.id !== id))
   }
 
   const chartData = entries

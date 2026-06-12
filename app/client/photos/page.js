@@ -158,6 +158,9 @@ export default function PhotosPage() {
     if (res.ok) setPhotos(prev => prev.filter(p => p.id !== id))
   }
 
+  // Clear long-press timer on unmount to prevent setState on unmounted component
+  useEffect(() => () => clearTimeout(longPressTimer.current), [])
+
   // Long-press support for touch devices
   function onPointerDown(id) {
     longPressTimer.current = setTimeout(() => setConfirmId(id), 600)

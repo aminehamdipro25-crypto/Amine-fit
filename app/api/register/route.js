@@ -144,21 +144,27 @@ export async function POST(req) {
       }),
     }
 
-    const entry = await saveSubmission(safeEntry)
-    console.log('[register] saved OK:', entry.id, isGift ? '(gift)' : '(pending)')
-    sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
-
-    // Mark gift as used synchronously now that the client record exists
+    // Mark gift as used BEFORE saving client to prevent race condition
     if (isGift) {
       try {
         const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-        await fetch(`${BASE}/api/gift`, {
+        const markRes = await fetch(`${BASE}/api/gift`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: giftCode, email: emailLower }),
         })
-      } catch { /* non-fatal */ }
+        const markData = await markRes.json()
+        if (!markData.ok) {
+          return NextResponse.json({ error: 'كود الهدية استُخدم مسبقاً أو انتهت صلاحيته' }, { status: 400 })
+        }
+      } catch {
+        return NextResponse.json({ error: 'تعذّر التحقق من كود الهدية — حاول مجدداً' }, { status: 500 })
+      }
     }
+
+    const entry = await saveSubmission(safeEntry)
+    console.log('[register] saved OK:', entry.id, isGift ? '(gift)' : '(pending)')
+    sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
 
     // Telegram push notification to admin
     const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'

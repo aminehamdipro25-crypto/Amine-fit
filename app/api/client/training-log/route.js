@@ -61,9 +61,9 @@ export async function POST(req) {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'تاريخ غير صالح' }, { status: 400 })
   }
-  // Only allow marking within the last 7 days
+  // Only allow marking within the last 7 days (no future dates)
   const daysDiff = (Date.now() - new Date(date).getTime()) / 86400000
-  if (daysDiff > 7 || daysDiff < -1) {
+  if (daysDiff > 7 || daysDiff < 0) {
     return NextResponse.json({ error: 'يمكن التسجيل فقط لآخر 7 أيام' }, { status: 400 })
   }
 

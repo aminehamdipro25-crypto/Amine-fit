@@ -49,7 +49,8 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny
-  const { text, emoji } = await req.json()
+  let text, emoji
+  try { ;({ text, emoji } = await req.json()) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   if (!text?.trim()) return NextResponse.json({ error: 'النص مطلوب' }, { status: 400 })
 
   const raw = await redisGet(`client_tasks:${params.id}`)
@@ -71,7 +72,8 @@ export async function POST(req, { params }) {
 export async function DELETE(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny
-  const { id } = await req.json()
+  let id
+  try { ;({ id } = await req.json()) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const raw   = await redisGet(`client_tasks:${params.id}`)
   const tasks = parse(raw).filter(t => t.id !== id)
   await redisPipeline([['SET', `client_tasks:${params.id}`, JSON.stringify(tasks)]])

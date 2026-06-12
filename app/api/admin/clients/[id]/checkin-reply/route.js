@@ -8,7 +8,12 @@ export async function POST(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  const { checkinId, reply } = await req.json()
+  let checkinId, reply
+  try {
+    ;({ checkinId, reply } = await req.json())
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
   if (!checkinId || !reply?.trim()) {
     return NextResponse.json({ error: 'checkinId and reply required' }, { status: 400 })
   }
@@ -39,7 +44,7 @@ function esc(s) {
 
 async function sendReplyEmail(client, checkin) {
   const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-  await fetch('https://api.resend.com/emails', {
+  const emailRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -76,4 +81,5 @@ async function sendReplyEmail(client, checkin) {
 </body></html>`,
     }),
   })
+  if (!emailRes.ok) console.error('[checkin-reply email]', await emailRes.text())
 }

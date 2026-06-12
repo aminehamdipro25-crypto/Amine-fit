@@ -172,6 +172,7 @@ function printClientPDF(client) {
 </body></html>`
 
   const win = window.open('', '_blank')
+  if (!win) { alert('يرجى السماح بفتح نوافذ جديدة في المتصفح'); return }
   win.document.write(html)
   win.document.close()
 }
