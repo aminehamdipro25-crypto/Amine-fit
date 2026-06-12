@@ -39,6 +39,16 @@ export default function PlanReport() {
     </div>
   )
 
+  if (!plan.form || !plan.ex || plan.bmr == null) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
+      <p className="text-red-600 text-xl font-bold">خطة غير مكتملة</p>
+      <p className="text-gray-500">البيانات الضرورية مفقودة — يرجى إنشاء الخطة من لوحة التحكم مجدداً</p>
+      <button onClick={() => window.close()} className="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700">
+        إغلاق
+      </button>
+    </div>
+  )
+
   const { form, bmr, tdee, target, ex } = plan
   const date = formatDate(plan.date)
   const goal     = GOALS.find(g => g.key === form.goal)     || GOALS[1]

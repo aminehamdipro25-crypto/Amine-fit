@@ -1029,8 +1029,9 @@ export default function ClientDashboard() {
           router.push(`/client/login?suspended=1&msg=${encodeURIComponent(d.error || 'تم تعليق حسابك')}`)
           return
         }
+        if (!r.ok) return
         const d = await r.json()
-        if (mounted && d) setClient(d)
+        if (mounted && d && (d.id || d.name)) setClient(d)
       } catch {} finally {
         if (mounted) setLoading(false)
       }
