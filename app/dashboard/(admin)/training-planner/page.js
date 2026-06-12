@@ -10,7 +10,9 @@ const inp = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] 
 const sel = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] text-white text-sm focus:border-[#fbbf24] outline-none transition appearance-none'
 
 const INIT = {
-  goal: 'gain',
+  goal: 'bulk',
+  split: 'auto',
+  musclePriority: '',
   level: 'beginner',
   daysPerWeek: '3',
   equipment: 'gym',
@@ -21,9 +23,31 @@ const INIT = {
 }
 
 const GOAL_OPTIONS = [
-  { v: 'gain',     l: 'بناء العضلات', icon: '💪' },
-  { v: 'loss',     l: 'خسارة الدهون', icon: '🔥' },
-  { v: 'maintain', l: 'الحفاظ على اللياقة', icon: '⚡' },
+  { v: 'bulk',        l: 'تضخيم',           icon: '🏋️', desc: 'بناء كتلة عضلية' },
+  { v: 'cut',         l: 'تنشيف',           icon: '🔥', desc: 'حرق دهون وتعريف' },
+  { v: 'recomp',      l: 'إعادة التشكيل',   icon: '⚖️', desc: 'بناء + حرق معاً' },
+  { v: 'strength',    l: 'قوة قصوى',        icon: '🏆', desc: 'أثقال ورفع قصوى' },
+  { v: 'performance', l: 'أداء رياضي',      icon: '⚡', desc: 'انفجارية ورشاقة' },
+  { v: 'fitness',     l: 'لياقة عامة',      icon: '🏃', desc: 'صحة واستدامة' },
+]
+
+const SPLIT_OPTIONS = [
+  { v: 'auto', l: 'تلقائي' },
+  { v: 'ppl',  l: 'Push/Pull/Legs' },
+  { v: 'ul',   l: 'Upper/Lower' },
+  { v: 'fb',   l: 'Full Body' },
+  { v: 'bro',  l: 'Bro Split' },
+]
+
+const MUSCLE_OPTIONS = [
+  { v: '',          l: 'بدون' },
+  { v: 'chest',     l: 'صدر' },
+  { v: 'back',      l: 'ظهر' },
+  { v: 'shoulders', l: 'كتف' },
+  { v: 'arms',      l: 'ذراعين' },
+  { v: 'legs',      l: 'أرجل' },
+  { v: 'glutes',    l: 'أرداف' },
+  { v: 'core',      l: 'بطن' },
 ]
 
 const LEVEL_OPTIONS = [
@@ -39,6 +63,11 @@ const EQUIP_OPTIONS = [
 ]
 
 const LEVEL_AR = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
+const GOAL_AR = {
+  bulk: 'تضخيم', cut: 'تنشيف', recomp: 'إعادة التشكيل',
+  strength: 'قوة قصوى', performance: 'أداء رياضي', fitness: 'لياقة عامة',
+  gain: 'بناء العضلات', loss: 'خسارة الدهون', maintain: 'الحفاظ على اللياقة',
+}
 
 /* ── Client Picker ─────────────────────────────────────────────────────────── */
 function ClientPicker({ onSelect }) {
@@ -311,15 +340,48 @@ export default function TrainingPlannerPage() {
 
                 {/* Goal */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">الهدف</label>
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">الهدف التدريبي</label>
                   <div className="grid grid-cols-3 gap-2">
                     {GOAL_OPTIONS.map(o => (
                       <button key={o.v} onClick={() => set('goal', o.v)}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-xs font-bold
+                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all
                           ${form.goal === o.v
                             ? 'bg-[#fbbf24]/10 border-[#fbbf24] text-[#fbbf24]'
                             : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
                         <span className="text-xl">{o.icon}</span>
+                        <span className="text-xs font-bold">{o.l}</span>
+                        <span className="text-[10px] opacity-60">{o.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Split Type */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">نوع التقسيم</label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {SPLIT_OPTIONS.map(o => (
+                      <button key={o.v} onClick={() => set('split', o.v)}
+                        className={`py-2 rounded-xl border-2 transition-all text-[10px] font-bold text-center leading-tight px-1
+                          ${form.split === o.v
+                            ? 'bg-[#fbbf24]/10 border-[#fbbf24] text-[#fbbf24]'
+                            : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
+                        {o.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Muscle Priority */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">أولوية عضلية <span className="normal-case font-normal opacity-60">(اختياري)</span></label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {MUSCLE_OPTIONS.map(o => (
+                      <button key={o.v} onClick={() => set('musclePriority', o.v)}
+                        className={`py-2 rounded-xl border-2 transition-all text-xs font-bold text-center
+                          ${form.musclePriority === o.v
+                            ? 'bg-[#fbbf24]/10 border-[#fbbf24] text-[#fbbf24]'
+                            : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
                         {o.l}
                       </button>
                     ))}
@@ -472,8 +534,9 @@ export default function TrainingPlannerPage() {
             {result && (
               <>
                 {/* Stats row */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {[
+                    { label: 'الهدف', val: GOAL_AR[result.goal] || GOAL_AR[form.goal] || form.goal, icon: '🎯' },
                     { label: 'أيام/أسبوع', val: result.daysPerWeek || form.daysPerWeek, icon: '📅' },
                     { label: 'مدة الجلسة', val: `${result.duration || form.duration} دقيقة`, icon: '⏱️' },
                     { label: 'المستوى', val: LEVEL_AR[result.level] || LEVEL_AR[form.level] || result.level || form.level, icon: '🏅' },

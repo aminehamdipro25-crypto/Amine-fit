@@ -20,11 +20,61 @@ CRITICAL RULES:
 - Order: heavy compound movements first, isolation last
 - NEVER place the same muscle group on consecutive days
 
-GOAL-SPECIFIC PROGRAMMING:
-- fat loss: 12-20 reps, 30-60s rest, superset pairs where possible, circuit-style finishers; prioritize metabolic conditioning
-- muscle hypertrophy/gain: 6-12 reps, 60-90s rest, progressive overload every session (+2.5 kg or +1 rep); emphasize time-under-tension
-- maintenance: 8-15 reps, 60-90s rest, balanced volume, sustainability over intensity
-- athletic performance: mix power work (3-5 reps, 3 min rest) + strength (5-8 reps) + explosive movements (Box Jump, Medicine Ball Slam, Broad Jump, Sprint Drill); include agility and coordination; avoid pure bodybuilding isolation; focus on multi-joint compound patterns and sport transfer
+GOAL-SPECIFIC PROGRAMMING — apply the matching protocol with precision:
+
+BULK (muscle mass / hypertrophy / bulking phase):
+- Reps: 6-12 | Rest: 60-90s
+- Volume: 16-20 working sets per muscle per week
+- Progressive overload: add "+2.5 kg or +1 rep" instruction in note on all main compound exercises
+- Exercise order: heavy compound first (Squat/Deadlift/Bench/Row/OHP), then isolation
+- Include drop sets on last set of at least 1 isolation exercise per day
+- Recommended splits: PPL or Upper/Lower for 4-6 days; Full Body for 2-3 days
+
+CUT (fat loss / shredding / cutting phase):
+- Reps: 12-20 | Rest: 30-60s
+- Volume: 12-16 working sets per muscle per week
+- Supersets: group exercises in superset pairs (antagonist muscles: chest+back, biceps+triceps)
+- Circuit finisher: mandatory 3-exercise metabolic circuit at end of each day (no rest between exercises, 45s rest after each round, 3 rounds total)
+- Main compound lifts: always keep 8-10 reps minimum — never drop below 6 reps on Squat/Deadlift/Bench
+- Include 1 cardio/conditioning exercise per day (Box Jump, Burpee, Jump Rope, or Mountain Climber)
+
+RECOMP (body recomposition — simultaneous fat loss + muscle gain):
+- Reps: 6-8 for compound movements, 12-15 for isolation | Rest: 60-75s
+- Strategy: start each day with 2 heavy compound sets (6-8 reps), then moderate volume (12-15 reps)
+- Preferred split: Full Body or Upper/Lower to hit each muscle 2× per week
+- Include both a strength element (heavy compound) AND a metabolic element (superset or mini-circuit) per session
+- Progressive overload: note "+1 rep or +2.5 kg" every 2 sessions
+
+STRENGTH (maximal strength / powerlifting):
+- Reps: 1-5 for main lifts, 6-8 for accessories | Rest: 3-5 min for main lifts, 90s for accessories
+- MANDATORY main lifts (rotate by day): Barbell Back Squat, Conventional Deadlift, Barbell Bench Press, Barbell Overhead Press
+- Program structure: 5×5 or 4×3 for main lift, then 3×6-8 accessories targeting weak points
+- Accessories ONLY: Paused Squat, Romanian Deadlift, Close-Grip Bench, Pendlay Row, Good Morning, Deficit Deadlift — NO isolation curls, fly variations, or pump work
+- Warmup MUST include ramping sets noted in warmup field: bar×10 → 50%×5 → 75%×3 → 90%×1 → working weight
+- Every exercise note must reference carryover to the main lift
+
+PERFORMANCE (athletic performance / explosiveness / agility):
+- Reps: power 3-5 (3 min rest) + strength 5-8 (2 min) + explosive 8-12 (60-90s) — mix all three each session
+- MUST include per week minimum: Box Jump or Broad Jump or Depth Jump; Medicine Ball Slam or Rotational Throw; Sprint Drill or Agility Ladder
+- Multi-planar: include ≥1 lateral movement (Side Lunge, Lateral Shuffle) and ≥1 rotational movement per session
+- End each session with a 4-min conditioning block (Sled Push alternative, Battle Rope, or 3-exercise circuit)
+- Zero pure isolation exercises — every movement must have direct sport-transfer value
+- Core: include Pallof Press, Copenhagen Plank, Dead Bug, or Anti-Rotation Press every session
+
+FITNESS (general fitness / health / sustainable conditioning):
+- Reps: 10-15 | Rest: 45-60s
+- Balanced volume: equal push/pull/lower/core every session
+- Sustainable: stop 2 reps before failure — longevity and consistency over maximum intensity
+- Cardio integration: include 1 moderate-intensity cardio exercise per session (10-15 min equivalent)
+- Variety: suggest an alternative exercise in the note field for each main movement
+- Preferred split: Full Body for 2-3 days; Upper/Lower for 4 days
+
+SPLIT PREFERENCES — enforce strictly when specified:
+- auto: choose optimal split for the goal and number of days
+- ppl: day names MUST follow Push/Pull/Legs naming (Push A, Pull Day, Legs Day, etc.)
+- ul: strictly alternate Upper Body and Lower Body days
+- fb: Full Body — each day must have ≥1 compound push, ≥1 compound pull, ≥1 lower body compound, ≥1 core movement
+- bro: one primary muscle group per day (Chest Day, Back Day, Legs Day, Shoulders Day, Arms Day) — requires ≥5 days
 
 EQUIPMENT RULES — STRICTLY FOLLOW:
 - gym (commercial): barbells, cables, machines, dumbbells — all available
@@ -921,23 +971,39 @@ export async function POST(req) {
   }
 
   const body = await req.json()
-  const { goal, level, daysPerWeek, equipment, injuries, age, gender } = body
+  const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority } = body
 
-  const VALID_GOALS  = new Set(['loss', 'gain', 'maintain', 'performance'])
-  const VALID_LEVELS = new Set(['beginner', 'intermediate', 'advanced'])
-  const VALID_EQUIP  = new Set(['gym', 'home', 'bodyweight'])
-  const VALID_GENDER = new Set(['male', 'female'])
+  const VALID_GOALS   = new Set(['bulk', 'cut', 'recomp', 'strength', 'performance', 'fitness', 'gain', 'loss', 'maintain'])
+  const VALID_LEVELS  = new Set(['beginner', 'intermediate', 'advanced'])
+  const VALID_EQUIP   = new Set(['gym', 'home', 'bodyweight'])
+  const VALID_GENDER  = new Set(['male', 'female'])
+  const VALID_SPLITS  = new Set(['auto', 'ppl', 'ul', 'fb', 'bro'])
+  const VALID_MUSCLES = new Set(['', 'chest', 'back', 'shoulders', 'arms', 'legs', 'glutes', 'core'])
 
-  const safeGoal  = VALID_GOALS.has(goal)   ? goal      : 'maintain'
-  const safeLevel = VALID_LEVELS.has(level) ? level     : 'intermediate'
-  const safeEquip = VALID_EQUIP.has(equipment) ? equipment : 'gym'
-  const safeGender = VALID_GENDER.has(gender) ? gender   : null
+  const safeGoal   = VALID_GOALS.has(goal)      ? goal      : 'fitness'
+  const safeLevel  = VALID_LEVELS.has(level)     ? level     : 'intermediate'
+  const safeEquip  = VALID_EQUIP.has(equipment)  ? equipment : 'gym'
+  const safeGender = VALID_GENDER.has(gender)    ? gender    : null
+  const safeSplit  = VALID_SPLITS.has(split)     ? split     : 'auto'
+  const safeMuscle = VALID_MUSCLES.has(musclePriority) ? (musclePriority || '') : ''
   const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
   const safeAge = age && /^\d{1,3}$/.test(String(age)) ? parseInt(age) : null
 
-  const goalMap = { loss: 'fat loss and metabolic conditioning', gain: 'muscle hypertrophy and strength', maintain: 'general fitness and maintenance', performance: 'athletic performance' }
+  const goalMap = {
+    bulk:        'muscle mass and hypertrophy — bulking phase',
+    cut:         'fat loss while preserving muscle mass — cutting/shredding phase',
+    recomp:      'body recomposition — simultaneous fat loss and muscle gain',
+    strength:    'maximal strength and powerlifting performance',
+    performance: 'athletic performance, explosiveness, and agility',
+    fitness:     'general fitness, health, and sustainable conditioning',
+    gain:        'muscle hypertrophy and strength',
+    loss:        'fat loss and metabolic conditioning',
+    maintain:    'general fitness and maintenance',
+  }
   const levelMap = { beginner: 'beginner (0-1 year)', intermediate: 'intermediate (1-3 years)', advanced: 'advanced (3+ years)' }
   const equipMap = { gym: 'full commercial gym', home: 'home gym (dumbbells, bands, pull-up bar)', bodyweight: 'bodyweight only' }
+  const splitMap  = { auto: 'auto — choose optimal split', ppl: 'Push/Pull/Legs', ul: 'Upper/Lower', fb: 'Full Body', bro: 'Bro Split (one muscle group per day)' }
+  const muscleMap = { chest: 'chest (pectorals)', back: 'back (lats, rhomboids, traps)', shoulders: 'shoulders (deltoids)', arms: 'arms (biceps + triceps)', legs: 'legs (quads, hamstrings, calves)', glutes: 'glutes and hip complex', core: 'core (abs, obliques, lower back)' }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     // Pick a fallback appropriate to equipment
@@ -985,6 +1051,8 @@ export async function POST(req) {
 
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}
+- Split Type: ${splitMap[safeSplit]}
+${safeMuscle ? `- Muscle Priority: ${muscleMap[safeMuscle]} — add 1 extra exercise and +1 set on all exercises targeting this muscle group` : ''}
 - Level: ${levelMap[safeLevel]}
 - Equipment: ${equipMap[safeEquip]}
 - Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}, ${safeGender === 'male' ? 'Male' : safeGender === 'female' ? 'Female' : 'unspecified gender'}
