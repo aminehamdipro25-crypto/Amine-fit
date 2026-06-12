@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import {
   Brain, Dumbbell, Zap, Sparkles, Users, Save,
   CheckCircle2, Loader2, ChevronDown, ChevronUp,
+  Search, X,
 } from 'lucide-react'
 
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] text-white text-sm focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20 outline-none transition placeholder:text-white/20'
@@ -38,6 +39,66 @@ const EQUIP_OPTIONS = [
 ]
 
 const LEVEL_AR = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
+
+/* ── Client Picker ─────────────────────────────────────────────────────────── */
+function ClientPicker({ onSelect }) {
+  const [clients, setClients] = useState([])
+  const [search,  setSearch]  = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/clients')
+      .then(r => r.json())
+      .then(d => setClients(d.clients || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? clients.filter(c => c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q))
+    : clients
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+        <input
+          autoFocus
+          placeholder="ابحث بالاسم أو البريد..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pr-9 pl-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#0a0a0a] text-white text-sm focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20 outline-none transition placeholder:text-white/20"
+        />
+      </div>
+      {loading ? (
+        <div className="text-center py-6 text-white/30 text-sm">جاري التحميل...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-6 text-white/30 text-sm">لا يوجد عملاء مطابقون</div>
+      ) : (
+        <div className="max-h-64 overflow-y-auto space-y-2 pl-1">
+          {filtered.map(c => (
+            <button key={c.id} onClick={() => onSelect(c)}
+              className="w-full text-right flex items-center gap-3 px-4 py-3 rounded-xl border border-[#2a2a2a] hover:border-[#fbbf24]/40 hover:bg-[#fbbf24]/5 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-[#fbbf24]/10 border border-[#fbbf24]/20 text-[#fbbf24] font-extrabold text-sm flex items-center justify-center flex-shrink-0">
+                {c.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-white text-sm truncate group-hover:text-[#fbbf24]">{c.name}</p>
+                <p className="text-xs text-white/30 truncate">{c.email}</p>
+              </div>
+              <div className="flex gap-3 text-xs text-white/40 flex-shrink-0">
+                {c.age    && <span>{c.age}س</span>}
+                {c.weight && <span>{c.weight}كغ</span>}
+                {c.height && <span>{c.height}سم</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /* ── Day Card ───────────────────────────────────────────────────────────── */
 function DayCard({ day }) {
@@ -98,27 +159,44 @@ export default function TrainingPlannerPage() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  const [showPicker, setShowPicker]     = useState(false)
+  const [pickedClient, setPickedClient] = useState(null)
+
   // Save to client
-  const [clients, setClients] = useState([])
-  const [clientsLoading, setClientsLoading] = useState(false)
   const [selectedClient, setSelectedClient] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [clients, setClients]               = useState([])
+  const [clientsLoading, setClientsLoading] = useState(false)
+  const [saving, setSaving]                 = useState(false)
+  const [saved, setSaved]                   = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const valid = +form.age > 0
 
-  // Load clients when result is shown
+  function fillFromClient(c) {
+    setForm(f => ({
+      ...f,
+      age:      c.age      || '',
+      gender:   c.gender   || 'male',
+      injuries: c.injuries || c.healthConditions || '',
+    }))
+    setPickedClient(c)
+    setSelectedClient(c.id || '')
+    setShowPicker(false)
+    setResult(null)
+    setSaved(false)
+  }
+
+  // Load clients dropdown when result is shown and no client was pre-picked
   useEffect(() => {
-    if (!result) return
+    if (!result || pickedClient) return
     setClientsLoading(true)
     fetch('/api/clients')
       .then(r => r.json())
       .then(data => setClients(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setClientsLoading(false))
-  }, [result])
+  }, [result, pickedClient])
 
   async function generate() {
     if (!valid || loading) return
@@ -141,10 +219,11 @@ export default function TrainingPlannerPage() {
   }
 
   async function saveToClient() {
-    if (!selectedClient || !result || saving) return
+    const clientId = pickedClient?.id || selectedClient
+    if (!clientId || !result || saving) return
     setSaving(true)
     try {
-      await fetch(`/api/register/${selectedClient}/plan`, {
+      await fetch(`/api/register/${clientId}/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: { training: result } }),
@@ -166,7 +245,7 @@ export default function TrainingPlannerPage() {
           </div>
           <div>
             <h1 className="text-2xl font-extrabold text-white">معد البرامج التدريبية</h1>
-            <p className="text-sm text-white/40 mt-0.5">أنشئ برنامجاً تدريبياً مخصصاً بالذكاء الاصطناعي</p>
+            <p className="text-sm text-white/40 mt-0.5">أنشئ برنامجاً تدريبياً مخصصاً</p>
           </div>
           <span className="mr-auto text-[11px] font-extrabold bg-[#fbbf24]/10 text-[#fbbf24] border border-[#fbbf24]/20 px-3 py-1 rounded-full">AI ✦</span>
         </div>
@@ -176,6 +255,52 @@ export default function TrainingPlannerPage() {
 
           {/* ── LEFT: Form ── */}
           <div className="space-y-5">
+
+            {/* ── Client Picker Card ── */}
+            <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#2a2a2a] bg-[#0f0f0f] flex items-center gap-3">
+                <Users className="w-4 h-4 text-[#fbbf24]" />
+                <span className="font-bold text-white text-sm">اختر عميلاً (اختياري)</span>
+              </div>
+              <div className="p-4">
+                {pickedClient ? (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fbbf24]/5 border border-[#fbbf24]/20">
+                    <div className="w-10 h-10 rounded-xl bg-[#fbbf24]/10 border border-[#fbbf24]/20 text-[#fbbf24] font-extrabold text-sm flex items-center justify-center flex-shrink-0">
+                      {pickedClient.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{pickedClient.name}</p>
+                      <p className="text-xs text-white/40 truncate">{pickedClient.email}</p>
+                    </div>
+                    <button
+                      onClick={() => { setPickedClient(null); setSelectedClient(''); setShowPicker(false) }}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5 text-white/40" />
+                    </button>
+                  </div>
+                ) : showPicker ? (
+                  <div className="space-y-3">
+                    <ClientPicker onSelect={fillFromClient} />
+                    <button
+                      onClick={() => setShowPicker(false)}
+                      className="w-full py-2 rounded-xl border border-[#2a2a2a] text-white/40 text-xs hover:text-white/60 transition-colors"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowPicker(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#2a2a2a] text-white/40 text-sm hover:border-[#fbbf24]/40 hover:text-[#fbbf24]/60 transition-all"
+                  >
+                    <Users className="w-4 h-4" />
+                    اختر عميلاً لملء البيانات تلقائياً
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[#2a2a2a] bg-[#0f0f0f] flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-[#fbbf24]" />
@@ -303,12 +428,12 @@ export default function TrainingPlannerPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      الذكاء الاصطناعي يبني البرنامج...
+                      جاري بناء البرنامج...
                     </>
                   ) : (
                     <>
                       <Brain className="w-5 h-5" />
-                      توليد البرنامج بالذكاء الاصطناعي
+                      توليد البرنامج
                     </>
                   )}
                 </button>
@@ -320,7 +445,7 @@ export default function TrainingPlannerPage() {
                   <div className="w-10 h-10 mx-auto bg-[#fbbf24]/10 rounded-full flex items-center justify-center animate-pulse">
                     <Zap className="w-5 h-5 text-[#fbbf24]" />
                   </div>
-                  <p className="font-bold text-[#fbbf24] text-sm">يحلّل الذكاء الاصطناعي البيانات...</p>
+                  <p className="font-bold text-[#fbbf24] text-sm">يحلّل البيانات...</p>
                   <p className="text-xs text-white/30">يحدد الأيام • يختار التمارين المناسبة • يحسب الحجم الأمثل</p>
                   <div className="flex justify-center gap-1 pt-1">
                     {[0,1,2].map(i => (
@@ -368,13 +493,13 @@ export default function TrainingPlannerPage() {
                   </div>
                 )}
 
-                {/* AI badge */}
+                {/* Engine badge */}
                 <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border
                   ${result.ai
                     ? 'bg-[#fbbf24]/5 border-[#fbbf24]/20 text-[#fbbf24]'
                     : 'bg-white/5 border-white/10 text-white/40'}`}>
                   {result.ai
-                    ? <><Sparkles className="w-4 h-4" /> تم التوليد بالذكاء الاصطناعي Claude</>
+                    ? <><Sparkles className="w-4 h-4" /> تم التوليد بالمحرك المتقدم</>
                     : <><Zap className="w-4 h-4" /> تم التوليد بالمحرك الافتراضي</>
                   }
                 </div>
@@ -406,7 +531,17 @@ export default function TrainingPlannerPage() {
                     <span className="font-bold text-white text-sm">حفظ لعميل</span>
                   </div>
                   <div className="p-4 space-y-3">
-                    {clientsLoading ? (
+                    {pickedClient ? (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-[#fbbf24]/5 border border-[#fbbf24]/20">
+                        <div className="w-8 h-8 rounded-xl bg-[#fbbf24]/10 border border-[#fbbf24]/20 text-[#fbbf24] font-extrabold text-xs flex items-center justify-center flex-shrink-0">
+                          {pickedClient.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-white text-sm truncate">{pickedClient.name}</p>
+                          <p className="text-xs text-white/40 truncate">{pickedClient.email}</p>
+                        </div>
+                      </div>
+                    ) : clientsLoading ? (
                       <div className="flex items-center gap-2 text-white/30 text-sm py-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         جاري تحميل العملاء...
@@ -426,7 +561,7 @@ export default function TrainingPlannerPage() {
 
                     <button
                       onClick={saveToClient}
-                      disabled={!selectedClient || saving}
+                      disabled={!(pickedClient?.id || selectedClient) || saving}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all
                         bg-[#0a0a0a] border border-[#2a2a2a] text-white hover:border-[#fbbf24]/40 hover:text-[#fbbf24]
                         disabled:opacity-40 disabled:cursor-not-allowed"
