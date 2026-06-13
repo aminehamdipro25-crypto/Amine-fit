@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck } from 'lucide-react'
+import PwaInstallBanner from '@/components/PwaInstallBanner'
 
 const navItems = [
   { href: '/client/dashboard',        icon: LayoutDashboard, label: 'الرئيسية' },
@@ -96,7 +97,7 @@ export default function ClientLayout({ children }) {
     router.push('/client/login')
   }
 
-  if (isLogin) return <>{children}</>
+  if (isLogin) return <>{children}<PwaInstallBanner /></>
 
   return (
     <div className={`flex bg-[#f5f5f5] overflow-hidden ${isPreview ? 'h-[calc(100vh-44px)] mt-[44px]' : 'h-screen'}`}>
@@ -174,6 +175,7 @@ export default function ClientLayout({ children }) {
         </header>
         <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
+      <PwaInstallBanner />
     </div>
   )
 }

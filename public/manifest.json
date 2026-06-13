@@ -1,18 +1,19 @@
 {
   "id": "com.aminefit.app",
   "name": "Amine-Fit — مدرب شخصي",
-  "short_name": "Amine-Fit",
+  "short_name": "AmineFit",
   "description": "بوابة العميل — خططك الغذائية والتدريبية مع المدرب أمين حمدي",
   "start_url": "/client/dashboard",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "prefer_related_applications": false,
   "background_color": "#0a0a0a",
   "theme_color": "#fbbf24",
   "orientation": "portrait-primary",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["health", "fitness", "lifestyle"],
+  "related_applications": [],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
