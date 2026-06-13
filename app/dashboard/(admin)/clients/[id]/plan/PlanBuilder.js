@@ -11,6 +11,7 @@ import NutritionTab from './components/NutritionTab'
 import TrainingTab from './components/TrainingTab'
 import ResourcesTab from './components/ResourcesTab'
 import AIGenerateModal from './components/AIGenerateModal'
+import ProtocolSection from '../../components/ProtocolSection'
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 function Toast({ msg, onClose }) {
@@ -45,6 +46,8 @@ export default function PlanBuilder({ client }) {
   }
 
   const [tab, setTab]     = useState('nutrition')
+  const [localClient, setLocalClient] = useState(client)
+  function handleProtocolUpdate(_, patch) { setLocalClient(c => ({ ...c, ...patch })) }
   const [saving, setSaving] = useState(false)
   const [toast, setToast]   = useState('')
 
@@ -361,18 +364,19 @@ export default function PlanBuilder({ client }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {[
           { key: 'nutrition',  label: 'الخطة الغذائية',    icon: Utensils },
           { key: 'training',   label: 'الخطة التدريبية',   icon: Dumbbell },
           { key: 'resources',  label: 'الملفات والروابط',  icon: Paperclip },
+          { key: 'protocol',   label: 'البروتوكول 🔬',      icon: null },
         ].map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all border
               ${tab === key
                 ? 'bg-[#0a0a0a] text-white border-[#0a0a0a] shadow-sm'
                 : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-            <Icon className="w-4 h-4" />
+            {Icon && <Icon className="w-4 h-4" />}
             {label}
           </button>
         ))}
@@ -408,8 +412,14 @@ export default function PlanBuilder({ client }) {
         <ResourcesTab clientId={client.id} />
       )}
 
+      {tab === 'protocol' && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <ProtocolSection client={localClient} onUpdate={handleProtocolUpdate} />
+        </div>
+      )}
+
       {/* Save / Delete row — only for nutrition/training tabs */}
-      {tab !== 'resources' && (
+      {tab !== 'resources' && tab !== 'protocol' && (
         <div className="flex items-center justify-between pb-6">
           <button
             onClick={async () => {

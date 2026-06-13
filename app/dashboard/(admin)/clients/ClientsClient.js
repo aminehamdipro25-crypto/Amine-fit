@@ -17,6 +17,7 @@ import ClientProgressPanel from './components/ClientProgressPanel'
 import ClientPhotosPanel from './components/ClientPhotosPanel'
 import ClientReceiptPanel from './components/ClientReceiptPanel'
 import ClientTasksPanel from './components/ClientTasksPanel'
+import ClientMessagesPanel from './components/ClientMessagesPanel'
 import ClientCard from './components/ClientCard'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -509,6 +510,9 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
 
           {/* Daily tasks management */}
           <ClientTasksPanel clientId={client.id} />
+
+          {/* Direct messaging */}
+          <ClientMessagesPanel clientId={client.id} clientName={client.name} />
         </div>
 
         {/* Footer actions */}
