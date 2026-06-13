@@ -5,9 +5,13 @@ import Link from 'next/link'
 import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown } from 'lucide-react'
 
 const PLAN_DISPLAY = {
-  basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
-  standard: { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
-  premium:  { label: 'باقة 3 أشهر',   emoji: '🏆', color: 'from-violet-600 to-purple-800' },
+  basic:     { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
+  standard:  { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
+  premium:   { label: 'باقة 3 أشهر',   emoji: '🏆', color: 'from-violet-600 to-purple-800' },
+  // Legacy gift plan keys — kept for backward compatibility with old registrations
+  training:  { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
+  monthly:   { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
+  '3months': { label: 'باقة 3 أشهر',   emoji: '🏆', color: 'from-violet-600 to-purple-800' },
 }
 const PLAN_NAME_DISPLAY = {
   'برنامج التدريب': PLAN_DISPLAY.basic,
@@ -41,6 +45,9 @@ function SubscriptionCard({ client }) {
           <div className="flex-1">
             <p className="text-white/60 text-xs font-bold uppercase tracking-wide">اشتراكك الحالي</p>
             <p className="text-white font-extrabold text-lg">{sub.info?.label || client.subscriptionPlan}</p>
+            {client.giftCode && (
+              <p className="text-white/70 text-xs font-bold mt-0.5">🎁 هدية من المدرب أمين</p>
+            )}
           </div>
           {!expired && (
             <div className={`text-center px-3 py-2 rounded-xl ${urgent ? 'bg-red-500/20 border border-red-400/30' : 'bg-white/10'}`}>

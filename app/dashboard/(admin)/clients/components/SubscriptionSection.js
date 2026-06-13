@@ -4,9 +4,13 @@ import { Loader2, RefreshCw, Star, X } from 'lucide-react'
 
 // ── Subscription helpers ──────────────────────────────────────────────────────
 export const PLANS_INFO = {
-  basic:    { label: 'برنامج التدريب', short: 'تدريب',   color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
-  standard: { label: 'الباقة الشهرية', short: 'شهرية',   color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
-  premium:  { label: 'باقة 3 أشهر',   short: '3 أشهر',  color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 90 },
+  basic:     { label: 'برنامج التدريب', short: 'تدريب',  color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
+  standard:  { label: 'الباقة الشهرية', short: 'شهرية',  color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
+  premium:   { label: 'باقة 3 أشهر',   short: '3 أشهر', color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 90 },
+  // Legacy gift plan keys
+  training:  { label: 'برنامج التدريب', short: 'تدريب',  color: 'bg-blue-50 text-blue-700 border-blue-200',       days: 30 },
+  monthly:   { label: 'الباقة الشهرية', short: 'شهرية',  color: 'bg-violet-50 text-violet-700 border-violet-200', days: 30 },
+  '3months': { label: 'باقة 3 أشهر',   short: '3 أشهر', color: 'bg-amber-50 text-amber-700 border-amber-200',    days: 90 },
 }
 
 export const PLAN_NAME_MAP = {
