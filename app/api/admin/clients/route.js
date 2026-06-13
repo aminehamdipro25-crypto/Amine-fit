@@ -8,27 +8,32 @@ export async function GET() {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  const all = await getSubmissions()
+  try {
+    const all = await getSubmissions()
 
-  // Return only fields needed for the calculator / plan builder
-  const clients = all.map(c => ({
-    id:             c.id,
-    name:           c.name    || '',
-    email:          c.email   || '',
-    gender:         c.gender  || 'male',
-    age:            c.age     || '',
-    weight:         c.weight  || '',
-    height:         c.height  || '',
-    targetWeight:   c.targetWeight || '',
-    bodyFatPct:     c.bodyFatPct   || '',
-    activityLevel:  c.activityLevel || 'moderate',
-    goal:           c.goal    || 'maintain',
-    country:        c.country       || '',
-    preferredFoods: c.preferredFoods  || '',
-    dislikedFoods:  c.dislikedFoods   || '',
-    foodAllergy:    c.foodAllergy     || '',
-    status:         c.status  || 'pending',
-  }))
+    // Return only fields needed for the calculator / plan builder
+    const clients = all.map(c => ({
+      id:             c.id,
+      name:           c.name    || '',
+      email:          c.email   || '',
+      gender:         c.gender  || 'male',
+      age:            c.age     || '',
+      weight:         c.weight  || '',
+      height:         c.height  || '',
+      targetWeight:   c.targetWeight || '',
+      bodyFatPct:     c.bodyFatPct   || '',
+      activityLevel:  c.activityLevel || 'moderate',
+      goal:           c.goal    || 'maintain',
+      country:        c.country       || '',
+      preferredFoods: c.preferredFoods  || '',
+      dislikedFoods:  c.dislikedFoods   || '',
+      foodAllergy:    c.foodAllergy     || '',
+      status:         c.status  || 'pending',
+    }))
 
-  return NextResponse.json({ clients })
+    return NextResponse.json({ clients })
+  } catch (err) {
+    console.error('[admin clients GET]', err.message)
+    return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
+  }
 }
