@@ -365,14 +365,22 @@ export async function POST(req) {
 
   // If no API key → use local engine immediately (never rate-limit)
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(postProcess(localPlan(form)))
+    try {
+      return NextResponse.json(postProcess(localPlan(form)))
+    } catch (e) {
+      return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
+    }
   }
 
   const duration = form.duration || 'day'
 
   // Week & Month plans → always use local engine (never rate-limit)
   if (duration === 'week' || duration === 'month') {
-    return NextResponse.json(postProcess(localPlan(form)))
+    try {
+      return NextResponse.json(postProcess(localPlan(form)))
+    } catch (e) {
+      return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
+    }
   }
 
   // ── Redis cache check (24h) — avoid repeat API calls for identical inputs ──
@@ -463,7 +471,6 @@ ${daySchema}`
     const response = await anthropic.messages.create({
       model:      'claude-sonnet-4-6',
       max_tokens: 7000,
-      thinking:   { type: 'adaptive' },
       system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages:   [{ role: 'user', content: dayPrompt }],
     })
@@ -479,6 +486,10 @@ ${daySchema}`
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
-    return NextResponse.json(postProcess(localPlan(form)))
+    try {
+      return NextResponse.json(postProcess(localPlan(form)))
+    } catch (e2) {
+      return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
+    }
   }
 }
