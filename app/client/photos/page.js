@@ -1,7 +1,131 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { GitCompare, Grid } from 'lucide-react'
+import { GitCompare, Grid, GripVertical } from 'lucide-react'
+
+function PhotoSlider({ left, right, cfgL, cfgR }) {
+  const [pct, setPct] = useState(50)
+  const containerRef  = useRef(null)
+  const dragging      = useRef(false)
+
+  function getPos(e) {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return 50
+    const x = e.touches ? e.touches[0].clientX : e.clientX
+    return Math.min(100, Math.max(0, ((x - rect.left) / rect.width) * 100))
+  }
+
+  function onStart(e) {
+    e.preventDefault()
+    dragging.current = true
+    setPct(getPos(e))
+  }
+
+  useEffect(() => {
+    function onMove(e) {
+      if (!dragging.current) return
+      e.preventDefault()
+      setPct(getPos(e))
+    }
+    function onEnd() { dragging.current = false }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup',   onEnd)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend',  onEnd)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup',   onEnd)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend',  onEnd)
+    }
+  }, [])
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-[#0a0a0a] px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <GitCompare className="w-4 h-4 text-[#fbbf24]" />
+          <p className="text-white font-extrabold text-sm">مقارنة التحول</p>
+        </div>
+        <p className="text-white/30 text-xs font-medium">اسحب للمقارنة</p>
+      </div>
+
+      {/* Slider container */}
+      <div
+        ref={containerRef}
+        className="relative aspect-square cursor-col-resize select-none"
+        onMouseDown={onStart}
+        onTouchStart={onStart}
+      >
+        {/* Right photo (full, behind) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={right.dataUrl}
+          alt={cfgR.label}
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
+
+        {/* Left photo (clipped) */}
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{ width: `${pct}%` }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={left.dataUrl}
+            alt={cfgL.label}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ width: `${10000 / Math.max(pct, 1)}%` }}
+            draggable={false}
+          />
+        </div>
+
+        {/* Divider line */}
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg"
+          style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+        >
+          {/* Handle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+            w-9 h-9 bg-white rounded-full shadow-xl flex items-center justify-center border-2 border-white/80">
+            <GripVertical className="w-4 h-4 text-slate-400" />
+          </div>
+        </div>
+
+        {/* Labels */}
+        <div className="absolute top-3 right-3 pointer-events-none">
+          <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${cfgL.badge}`}>
+            {cfgL.emoji} {cfgL.label}
+          </span>
+        </div>
+        <div className="absolute top-3 left-3 pointer-events-none">
+          <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${cfgR.badge}`}>
+            {cfgR.emoji} {cfgR.label}
+          </span>
+        </div>
+
+        {/* Dates at bottom */}
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-3 flex justify-between pointer-events-none">
+          <p className="text-white/70 text-[10px] font-medium">{fmtDate(right.date)}</p>
+          <p className="text-white/70 text-[10px] font-medium">{fmtDate(left.date)}</p>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {(left.note || right.note) && (
+        <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+          <div className="px-3 py-2 text-right">
+            {right.note && <p className="text-xs text-slate-500 font-medium truncate">{right.note}</p>}
+          </div>
+          <div className="px-3 py-2 text-left">
+            {left.note && <p className="text-xs text-slate-500 font-medium truncate">{left.note}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const TYPE_CONFIG = {
   before:   { label: 'قبل',    emoji: '📸', badge: 'bg-blue-100 text-blue-700',    border: 'border-blue-300' },
@@ -331,7 +455,7 @@ export default function PhotosPage() {
         </div>
       </div>
 
-      {/* Comparison mode */}
+      {/* Comparison mode — interactive drag slider */}
       {compareMode && photos.length >= 2 && (() => {
         const before   = [...photos].reverse().find(p => p.type === 'before')
         const after    = [...photos].reverse().find(p => p.type === 'after')
@@ -347,41 +471,7 @@ export default function PhotosPage() {
         )
         const cfgL = TYPE_CONFIG[left.type]  || TYPE_CONFIG.progress
         const cfgR = TYPE_CONFIG[right.type] || TYPE_CONFIG.progress
-        return (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="bg-[#0a0a0a] px-5 py-3 flex items-center gap-2">
-              <GitCompare className="w-4 h-4 text-[#fbbf24]" />
-              <p className="text-white font-extrabold text-sm">مقارنة التحول</p>
-            </div>
-            <div className="grid grid-cols-2 gap-0">
-              {[{ photo: left, cfg: cfgL }, { photo: right, cfg: cfgR }].map(({ photo, cfg }, i) => (
-                <div key={photo.id} className={`relative ${i === 0 ? 'border-l border-slate-100' : ''}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.dataUrl}
-                    alt={cfg.label}
-                    className="w-full aspect-square object-cover"
-                  />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
-                    <span className={`inline-block text-xs font-extrabold px-2 py-0.5 rounded-full ${cfg.badge}`}>
-                      {cfg.emoji} {cfg.label}
-                    </span>
-                    <p className="text-white/60 text-[10px] font-medium mt-0.5">{fmtDate(photo.date)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {left.note || right.note ? (
-              <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
-                {[left, right].map(p => (
-                  <div key={p.id} className="px-3 py-2">
-                    {p.note && <p className="text-xs text-slate-500 font-medium truncate">{p.note}</p>}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        )
+        return <PhotoSlider left={left} right={right} cfgL={cfgL} cfgR={cfgR} />
       })()}
 
       {/* Gallery */}

@@ -1196,13 +1196,100 @@ const goalLabels = {
   maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي',
 }
 
+/* ── First-time onboarding modal ─────────────────────────────────────────── */
+const ONBOARDING_KEY = 'af_onboarded_v1'
+
+function OnboardingModal({ client, onDone }) {
+  const [step, setStep] = useState(0)
+
+  const steps = [
+    {
+      emoji: '🎉',
+      title: `أهلاً وسهلاً ${client.name?.split(' ')[0] || ''}!`,
+      body: 'مرحباً بك في بوابتك الشخصية مع المدرب أمين. دعنا نريك أهم الميزات في 3 خطوات سريعة.',
+      color: 'from-amber-400 to-yellow-500',
+    },
+    {
+      emoji: '🥗',
+      title: 'خطتك المخصصة',
+      body: 'ستجد هنا خطتك الغذائية والتدريبية المصممة خصيصاً لك من المدرب أمين. تحدّث يومياً للحصول على أفضل النتائج.',
+      color: 'from-emerald-500 to-teal-600',
+    },
+    {
+      emoji: '📊',
+      title: 'تابع تقدمك',
+      body: 'سجّل وزنك وقياساتك أسبوعياً، وارسل تقريرك للمدرب. الاستمرارية هي سر النتائج الحقيقية!',
+      color: 'from-violet-500 to-purple-700',
+    },
+  ]
+
+  const current = steps[step]
+
+  function finish() {
+    try { localStorage.setItem(ONBOARDING_KEY, '1') } catch {}
+    onDone()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
+        {/* Progress dots */}
+        <div className={`bg-gradient-to-l ${current.color} px-6 pt-8 pb-10 text-center relative`}>
+          <div className="flex justify-center gap-2 absolute bottom-3 inset-x-0">
+            {steps.map((_, i) => (
+              <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-6 bg-white' : 'w-2 bg-white/40'}`} />
+            ))}
+          </div>
+          <p className="text-6xl mb-4">{current.emoji}</p>
+          <h2 className="text-white font-extrabold text-xl leading-tight">{current.title}</h2>
+        </div>
+
+        <div className="p-6">
+          <p className="text-slate-600 text-sm leading-relaxed text-center font-medium mb-6">
+            {current.body}
+          </p>
+
+          <div className="flex gap-3">
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 transition">
+                السابق
+              </button>
+            )}
+            {step < steps.length - 1 ? (
+              <button onClick={() => setStep(s => s + 1)}
+                className="flex-1 py-3 rounded-xl bg-[#0a0a0a] text-[#fbbf24] font-extrabold text-sm hover:bg-[#1a1a1a] transition">
+                التالي
+              </button>
+            ) : (
+              <button onClick={finish}
+                className="flex-1 py-3 rounded-xl bg-[#0a0a0a] text-[#fbbf24] font-extrabold text-sm hover:bg-[#1a1a1a] transition">
+                ابدأ الآن 🚀
+              </button>
+            )}
+          </div>
+
+          {step === 0 && (
+            <button onClick={finish}
+              className="w-full text-center text-xs text-slate-300 font-medium mt-3 hover:text-slate-400 transition">
+              تخطي
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ClientDashboard() {
   const router = useRouter()
   const [client, setClient] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     let mounted = true
+    let fetched = false
     async function fetchClient() {
       try {
         const r = await fetch('/api/client/me')
@@ -1215,7 +1302,16 @@ export default function ClientDashboard() {
         }
         if (!r.ok) return
         const d = await r.json()
-        if (mounted && d && (d.id || d.name)) setClient(d)
+        if (mounted && d && (d.id || d.name)) {
+          setClient(d)
+          // Show onboarding modal on first visit only
+          if (!fetched) {
+            fetched = true
+            try {
+              if (!localStorage.getItem(ONBOARDING_KEY)) setShowOnboarding(true)
+            } catch {}
+          }
+        }
       } catch {} finally {
         if (mounted) setLoading(false)
       }
@@ -1240,6 +1336,11 @@ export default function ClientDashboard() {
 
   return (
     <div className="space-y-5 max-w-3xl mx-auto">
+
+      {/* First-time onboarding */}
+      {showOnboarding && client && (
+        <OnboardingModal client={client} onDone={() => setShowOnboarding(false)} />
+      )}
 
       {/* Welcome hero */}
       <div className="relative rounded-3xl overflow-hidden" style={{
