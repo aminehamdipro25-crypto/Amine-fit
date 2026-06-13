@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Zap, Mail, Lock, Loader2, Eye, EyeOff, KeyRound, ShieldCheck, Ban } from 'lucide-react'
+import { Zap, Mail, Lock, Loader2, Eye, EyeOff, KeyRound, ShieldCheck, Ban, X } from 'lucide-react'
 
 const BG_EMOJIS = {
   left:  [
@@ -69,6 +69,56 @@ function ClientLoginInner() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+
+  // Forgot password
+  const [showForgot, setShowForgot]         = useState(false)
+  const [forgotEmail, setForgotEmail]       = useState('')
+  const [forgotStep, setForgotStep]         = useState(1) // 1=email, 2=code+password
+  const [forgotCode, setForgotCode]         = useState('')
+  const [forgotPw, setForgotPw]             = useState('')
+  const [forgotPwConfirm, setForgotPwConfirm] = useState('')
+  const [forgotLoading, setForgotLoading]   = useState(false)
+  const [forgotMsg, setForgotMsg]           = useState('')
+  const [forgotError, setForgotError]       = useState('')
+
+  async function sendResetCode() {
+    setForgotLoading(true); setForgotError(''); setForgotMsg('')
+    try {
+      await fetch('/api/client/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      })
+      setForgotStep(2)
+      setForgotMsg('تم إرسال الكود لبريدك — تحقق من صندوق الوارد')
+    } catch { setForgotError('تعذّر الإرسال — حاول مجدداً') }
+    finally { setForgotLoading(false) }
+  }
+
+  async function resetPassword() {
+    setForgotLoading(true); setForgotError('')
+    try {
+      const res = await fetch('/api/client/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, code: forgotCode, password: forgotPw, confirmPassword: forgotPwConfirm }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setForgotError(data.error || 'خطأ'); return }
+      router.push('/client/dashboard')
+    } catch { setForgotError('تعذّر الاتصال — حاول مجدداً') }
+    finally { setForgotLoading(false) }
+  }
+
+  function closeForgot() {
+    setShowForgot(false)
+    setForgotStep(1)
+    setForgotMsg('')
+    setForgotError('')
+    setForgotCode('')
+    setForgotPw('')
+    setForgotPwConfirm('')
+  }
 
   async function submitLogin(e) {
     e.preventDefault()
@@ -169,6 +219,63 @@ function ClientLoginInner() {
         ))}
       </div>
 
+      {/* Forgot password modal */}
+      {showForgot && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-white font-extrabold text-lg">
+                {forgotStep === 1 ? 'نسيت كلمة المرور' : 'إعادة تعيين كلمة المرور'}
+              </h3>
+              <button onClick={closeForgot} className="text-white/30 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {forgotMsg && <p className="text-emerald-400 text-sm font-bold mb-4 text-center">{forgotMsg}</p>}
+            {forgotError && <p className="text-red-400 text-sm font-bold mb-4 text-center">{forgotError}</p>}
+
+            {forgotStep === 1 ? (
+              <div className="space-y-4">
+                <p className="text-white/50 text-sm">أدخل بريدك الإلكتروني وسنرسل لك كود إعادة التعيين</p>
+                <input
+                  type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)}
+                  placeholder="البريد الإلكتروني" dir="ltr"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm outline-none focus:border-[#fbbf24]" />
+                <button onClick={sendResetCode} disabled={forgotLoading || !forgotEmail}
+                  className="w-full py-3 bg-[#fbbf24] text-black font-extrabold rounded-xl text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                  {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إرسال الكود'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-white/50 text-sm">أدخل الكود الذي أُرسل لـ <span className="text-[#fbbf24]">{forgotEmail}</span></p>
+                <input
+                  type="text" value={forgotCode} onChange={e => setForgotCode(e.target.value.toUpperCase())}
+                  placeholder="كود التفعيل" dir="ltr" maxLength={6}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm outline-none focus:border-[#fbbf24] font-mono tracking-widest text-center" />
+                <input
+                  type="password" value={forgotPw} onChange={e => setForgotPw(e.target.value)}
+                  placeholder="كلمة المرور الجديدة"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm outline-none focus:border-[#fbbf24]" />
+                <input
+                  type="password" value={forgotPwConfirm} onChange={e => setForgotPwConfirm(e.target.value)}
+                  placeholder="تأكيد كلمة المرور"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm outline-none focus:border-[#fbbf24]" />
+                <button onClick={resetPassword} disabled={forgotLoading || !forgotCode || !forgotPw || !forgotPwConfirm}
+                  className="w-full py-3 bg-[#fbbf24] text-black font-extrabold rounded-xl text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                  {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تعيين كلمة المرور'}
+                </button>
+                <button onClick={() => setForgotStep(1)}
+                  className="w-full text-white/30 hover:text-white/60 text-xs py-2 transition">
+                  إعادة إرسال الكود
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Card */}
       <div className="relative w-full max-w-sm z-10">
 
@@ -236,6 +343,10 @@ function ClientLoginInner() {
                     </div>
                   </div>
                   <PasswordField value={loginPw} onChange={setLoginPw} label="كلمة المرور" />
+                  <button type="button" onClick={() => { setShowForgot(true); setForgotEmail(loginEmail) }}
+                    className="text-xs text-white/40 hover:text-[#fbbf24] transition mt-1 text-right w-full">
+                    نسيت كلمة المرور؟
+                  </button>
                   {error && (
                     <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 font-medium">{error}</p>
                   )}
