@@ -83,7 +83,63 @@ EQUIPMENT RULES — STRICTLY FOLLOW:
 
 WARMUP & COOLDOWN — required in every day:
 - warmup: 2-3 exercises (5-10 min total) — light cardio + dynamic stretching relevant to the day's muscles
-- cooldown: 2-3 exercises (5 min total) — static stretches for worked muscles, held 20-30s each`
+- cooldown: 2-3 exercises (5 min total) — static stretches for worked muscles, held 20-30s each
+
+GENDER-SPECIFIC PROGRAMMING — apply strictly based on client gender:
+
+FEMALE:
+- Lower body is the PRIORITY: dedicate 55-60% of total weekly volume to glutes, hamstrings, and quads
+- MANDATORY on every lower body day — include AT LEAST 2 of these: Hip Thrust, Glute Bridge, Single-Leg Glute Bridge, Sumo Squat, Sumo Deadlift, Donkey Kick, Fire Hydrant, Lateral Band Walk, Cable/Band Kickback, Romanian Deadlift, Frog Pump, Cable Hip Abduction
+- Glute isolation reps: 15-25 (NOT 8-12) — high-rep glute work builds shape, not just strength
+- Lower body compound reps: 10-15 | Rest: 60-90s
+- Upper body (40% of volume): focus on definition and posture — NOT maximum hypertrophy
+  • Emphasis: Lateral Raise (lateral deltoids for shoulder width), Rear Delt Fly (posture), Resistance Band work
+  • Rep range: 12-20 for upper body isolation
+  • Avoid heavy barbell bench press for beginners — use Push-Up variations, DB Floor Press
+- Beginner female push movement: use Knee Push-Up as primary (not standard Push-Up), progress to Incline Push-Up, then full Push-Up
+- Beginner female pull movement: Inverted Row is the PRIMARY exercise (Pull-Up is too difficult for most female beginners)
+- Core: prioritize anti-rotation and stability — Dead Bug, Bird Dog, Plank variations, Glute Bridge March — NOT just crunches
+- Split: Full Body or Upper/Lower — never program a dedicated "chest day" for female clients (unless explicitly requested)
+- Legs/glutes must appear MINIMUM 2× per week in any program ≥4 days
+
+MALE:
+- Upper body is the PRIORITY: dedicate 55% of weekly volume to chest, back, shoulders, and arms
+- Program backbone (include in every week): compound Push (Bench Press or OHP), compound Pull (Row + Pull-Up/Chin-Up), compound Legs (Squat + Deadlift)
+- Include direct arm work (dedicated biceps + triceps exercises) in at least 2 sessions per week
+- Shoulder width: Lateral Raise must appear on every upper body session
+- Lower body: compound-dominant (Squat, Deadlift) with minimal glute isolation — no Fire Hydrant or Donkey Kick
+- Main lift rep range: 5-10 for strength-hypertrophy hybrid; isolation: 10-15
+
+LEVEL-SPECIFIC ADAPTATION — override default exercise selection strictly per level:
+
+BEGINNER (0-1 year experience):
+- Sets: 2-3 per exercise ONLY (never 4-5 for beginners — recovery capacity is limited)
+- Rest: 90s minimum for compounds, 60s for isolation — err on MORE rest
+- Movement regressions — use THESE instead of standard versions:
+  • Push: Knee Push-Up → (when mastered) → standard Push-Up → (then) → DB Press
+  • Pull: Inverted Row or Band-Assisted Pull-Up — NEVER unassisted Pull-Up for beginner
+  • Squat: Bodyweight Box Squat or Goblet Squat — NOT loaded Barbell Back Squat
+  • Hip Hinge: Glute Bridge → (then) → Dumbbell Romanian Deadlift — NOT Conventional Deadlift
+  • Overhead: DB Shoulder Press with light weight — NOT Barbell OHP
+  • Core: Dead Bug, Bird Dog, modified Plank — NOT Hanging Leg Raise or Ab Wheel
+- Every exercise MUST have an Arabic technique cue in the note field (required for beginners)
+- No supersets for beginners — straight sets only
+- Total working sets per session: 10-14 maximum
+- RPE: stop 3-4 reps before failure — technique mastery is the goal, not intensity
+
+INTERMEDIATE (1-3 years):
+- Sets: 3-4 per exercise
+- Use standard movement versions; single-leg and unilateral variations appropriate
+- Can include supersets for isolation exercises only (not compound + compound)
+- Include progressive overload note on at least 2 main lifts per session
+- RPE 7-8: 2 reps in reserve
+
+ADVANCED (3+ years):
+- Sets: 4-5 for main movements
+- Complex variations mandatory: Paused Squat, Deficit Deadlift, Archer Push-Up, Nordic Curl, Pistol Squat, Single-Arm movements
+- Intensity techniques expected: drop sets, supersets (including compound), rest-pause, mechanical drop sets
+- Total working sets per session: 18-24
+- RPE 8-9: 1-2 reps in reserve on most working sets`
 
 const FALLBACKS = {
   2: {
@@ -955,9 +1011,548 @@ const FALLBACKS_BW = {
   },
 }
 
-function getFallback(n, equipment) {
-  if (equipment === 'home')       return FALLBACKS_HOME[n] || FALLBACKS_HOME[3]
-  if (equipment === 'bodyweight') return FALLBACKS_BW[n]   || FALLBACKS_BW[3]
+// Female-specific bodyweight fallbacks — glute/hip priority, beginner-friendly regressions
+const FALLBACKS_BW_F = {
+  2: {
+    daysPerWeek: 2, duration: 40, level: 'beginner',
+    note: 'برنامجك لوزن الجسم 2 أيام — تركيز على الأرداف والجزء السفلي.',
+    tips: ['راحة يوم على الأقل بين الجلستين', 'نزول بطيء في كل تكرار — جودة أهم من كمية', 'ركّزي على ضغط الأرداف في أعلى كل حركة'],
+    days: [
+      {
+        name: 'Full Body A — Upper + Glutes',
+        focus: 'كامل',
+        description: 'جزء علوي وأرداف',
+        warmup: [
+          { name: 'Jumping Jacks', duration: '2 min', note: 'دفئي الجسم بلطف' },
+          { name: 'Glute Bridge March', duration: '2 min', note: 'تنشيط عضلات الأرداف قبل التمرين' },
+        ],
+        exercises: [
+          { name: 'Knee Push-Up', sets: 3, reps: '10-15', rest: '60s', note: 'ركبتك على الأرض — نزول بطيء 3 ثوانٍ' },
+          { name: 'Glute Bridge', sets: 3, reps: '20', rest: '45s', note: 'ارفعي الورك وضغطي الأرداف بقوة في الأعلى' },
+          { name: 'Donkey Kick', sets: 3, reps: '20 each', rest: '30s', note: 'اركعي على اليدين والركبتين — ارفعي الساق للأعلى مع ضغط الردف' },
+          { name: 'Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: 'ركبة منحنية — ارفعي للجانب كالكلب' },
+          { name: 'Plank', sets: 3, reps: '30s hold', rest: '30s', note: 'جسمك خط مستقيم — بطن محكمة' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: 'تمدد عميق للأرداف والورك' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body B — Legs + Core',
+        focus: 'أرجل وبطن',
+        description: 'أرجل كاملة وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: 'تحريك مفصل الورك بالكامل' },
+          { name: 'Bodyweight Squat', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Sumo Squat', sets: 4, reps: '20', rest: '60s', note: 'قدماك أعرض من الكتف — ساعدي الأرداف على التفعيل' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '45s', note: 'خطوة للخلف — الركبة الأمامية فوق الكاحل' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: 'ساق واحدة مرفوعة — ضغطي الردف جيداً' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: 'ظهرك ملاصق للأرض — حركة بطيئة ومتحكمة' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+  3: {
+    daysPerWeek: 3, duration: 45, level: 'beginner',
+    note: 'برنامج وزن الجسم للمرأة — تركيز على الأرداف والجزء السفلي بدون معدات.',
+    tips: ['ركّزي على ضغط الأرداف في كل تمرين', 'النزول البطيء يضاعف التأثير', 'الاتساق هو السر — 3 أيام أسبوعياً بانتظام'],
+    days: [
+      {
+        name: 'Upper Body Day',
+        focus: 'صدر وكتف',
+        description: 'جزء علوي — كتف وصدر وظهر',
+        warmup: [
+          { name: 'Arm Circles', duration: '2 min', note: 'دفئي الكتف' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: 'تنشيط عضلات الظهر العلوي' },
+        ],
+        exercises: [
+          { name: 'Knee Push-Up', sets: 3, reps: '10-12', rest: '60s', note: 'ركبتك على الأرض — ركّزي على الصدر والكتف' },
+          { name: 'Pike Push-Up', sets: 3, reps: '8-10', rest: '60s', note: 'ورك للسماء — للكتف الأمامي' },
+          { name: 'Inverted Row', sets: 3, reps: '8-12', rest: '60s', note: 'طاولة أو عارضة منخفضة — اسحبي الصدر للأعلى' },
+          { name: 'Superman Hold', sets: 3, reps: '12', rest: '45s', note: 'ارفعي اليدين والقدمين معاً — للظهر السفلي' },
+          { name: 'Tricep Dip', sets: 3, reps: '10', rest: '45s', note: 'يداك على كرسي ثابت — مرفق للخلف' },
+        ],
+        cooldown: [
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs Day',
+        focus: 'أرجل',
+        description: 'أرداف وأرجل — التركيز الأساسي',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: 'تحريك مفصل الورك' },
+          { name: 'Glute Bridge', duration: '2×15', note: 'تنشيط الأرداف' },
+        ],
+        exercises: [
+          { name: 'Glute Bridge', sets: 4, reps: '25', rest: '45s', note: 'اضغطي الأرداف بقوة في أعلى نقطة — احتفظي ثانية' },
+          { name: 'Sumo Squat', sets: 4, reps: '20', rest: '60s', note: 'قدماك أعرض بكثير من الكتف — للأرداف والداخلي' },
+          { name: 'Donkey Kick', sets: 3, reps: '20 each', rest: '30s', note: 'ركبة منحنية 90° — ارفعي للسقف' },
+          { name: 'Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: 'للأرداف الجانبية — ارفعي للجانب' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '45s', note: 'خطوة للخلف — الجذع منتصب' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: 'تمدد عميق للأرداف' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body + Core',
+        focus: 'كامل',
+        description: 'جسم كامل وبطن',
+        warmup: [
+          { name: 'High Knees', duration: '2 min', note: '' },
+          { name: 'Hip Circle', duration: '1 min each side', note: '' },
+        ],
+        exercises: [
+          { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '60s', note: 'ظهر مستقيم — فخذ موازٍ للأرض' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: 'ساق واحدة مرفوعة — تحكّمي في الهبوط' },
+          { name: 'Incline Push-Up', sets: 3, reps: '10-12', rest: '45s', note: 'يداك على طاولة أو كرسي' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: 'ظهرك ملاصق للأرض تماماً' },
+          { name: 'Bird Dog', sets: 3, reps: '10 each side', rest: '30s', note: 'ذراع وساق معاكسة معاً — حافظي على التوازن' },
+          { name: 'Plank', sets: 3, reps: '30s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+  4: {
+    daysPerWeek: 4, duration: 45, level: 'beginner',
+    note: 'برنامج 4 أيام للمرأة — Upper/Lower مع تركيز مضاعف على الأرداف.',
+    tips: [
+      'يوم الأرداف والأرجل هو أهم يوم في البرنامج — لا تتجاهليه',
+      'الثبات في الأداء الصحيح يبني جسماً أفضل من رفع أثقال بشكل خاطئ',
+      'خذي راحة يوم بين كل يومين متتاليين',
+    ],
+    days: [
+      {
+        name: 'Upper Body A',
+        focus: 'صدر وكتف',
+        description: 'جزء علوي أ',
+        warmup: [
+          { name: 'Arm Circles + Neck Rolls', duration: '2 min', note: '' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Knee Push-Up', sets: 3, reps: '12', rest: '60s', note: 'نزول بطيء 3 ثوانٍ — صدر مستقيم' },
+          { name: 'Pike Push-Up', sets: 3, reps: '8-10', rest: '60s', note: 'للكتف — ورك للسقف' },
+          { name: 'Inverted Row', sets: 3, reps: '8-10', rest: '60s', note: 'طاولة أو عارضة منخفضة' },
+          { name: 'Superman Hold', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '30s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: '' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs A',
+        focus: 'أرجل',
+        description: 'أرداف وأرجل أ — هيمنة الأرداف',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: 'تنشيط قوي للأرداف' },
+          { name: 'Hip Circle', duration: '1 min each side', note: '' },
+        ],
+        exercises: [
+          { name: 'Glute Bridge', sets: 4, reps: '25', rest: '45s', note: 'اضغطي الأرداف وثبّتي في الأعلى ثانية كاملة' },
+          { name: 'Sumo Squat', sets: 4, reps: '20', rest: '60s', note: 'قدماك أعرض بكثير — أصابع للخارج' },
+          { name: 'Donkey Kick', sets: 3, reps: '20 each', rest: '30s', note: 'اركعي على اليدين والركبتين' },
+          { name: 'Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: 'للأرداف الجانبية' },
+          { name: 'Single-Leg Calf Raise', sets: 3, reps: '20 each', rest: '30s', note: 'استمسكي بالحائط للتوازن' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Upper Body B',
+        focus: 'ظهر',
+        description: 'جزء علوي ب — ظهر وبطن',
+        warmup: [
+          { name: 'Cat-Cow Stretch', duration: '2 min', note: '' },
+          { name: 'Dead Hang', duration: '15s hold', note: '' },
+        ],
+        exercises: [
+          { name: 'Inverted Row', sets: 4, reps: '10-12', rest: '60s', note: 'اسحبي الصدر للأعلى — مرفقك للخلف' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Incline Push-Up', sets: 3, reps: '12', rest: '45s', note: 'يداك على كرسي أو طاولة' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: 'ظهرك ملاصق للأرض تماماً' },
+          { name: 'Bird Dog', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Cat-Cow Stretch', duration: '1 min', note: '' },
+        ],
+      },
+      {
+        name: 'Legs & Core B',
+        focus: 'أرجل وبطن',
+        description: 'أرجل ب — كوادريسبس وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '60s', note: 'ظهر مستقيم — فخذ موازٍ للأرض' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '45s', note: 'خطوة للخلف — جذع منتصب' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: 'ارفعي الردف للأعلى واضغطي' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+          { name: 'Plank', sets: 3, reps: '35s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Pigeon Pose', duration: '40s each', note: '' },
+        ],
+      },
+    ],
+  },
+  5: {
+    daysPerWeek: 5, duration: 50, level: 'intermediate',
+    note: 'برنامج 5 أيام للمرأة — جلستان للأرداف والأرجل أسبوعياً لأقصى نتيجة.',
+    tips: [
+      'يومَي الأرداف هما قلب البرنامج — لا تتنازلي عنهما',
+      'ركّزي على الإحساس العضلي وليس فقط إنهاء التكرارات',
+      'النوم والتغذية الجيدة تكمل عملك في التمرين',
+    ],
+    days: [
+      {
+        name: 'Upper Body A',
+        focus: 'صدر وكتف',
+        description: 'جزء علوي أ',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 4, reps: '12-15', rest: '60s', note: 'إذا كان صعباً استخدمي Knee Push-Up' },
+          { name: 'Pike Push-Up', sets: 3, reps: '10-12', rest: '60s', note: 'ورك للسماء — للكتف' },
+          { name: 'Inverted Row', sets: 4, reps: '10-12', rest: '60s', note: 'اسحبي الصدر بالكامل' },
+          { name: 'Tricep Dip', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs A',
+        focus: 'أرجل',
+        description: 'أرداف وأرجل أ — أولوية قصوى',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: '' },
+          { name: 'Hip Circle', duration: '1 min each', note: '' },
+        ],
+        exercises: [
+          { name: 'Glute Bridge', sets: 4, reps: '25', rest: '45s', note: 'اضغطي الأرداف وثبّتي في الأعلى' },
+          { name: 'Sumo Squat', sets: 4, reps: '20', rest: '60s', note: 'قدماك واسعتان — للأرداف والداخلي' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: '' },
+          { name: 'Donkey Kick', sets: 3, reps: '20 each', rest: '30s', note: 'اضغطي الردف في الأعلى' },
+          { name: 'Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Core & Conditioning',
+        focus: 'بطن',
+        description: 'بطن وتكييف',
+        warmup: [
+          { name: 'High Knees', duration: '2 min', note: '' },
+          { name: 'Jumping Jacks', duration: '1 min', note: '' },
+        ],
+        exercises: [
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+          { name: 'Bird Dog', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+          { name: 'Mountain Climber', sets: 3, reps: '30s', rest: '30s', note: '' },
+          { name: 'Burpee', sets: 3, reps: '8', rest: '60s', note: 'تمرين كامل الجسم' },
+          { name: 'Glute Bridge', sets: 3, reps: '20', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Cat-Cow Stretch', duration: '1 min', note: '' },
+        ],
+      },
+      {
+        name: 'Upper Body B',
+        focus: 'ظهر',
+        description: 'جزء علوي ب',
+        warmup: [
+          { name: 'Cat-Cow + Thoracic Rotation', duration: '3 min', note: '' },
+          { name: 'Scapula Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Inverted Row', sets: 4, reps: '12', rest: '60s', note: '' },
+          { name: 'Chin-Up', sets: 3, reps: '4-6 (or assisted)', rest: '90s', note: 'إذا كان صعباً استخدمي Inverted Row' },
+          { name: 'Incline Push-Up', sets: 3, reps: '12-15', rest: '45s', note: '' },
+          { name: 'Superman Hold', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Lat Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs B',
+        focus: 'أرجل وبطن',
+        description: 'أرداف وأرجل ب — كوادريسبس',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Bodyweight Squat', sets: 4, reps: '20', rest: '60s', note: '' },
+          { name: 'Reverse Lunge', sets: 3, reps: '12 each', rest: '45s', note: '' },
+          { name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: 'قدمك الخلفية على كرسي' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+        ],
+      },
+    ],
+  },
+}
+
+// Female-specific home gym fallbacks — glute/hip priority with dumbbells and bands
+const FALLBACKS_HOME_F = {
+  2: {
+    daysPerWeek: 2, duration: 50, level: 'beginner',
+    note: 'برنامج منزلي 2 أيام للمرأة — دمبل ومطاط مع تركيز على الأرداف.',
+    tips: ['راحة يوم على الأقل بين الجلستين', 'ركّزي على الإحساس العضلي في الأرداف', 'الدمبل الخفيف مع أداء صحيح أفضل من الثقيل بشكل خاطئ'],
+    days: [
+      {
+        name: 'Full Body A — Upper + Glutes',
+        focus: 'كامل',
+        description: 'جزء علوي وأرداف',
+        warmup: [
+          { name: 'Arm Circles + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Glute Bridge March', duration: '2 min', note: 'تنشيط الأرداف' },
+        ],
+        exercises: [
+          { name: 'Knee Push-Up', sets: 3, reps: '10-12', rest: '60s', note: 'نزول بطيء 3 ثوانٍ' },
+          { name: 'Dumbbell Row', sets: 3, reps: '12', rest: '60s', note: 'كوع للسقف — اسحبي نحو الورك' },
+          { name: 'Dumbbell Hip Thrust', sets: 4, reps: '20', rest: '45s', note: 'كتفك على الكنبة — دمبل على الورك — اضغطي الأرداف' },
+          { name: 'Resistance Band Kickback', sets: 3, reps: '20 each', rest: '30s', note: 'ثبّتي المطاط على الكاحل' },
+          { name: 'Plank', sets: 3, reps: '35s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Full Body B — Legs + Core',
+        focus: 'أرجل وبطن',
+        description: 'أرجل كاملة وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Sumo Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Sumo Squat', sets: 4, reps: '15', rest: '60s', note: 'قدماك أعرض بكثير — دمبل بين اليدين' },
+          { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: '12', rest: '90s', note: 'ركبة خفيف — ظهر مستقيم' },
+          { name: 'Dumbbell Reverse Lunge', sets: 3, reps: '12 each', rest: '45s', note: '' },
+          { name: 'Resistance Band Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: 'مطاط فوق الركبة' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+        ],
+      },
+    ],
+  },
+  3: {
+    daysPerWeek: 3, duration: 50, level: 'beginner',
+    note: 'برنامج منزلي 3 أيام للمرأة — دمبل ومطاط مع تركيز مضاعف على الأرداف والجزء السفلي.',
+    tips: ['يوم الأرداف هو القلب — لا تتجاوزيه', 'استخدمي مطاط المقاومة لتفعيل الأرداف أكثر', 'ركّزي على الضغط العضلي لا على إنهاء التكرارات'],
+    days: [
+      {
+        name: 'Push Day',
+        focus: 'صدر وكتف',
+        description: 'جزء علوي — كتف وصدر وترايسبس',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Knee Push-Up', sets: 3, reps: '12-15', rest: '60s', note: 'نزول بطيء 3 ثوانٍ — أتقني الأداء أولاً' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '12-15', rest: '60s', note: 'اضغطي للأعلى بالكامل' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15-20', rest: '45s', note: 'ارفعي ببطء للأسفل — للكتف الجانبي' },
+          { name: 'Resistance Band Tricep Pushdown', sets: 3, reps: '15-20', rest: '45s', note: 'ثبّتي المطاط فوق الباب' },
+          { name: 'Bird Dog', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs Day',
+        focus: 'أرجل',
+        description: 'أرداف وأرجل — اليوم الأهم',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: 'تنشيط قوي للأرداف' },
+          { name: 'Resistance Band Side Walk', duration: '2 min', note: 'مطاط فوق الركبة — خطوات جانبية' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Hip Thrust', sets: 4, reps: '20', rest: '45s', note: 'كتفك على الكنبة — دمبل على الورك — اضغطي الأرداف بقوة' },
+          { name: 'Dumbbell Sumo Squat', sets: 4, reps: '15', rest: '60s', note: 'قدماك أعرض بكثير من الكتف' },
+          { name: 'Dumbbell Romanian Deadlift', sets: 3, reps: '12', rest: '90s', note: 'ركبة خفيف مكسورة — ظهر مستقيم' },
+          { name: 'Resistance Band Kickback', sets: 3, reps: '20 each', rest: '30s', note: 'ثبّتي المطاط على الكاحل' },
+          { name: 'Resistance Band Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: 'مطاط فوق الركبة' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: 'تمدد عميق للأرداف' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Pull Day + Core',
+        focus: 'ظهر وبطن',
+        description: 'ظهر وبطن',
+        warmup: [
+          { name: 'Cat-Cow Stretch', duration: '2 min', note: '' },
+          { name: 'Resistance Band Row', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Row', sets: 4, reps: '12', rest: '60s', note: 'كوع للسقف — اسحبي نحو الورك' },
+          { name: 'Resistance Band Pull-Apart', sets: 3, reps: '20', rest: '30s', note: 'مفيد لتقوية الكفة المدوّرة والظهر العلوي' },
+          { name: 'Dumbbell Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', note: 'انحني للأمام — ذراعان للخلف' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+          { name: 'Plank', sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Cat-Cow Stretch', duration: '1 min', note: '' },
+        ],
+      },
+    ],
+  },
+  4: {
+    daysPerWeek: 4, duration: 55, level: 'intermediate',
+    note: 'برنامج منزلي 4 أيام للمرأة — Upper/Lower مع جلستين للأرداف أسبوعياً.',
+    tips: [
+      'يومَي الأرداف أولوية — لا تفوّتيهما أبداً',
+      'زيدي وزن الدمبل عندما تنتهين من التكرارات بسهولة تامة',
+      'الراحة 7-8 ساعات ليلياً تبني العضل خلال النوم',
+    ],
+    days: [
+      {
+        name: 'Upper A — Push',
+        focus: 'صدر وكتف',
+        description: 'جزء علوي أ — دفع',
+        warmup: [
+          { name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: '' },
+          { name: 'Knee Push-Up', duration: '2×10', note: '' },
+        ],
+        exercises: [
+          { name: 'Push-Up', sets: 3, reps: '12-15', rest: '60s', note: 'إذا صعب استخدمي Knee Push-Up' },
+          { name: 'Dumbbell Floor Press', sets: 3, reps: '12-15', rest: '60s', note: 'استلقي على الأرض — مرفق بزاوية 45°' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '12-15', rest: '60s', note: '' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15-20', rest: '45s', note: 'للكتف الجانبي والعرض' },
+          { name: 'Resistance Band Tricep Pushdown', sets: 3, reps: '15-20', rest: '45s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Chest Doorway Stretch', duration: '30s hold', note: '' },
+          { name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs A',
+        focus: 'أرجل',
+        description: 'أرداف وأرجل أ — الأرداف أولاً',
+        warmup: [
+          { name: 'Glute Bridge March', duration: '3 min', note: '' },
+          { name: 'Resistance Band Side Walk', duration: '2 min', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Hip Thrust', sets: 4, reps: '20', rest: '45s', note: 'كتفك على الكنبة — اضغطي الأرداف بقوة' },
+          { name: 'Dumbbell Sumo Squat', sets: 4, reps: '15', rest: '60s', note: 'قدماك واسعتان جداً' },
+          { name: 'Resistance Band Kickback', sets: 3, reps: '20 each', rest: '30s', note: '' },
+          { name: 'Resistance Band Fire Hydrant', sets: 3, reps: '20 each', rest: '30s', note: '' },
+          { name: 'Standing Calf Raise', sets: 3, reps: '20-25', rest: '30s', note: 'امسكي دمبل للمقاومة' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+          { name: 'Seated Hamstring Stretch', duration: '40s each', note: '' },
+        ],
+      },
+      {
+        name: 'Upper B — Pull',
+        focus: 'ظهر وبايسبس',
+        description: 'جزء علوي ب — سحب',
+        warmup: [
+          { name: 'Cat-Cow + Thoracic Rotation', duration: '3 min', note: '' },
+          { name: 'Resistance Band Row', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Row', sets: 4, reps: '12', rest: '60s', note: 'كوع للسقف' },
+          { name: 'Resistance Band Pull-Apart', sets: 3, reps: '20', rest: '30s', note: '' },
+          { name: 'Dumbbell Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', note: 'انحني للأمام' },
+          { name: 'Dumbbell Curl', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Dead Bug', sets: 3, reps: '10 each side', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Child\'s Pose', duration: '45s', note: '' },
+          { name: 'Bicep Wall Stretch', duration: '30s each', note: '' },
+        ],
+      },
+      {
+        name: 'Glutes & Legs B',
+        focus: 'أرجل وبطن',
+        description: 'أرداف وأرجل ب — هامسترينج وكوادريسبس وبطن',
+        warmup: [
+          { name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' },
+          { name: 'Bodyweight Squat', duration: '2×15', note: '' },
+        ],
+        exercises: [
+          { name: 'Dumbbell Romanian Deadlift', sets: 4, reps: '12-15', rest: '90s', note: 'ركبة خفيف مكسورة — ظهر مستقيم' },
+          { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '12 each', rest: '60s', note: 'قدمك الخلفية على كرسي' },
+          { name: 'Dumbbell Walking Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Single-Leg Glute Bridge', sets: 3, reps: '15 each', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [
+          { name: 'Pigeon Pose', duration: '45s each', note: '' },
+          { name: 'Standing Quad Stretch', duration: '30s each', note: '' },
+        ],
+      },
+    ],
+  },
+}
+
+function getFallback(n, equipment, gender) {
+  if (equipment === 'home') {
+    if (gender === 'female') return FALLBACKS_HOME_F[n] || FALLBACKS_HOME_F[3]
+    return FALLBACKS_HOME[n] || FALLBACKS_HOME[3]
+  }
+  if (equipment === 'bodyweight') {
+    if (gender === 'female') return FALLBACKS_BW_F[n] || FALLBACKS_BW_F[3]
+    return FALLBACKS_BW[n] || FALLBACKS_BW[3]
+  }
   return FALLBACKS[n] || FALLBACKS[3]
 }
 
@@ -1006,8 +1601,7 @@ export async function POST(req) {
   const muscleMap = { chest: 'chest (pectorals)', back: 'back (lats, rhomboids, traps)', shoulders: 'shoulders (deltoids)', arms: 'arms (biceps + triceps)', legs: 'legs (quads, hamstrings, calves)', glutes: 'glutes and hip complex', core: 'core (abs, obliques, lower back)' }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    // Pick a fallback appropriate to equipment
-    const fb = getFallback(n, safeEquip)
+    const fb = getFallback(n, safeEquip, safeGender)
     return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, ai: false })
   }
 
@@ -1049,13 +1643,26 @@ export async function POST(req) {
   // Build full system prompt with optional equipment constraint
   const SYSTEM_PROMPT = SYSTEM_PROMPT_BASE + exerciseConstraint
 
+  const genderDirective = safeGender === 'female'
+    ? `- Gender: FEMALE — MANDATORY: prioritize glutes and lower body (≥55% volume), include ≥2 glute isolation exercises per lower body day (Hip Thrust/Glute Bridge/Donkey Kick/Fire Hydrant), use higher reps for glutes (15-25), use beginner-appropriate push regressions (Knee Push-Up, Inverted Row)`
+    : safeGender === 'male'
+    ? `- Gender: MALE — MANDATORY: prioritize upper body compound lifts (Bench/Row/OHP/Pull-Up), include direct arm work 2× per week, Lateral Raise on every upper body day`
+    : `- Gender: unspecified — use balanced programming`
+
+  const levelDirective = safeLevel === 'beginner'
+    ? `- Level: BEGINNER — MANDATORY: 2-3 sets only, 90s+ rest, use movement regressions (Knee Push-Up not Push-Up, Inverted Row not Pull-Up, Goblet Squat not Barbell Squat), technique note required on every exercise, no supersets`
+    : safeLevel === 'advanced'
+    ? `- Level: ADVANCED — use complex variations (Paused/Deficit lifts, Archer Push-Up, Nordic Curl, Single-Leg), include intensity techniques (drop sets, supersets, rest-pause), 4-5 sets, higher total volume`
+    : `- Level: ${levelMap[safeLevel]}`
+
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}
 - Split Type: ${splitMap[safeSplit]}
 ${safeMuscle ? `- Muscle Priority: ${muscleMap[safeMuscle]} — add 1 extra exercise and +1 set on all exercises targeting this muscle group` : ''}
-- Level: ${levelMap[safeLevel]}
+${genderDirective}
+${levelDirective}
 - Equipment: ${equipMap[safeEquip]}
-- Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}, ${safeGender === 'male' ? 'Male' : safeGender === 'female' ? 'Female' : 'unspecified gender'}
+- Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
 
 Return exactly this JSON (${n} days):
@@ -1093,7 +1700,7 @@ ${schema}`
     return NextResponse.json({ ...validatedPlan, ai: true })
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
-    const fb = getFallback(n, safeEquip)
+    const fb = getFallback(n, safeEquip, safeGender)
     return NextResponse.json({ ...fb, daysPerWeek: n, ai: false })
   }
 }
