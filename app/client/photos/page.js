@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { GitCompare, Grid } from 'lucide-react'
 
 const TYPE_CONFIG = {
   before:   { label: 'قبل',    emoji: '📸', badge: 'bg-blue-100 text-blue-700',    border: 'border-blue-300' },
@@ -68,6 +69,9 @@ export default function PhotosPage() {
   // Delete confirm
   const [confirmId, setConfirmId] = useState(null)
   const longPressTimer = useRef(null)
+
+  // Comparison mode
+  const [compareMode, setCompareMode] = useState(false)
 
   // ── Load photos ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -188,10 +192,24 @@ export default function PhotosPage() {
       </div>
 
       {/* Page header */}
-      <div>
-        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">معرض الصور</p>
-        <h1 className="text-2xl font-extrabold text-slate-900">صور قبل وبعد 📸</h1>
-        <p className="text-sm text-slate-400 mt-1">ارفع صورك لتتابع تحولك مع الوقت</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">معرض الصور</p>
+          <h1 className="text-2xl font-extrabold text-slate-900">صور قبل وبعد 📸</h1>
+          <p className="text-sm text-slate-400 mt-1">ارفع صورك لتتابع تحولك مع الوقت</p>
+        </div>
+        {photos.length >= 2 && (
+          <button
+            onClick={() => setCompareMode(m => !m)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold transition flex-shrink-0
+              ${compareMode
+                ? 'bg-[#0a0a0a] text-[#fbbf24]'
+                : 'bg-white border border-slate-200 text-slate-600 hover:border-[#fbbf24] hover:text-[#fbbf24]'}`}
+          >
+            {compareMode ? <Grid className="w-4 h-4" /> : <GitCompare className="w-4 h-4" />}
+            {compareMode ? 'المعرض' : 'مقارنة'}
+          </button>
+        )}
       </div>
 
       {/* Upload card */}
@@ -312,6 +330,59 @@ export default function PhotosPage() {
           </button>
         </div>
       </div>
+
+      {/* Comparison mode */}
+      {compareMode && photos.length >= 2 && (() => {
+        const before   = [...photos].reverse().find(p => p.type === 'before')
+        const after    = [...photos].reverse().find(p => p.type === 'after')
+        const progress = [...photos].reverse().find(p => p.type === 'progress')
+        const left     = before || photos[photos.length - 1]
+        const right    = after || progress || photos[0]
+        if (!left || !right || left.id === right.id) return (
+          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+            <p className="text-4xl mb-3">📸</p>
+            <p className="font-extrabold text-slate-700">تحتاج صورة "قبل" وصورة "بعد" للمقارنة</p>
+            <p className="text-sm text-slate-400 mt-1">ارفع صورتين على الأقل من نوعين مختلفين</p>
+          </div>
+        )
+        const cfgL = TYPE_CONFIG[left.type]  || TYPE_CONFIG.progress
+        const cfgR = TYPE_CONFIG[right.type] || TYPE_CONFIG.progress
+        return (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-[#0a0a0a] px-5 py-3 flex items-center gap-2">
+              <GitCompare className="w-4 h-4 text-[#fbbf24]" />
+              <p className="text-white font-extrabold text-sm">مقارنة التحول</p>
+            </div>
+            <div className="grid grid-cols-2 gap-0">
+              {[{ photo: left, cfg: cfgL }, { photo: right, cfg: cfgR }].map(({ photo, cfg }, i) => (
+                <div key={photo.id} className={`relative ${i === 0 ? 'border-l border-slate-100' : ''}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.dataUrl}
+                    alt={cfg.label}
+                    className="w-full aspect-square object-cover"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
+                    <span className={`inline-block text-xs font-extrabold px-2 py-0.5 rounded-full ${cfg.badge}`}>
+                      {cfg.emoji} {cfg.label}
+                    </span>
+                    <p className="text-white/60 text-[10px] font-medium mt-0.5">{fmtDate(photo.date)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {left.note || right.note ? (
+              <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+                {[left, right].map(p => (
+                  <div key={p.id} className="px-3 py-2">
+                    {p.note && <p className="text-xs text-slate-500 font-medium truncate">{p.note}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )
+      })()}
 
       {/* Gallery */}
       {photos.length > 0 ? (

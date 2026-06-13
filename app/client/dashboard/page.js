@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown } from 'lucide-react'
 
 const PLAN_DISPLAY = {
   basic:    { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -1007,6 +1007,180 @@ function ReceiptUpload() {
   )
 }
 
+/* ── Weight progress mini chart ─────────────────────────────────────────── */
+function WeightProgressWidget() {
+  const [points, setPoints] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/client/checkin')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (!Array.isArray(data)) { setPoints([]); return }
+        const withW = data.filter(c => c.weight).slice(-8)
+        setPoints(withW.map(c => ({ w: c.weight, d: c.date })))
+      })
+      .catch(() => setPoints([]))
+  }, [])
+
+  if (!points || points.length < 2) return null
+
+  const min   = Math.min(...points.map(p => p.w))
+  const max   = Math.max(...points.map(p => p.w))
+  const range = max - min || 1
+  const W = 200, H = 48, PAD = 6
+  const xs = points.map((_, i) => PAD + (i / (points.length - 1)) * (W - PAD * 2))
+  const ys = points.map(p => H - PAD - ((p.w - min) / range) * (H - PAD * 2))
+  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x} ${ys[i]}`).join(' ')
+
+  const first = points[0].w
+  const last  = points[points.length - 1].w
+  const diff  = (last - first).toFixed(1)
+  const down  = last < first
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <TrendingDown className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div>
+            <p className="font-extrabold text-slate-800 text-sm">تطور الوزن</p>
+            <p className="text-[10px] text-slate-400 font-medium">من التقارير الأسبوعية</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className={`text-lg font-extrabold ${down ? 'text-emerald-600' : diff > 0 ? 'text-orange-500' : 'text-slate-600'}`}>
+            {diff > 0 ? '+' : ''}{diff} كغ
+          </p>
+          <p className="text-[10px] text-slate-400 font-medium">{points.length} قراءات</p>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
+        <path d={path} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {xs.map((x, i) => (
+          <circle key={i} cx={x} cy={ys[i]} r="3" fill={i === points.length - 1 ? '#10b981' : '#d1fae5'} stroke="#10b981" strokeWidth="1.5" />
+        ))}
+      </svg>
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px] text-slate-400 font-medium">{points[0].w} كغ</span>
+        <span className="text-[10px] text-emerald-600 font-bold">{last} كغ الآن</span>
+      </div>
+      <Link href="/client/checkins"
+        className="block text-center text-xs font-bold text-slate-400 hover:text-slate-600 transition mt-2">
+        كل التقارير ←
+      </Link>
+    </div>
+  )
+}
+
+/* ── Achievement badges ─────────────────────────────────────────────────── */
+function AchievementBadgesWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/client/checkin').then(r => r.ok ? r.json() : []),
+      fetch('/api/client/training-log').then(r => r.ok ? r.json() : {}),
+      fetch('/api/client/logs').then(r => r.ok ? r.json() : []),
+    ])
+      .then(([checkins, trainingLog, logs]) => setData({ checkins, trainingLog, logs }))
+      .catch(() => {})
+  }, [])
+
+  if (!data) return null
+
+  const checkins    = Array.isArray(data.checkins)    ? data.checkins    : []
+  const trainingLog = data.trainingLog && typeof data.trainingLog === 'object' ? data.trainingLog : {}
+  const logs        = Array.isArray(data.logs)        ? data.logs        : []
+
+  // Compute badges
+  const trainDays = Object.keys(trainingLog).filter(k => trainingLog[k]).length
+  const logDays   = logs.length
+  const streak    = (() => {
+    let s = 0
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+      if (trainingLog[d]) s++
+      else if (i > 0) break
+    }
+    return s
+  })()
+
+  const badges = [
+    { id: 'first_checkin',  icon: '📋', label: 'أول تقرير',          desc: 'أرسلت أول تقرير أسبوعي',            earned: checkins.length >= 1 },
+    { id: 'checkin_4',      icon: '🗓️', label: 'شهر من التقارير',    desc: '4 تقارير أسبوعية متتالية',          earned: checkins.length >= 4 },
+    { id: 'checkin_12',     icon: '📅', label: '3 أشهر',             desc: '12 تقرير أسبوعي',                   earned: checkins.length >= 12 },
+    { id: 'train_7',        icon: '💪', label: 'أسبوع تدريب',        desc: 'سجّلت 7 أيام تدريب',                earned: trainDays >= 7 },
+    { id: 'train_30',       icon: '🏋️', label: 'شهر تدريب',          desc: 'سجّلت 30 يوم تدريب',               earned: trainDays >= 30 },
+    { id: 'streak_7',       icon: '🔥', label: 'أسبوع متتالي',       desc: '7 أيام تدريب متواصلة',              earned: streak >= 7 },
+    { id: 'streak_30',      icon: '⚡', label: 'شهر متواصل',         desc: '30 يوم تدريب متواصل',               earned: streak >= 30 },
+    { id: 'journal_7',      icon: '✨', label: 'مداوم على اليومية',   desc: 'سجّلت 7 أيام في اليومية',           earned: logDays >= 7 },
+    { id: 'journal_30',     icon: '🏆', label: 'مثابر',              desc: 'سجّلت 30 يوم في اليومية',           earned: logDays >= 30 },
+  ]
+
+  const earned = badges.filter(b => b.earned)
+  if (earned.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+          <Trophy className="w-4 h-4 text-amber-500" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">إنجازاتي</p>
+          <p className="text-[10px] text-slate-400 font-medium">{earned.length} / {badges.length} شارة مكتسبة</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {badges.map(b => (
+          <div
+            key={b.id}
+            title={b.desc}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition
+              ${b.earned
+                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                : 'bg-slate-50 text-slate-300 border border-slate-100 grayscale opacity-50'
+              }`}
+          >
+            <span>{b.icon}</span>
+            <span>{b.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Quick links to new features ─────────────────────────────────────────── */
+function QuickLinksWidget() {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <Link href="/client/chat"
+        className="group bg-[#0a0a0a] rounded-2xl p-4 flex items-center gap-3 hover:bg-[#1a1a1a] transition">
+        <div className="w-9 h-9 bg-[#fbbf24]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+          <MessageCircle className="w-5 h-5 text-[#fbbf24]" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-extrabold text-white text-sm">مساعدي</p>
+          <p className="text-white/40 text-[10px] font-medium truncate">أسئلة التغذية والتدريب</p>
+        </div>
+      </Link>
+      <Link href="/client/checkins"
+        className="group bg-violet-600 rounded-2xl p-4 flex items-center gap-3 hover:bg-violet-700 transition">
+        <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+          <ClipboardList className="w-5 h-5 text-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-extrabold text-white text-sm">تقاريري</p>
+          <p className="text-white/60 text-[10px] font-medium truncate">سجل التقارير وردود المدرب</p>
+        </div>
+      </Link>
+    </div>
+  )
+}
+
 const goalLabels = {
   loss: 'خسارة وزن', gain: 'بناء عضلات',
   maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي',
@@ -1266,6 +1440,9 @@ export default function ClientDashboard() {
         </Link>
       </div>
 
+      {/* Quick links — Chat + Check-ins */}
+      <QuickLinksWidget />
+
       {/* Streak */}
       <StreakWidget />
 
@@ -1274,6 +1451,12 @@ export default function ClientDashboard() {
 
       {/* Weekly check-in */}
       <WeeklyCheckin />
+
+      {/* Weight progress mini chart */}
+      <WeightProgressWidget />
+
+      {/* Achievement badges */}
+      <AchievementBadgesWidget />
 
       {/* Daily tasks from coach */}
       <DailyTasksWidget />
