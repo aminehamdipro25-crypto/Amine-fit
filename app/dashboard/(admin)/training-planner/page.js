@@ -3,8 +3,19 @@ import { useState, useEffect } from 'react'
 import {
   Brain, Dumbbell, Zap, Sparkles, Users, Save,
   CheckCircle2, Loader2, ChevronDown, ChevronUp,
-  Search, X,
+  Search, X, ShieldAlert,
 } from 'lucide-react'
+
+const INJURY_CHIPS = [
+  { id: 'knee',       ar: 'ركبة',      icon: '🦵', en: 'knee injury/pain' },
+  { id: 'lower_back', ar: 'ظهر سفلي',  icon: '🔙', en: 'lower back pain/disc' },
+  { id: 'shoulder',   ar: 'كتف',       icon: '🤷', en: 'shoulder injury/impingement' },
+  { id: 'ankle',      ar: 'كاحل',      icon: '🦶', en: 'ankle injury/achilles' },
+  { id: 'hip',        ar: 'ورك/حوض',   icon: '🦴', en: 'hip injury/FAI' },
+  { id: 'wrist',      ar: 'رسغ/مرفق',  icon: '💪', en: 'wrist/elbow tendinitis' },
+  { id: 'neck',       ar: 'رقبة',      icon: '🦴', en: 'neck/cervical spine' },
+  { id: 'hernia',     ar: 'فتق',       icon: '⚠️', en: 'hernia' },
+]
 
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] text-white text-sm focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20 outline-none transition placeholder:text-white/20'
 const sel = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] text-white text-sm focus:border-[#fbbf24] outline-none transition appearance-none'
@@ -192,6 +203,10 @@ export default function TrainingPlannerPage() {
   const [showPicker, setShowPicker]     = useState(false)
   const [pickedClient, setPickedClient] = useState(null)
 
+  // Structured injury state — synced to form.injuries
+  const [injuryChips, setInjuryChips] = useState([])
+  const [injuryNote,  setInjuryNote]  = useState('')
+
   // Save to client
   const [selectedClient, setSelectedClient] = useState('')
   const [clients, setClients]               = useState([])
@@ -201,14 +216,38 @@ export default function TrainingPlannerPage() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  // Sync injury chips + note → form.injuries (English, for AI prompt)
+  useEffect(() => {
+    const chipStr = injuryChips
+      .map(id => INJURY_CHIPS.find(c => c.id === id)?.en || id)
+      .join(', ')
+    const combined = [chipStr, injuryNote.trim()].filter(Boolean).join('; ')
+    set('injuries', combined)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [injuryChips, injuryNote])
+
+  function toggleInjuryChip(id) {
+    setInjuryChips(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    )
+  }
+
   const valid = +form.age > 0
 
   function fillFromClient(c) {
+    const savedInjuries = c.injuries || c.physicalLimitationsNote || c.healthConditions || ''
+    // Detect pre-selected chips from saved injury string
+    const detected = INJURY_CHIPS.filter(chip =>
+      savedInjuries.toLowerCase().includes(chip.en.split('/')[0]) ||
+      savedInjuries.includes(chip.ar)
+    ).map(c => c.id)
+    setInjuryChips(detected)
+    // Any text not matching chips goes into the free-text note
+    setInjuryNote(detected.length > 0 ? '' : savedInjuries)
     setForm(f => ({
       ...f,
-      age:      c.age      || '',
-      gender:   c.gender   || 'male',
-      injuries: c.injuries || c.healthConditions || '',
+      age:    c.age    || '',
+      gender: c.gender || 'male',
     }))
     setPickedClient(c)
     setSelectedClient(c.id || '')
@@ -472,15 +511,45 @@ export default function TrainingPlannerPage() {
                   </div>
                 </div>
 
-                {/* Injuries */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">إصابات أو قيود (اختياري)</label>
-                  <textarea
-                    className={`${inp} resize-none`}
-                    rows={2}
-                    placeholder="مثال: ألم في الركبة اليسرى، مشكلة في الظهر..."
-                    value={form.injuries}
-                    onChange={e => set('injuries', e.target.value)}
+                {/* Injuries — structured chip selector */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <label className="text-xs font-bold text-white/40 uppercase tracking-widest">إصابات أو قيود جسدية <span className="normal-case font-normal opacity-60">(اختياري)</span></label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {INJURY_CHIPS.map(chip => {
+                      const selected = injuryChips.includes(chip.id)
+                      return (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          onClick={() => toggleInjuryChip(chip.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all
+                            ${selected
+                              ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                              : 'border-[#2a2a2a] text-white/35 hover:border-[#3a3a3a] hover:text-white/55'}`}
+                        >
+                          <span>{chip.icon}</span>
+                          <span>{chip.ar}</span>
+                          {selected && <span className="text-amber-400 font-extrabold">✓</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {injuryChips.length > 0 && (
+                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/5 border border-amber-400/20">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                        سيُعدِّل البرنامج التمارين تلقائياً لتجنب الإجهاد على المناطق المحددة مع الحفاظ على كامل الكثافة في باقي المجموعات العضلية
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    className={`${inp} text-sm`}
+                    placeholder="تفاصيل إضافية — مثال: ألم في الركبة اليسرى فقط، إصابة قديمة في الأربطة..."
+                    value={injuryNote}
+                    onChange={e => setInjuryNote(e.target.value)}
                   />
                 </div>
               </div>

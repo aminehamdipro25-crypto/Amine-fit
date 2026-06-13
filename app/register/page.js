@@ -8,6 +8,17 @@ import { COUNTRIES, COUNTRY_GROUPS } from '@/lib/countries'
 const LS_FORM = 'af_reg_form'
 const LS_STEP = 'af_reg_step'
 
+const INJURY_CHIPS = [
+  { id: 'knee',       ar: 'ركبة',      icon: '🦵' },
+  { id: 'lower_back', ar: 'ظهر سفلي',  icon: '🔙' },
+  { id: 'shoulder',   ar: 'كتف',       icon: '🤷' },
+  { id: 'ankle',      ar: 'كاحل',      icon: '🦶' },
+  { id: 'hip',        ar: 'ورك/حوض',   icon: '🦴' },
+  { id: 'wrist',      ar: 'رسغ/مرفق',  icon: '💪' },
+  { id: 'neck',       ar: 'رقبة',      icon: '🦴' },
+  { id: 'hernia',     ar: 'فتق',       icon: '⚠️' },
+]
+
 // Map Arabic plan names from pricing page to subscription plan keys
 const PLAN_NAME_MAP = {
   'برنامج التدريب': { key: 'basic',    label: 'برنامج التدريب',  price: '50 د.ت',  days: 30 },
@@ -102,7 +113,7 @@ const INIT = {
   hasDigestiveIssues:'', digestiveIssuesNote:'',
   hasHormonalIssues:'', hormonalIssuesNote:'',
   trainingLocation:'', availableTrainingDays:'',
-  hasPhysicalLimitations:'', physicalLimitationsNote:'',
+  hasPhysicalLimitations:'', physicalLimitationsNote:'', injuries:'',
   sleepHours:'', hasPsychStress:'', foodPrep:'',
   motivation:'', previousPrograms:'', commitment:'', heardFrom:'', notes:'',
   interestedPlan: '',
@@ -637,16 +648,58 @@ export default function RegisterPage() {
                   {value:'5', label:'5 أيام أو أكثر'},
                 ]} />
               </Inp>
-              <Inp label="هل لديك أي إصابات أو قيود جسدية؟" error={errors.hasPhysicalLimitations}
-                hint="آلام في الركبة، الظهر، الكتف، أي منطقة تحتاج تجنبها...">
-                <RadioGroup field="hasPhysicalLimitations" form={form} setForm={setForm}
-                  options={[{value:'yes',label:'نعم'},{value:'no',label:'لا'}]} />
-              </Inp>
-              {form.hasPhysicalLimitations === 'yes' && (
-                <Inp label="اذكر القيود أو الإصابات باختصار">
-                  <Textarea field="physicalLimitationsNote" form={form} setForm={setForm} errors={errors} rows={2} />
-                </Inp>
-              )}
+              {/* Structured injury selector */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-slate-700">
+                  هل لديك إصابات أو آلام في أي منطقة؟
+                  <span className="block text-xs font-normal text-slate-400 mt-0.5">اختر كل ما ينطبق عليك — سيتكيف البرنامج التدريبي تلقائياً معها</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {INJURY_CHIPS.map(chip => {
+                    const selected = (form.injuries || '').split(',').map(s => s.trim()).includes(chip.ar)
+                    return (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => {
+                          const current = (form.injuries || '').split(',').map(s => s.trim()).filter(Boolean)
+                          const next = selected
+                            ? current.filter(v => v !== chip.ar)
+                            : [...current, chip.ar]
+                          setForm(f => ({
+                            ...f,
+                            injuries: next.join(', '),
+                            hasPhysicalLimitations: next.length > 0 ? 'yes' : 'no',
+                          }))
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all
+                          ${selected
+                            ? 'bg-amber-50 border-amber-400 text-amber-700'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                      >
+                        <span>{chip.icon}</span>
+                        <span>{chip.ar}</span>
+                        {selected && <span className="text-amber-500 text-xs font-extrabold">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+                {form.hasPhysicalLimitations === 'yes' && (
+                  <Inp label="تفاصيل إضافية عن الإصابة (اختياري)"
+                    hint="مثال: إصابة قديمة في الأربطة، ألم مزمن في الركبة اليسرى...">
+                    <Textarea field="physicalLimitationsNote" form={form} setForm={setForm} errors={errors} rows={2} />
+                  </Inp>
+                )}
+                {!form.hasPhysicalLimitations && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, hasPhysicalLimitations: 'no', injuries: '' }))}
+                    className="text-xs text-slate-400 underline underline-offset-2 hover:text-slate-600 transition-colors"
+                  >
+                    لا توجد إصابات
+                  </button>
+                )}
+              </div>
             </>}
 
             {/* ── STEP 4: Lifestyle & Commitment ── */}

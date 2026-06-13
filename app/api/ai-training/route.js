@@ -139,7 +139,55 @@ ADVANCED (3+ years):
 - Complex variations mandatory: Paused Squat, Deficit Deadlift, Archer Push-Up, Nordic Curl, Pistol Squat, Single-Arm movements
 - Intensity techniques expected: drop sets, supersets (including compound), rest-pause, mechanical drop sets
 - Total working sets per session: 18-24
-- RPE 8-9: 1-2 reps in reserve on most working sets`
+- RPE 8-9: 1-2 reps in reserve on most working sets
+
+INJURY ACCOMMODATION — MANDATORY CLINICAL RULES (zero exceptions):
+When any injury is mentioned, apply EVERY rule for that region. Write the adaptation rationale in the exercise note field in Arabic. Add an "injury_notes" field to each day: { "injury_notes": "<Arabic: active protocol + what to avoid>" }.
+
+KNEE INJURIES (knee pain, ACL, meniscus, patellar tendinopathy, chondromalacia):
+- ABSOLUTELY FORBIDDEN: Barbell Back Squat (deep), Jump Squat, Box Jump, Depth Jump, Broad Jump, Burpee with jump, Running sprints, High-impact plyometrics, Full-ROM Leg Press, Bulgarian Split Squat (heavy)
+- USE INSTEAD: Wall Sit (isometric, pain-free angle), Step-Up (low box ≤20cm), Leg Press (0–60° arc ONLY), Terminal Knee Extension (TKE) with band, Straight-Leg Raise, Hamstring Curl (prone), Hip Thrust, Seated Leg Extension (partial, pain-free arc), Glute Bridge
+- MANDATORY in warmup: "Terminal Knee Extension with resistance band" + "Quad Set (isometric hold)"
+- Exercise note: "اعمل في المدى الخالي من الألم فقط — تجنب الانحناء العميق للركبة — أوقف التمرين فوراً عند الشعور بألم حاد"
+
+LOWER BACK INJURIES (disc herniation, lumbar pain, sciatica, spondylolisthesis, chronic lower back pain):
+- ABSOLUTELY FORBIDDEN: Conventional Deadlift, Good Morning, Barbell Back Squat (heavy/loaded), Sit-Up, Full Leg Raise (posterior pelvic tilt), Jefferson Curl, any spinal flexion under axial load, Barbell Row (bent-over under heavy load)
+- USE INSTEAD: Hip Thrust (zero spinal compression), Romanian Deadlift (moderate weight, strict neutral spine), Goblet Squat (upright torso), Bird Dog, Dead Bug, Pallof Press, Suitcase Carry, McGill Modified Curl-Up, Side Plank, Cable Pull-Through
+- CORE PROTOCOL: Anti-extension and anti-rotation ONLY — no spinal flexion crunches whatsoever
+- MANDATORY in warmup: "Cat-Cow (slow, controlled)" + "Dead Bug (2×8 each side)" + "Bird Dog"
+- Exercise note: "الحفاظ على العمود الفقري محايداً طوال الحركة — لا انحناء للظهر — تنفّس طبيعي في كل تكرار"
+
+SHOULDER INJURIES (rotator cuff tear/strain, shoulder impingement, labrum tear, AC joint dysfunction):
+- ABSOLUTELY FORBIDDEN: Barbell Overhead Press, Behind-the-Neck Press, Upright Row, Wide-Grip Bench Press (wider than 1.5× shoulder width), Heavy Dips, Kipping Pull-Up, any movement causing pain in the impingement arc (60–120° abduction)
+- USE INSTEAD: Landmine Press (natural arc, shoulder-friendly), Neutral-Grip DB Incline Press (30°), Cable Face Pull, Band Pull-Apart, Side-Lying External Rotation, Prone Y-T-W, Low Cable Fly (below shoulder height), Serratus Wall Slide
+- MANDATORY in warmup (every session): "Band External Rotation (2×15 each side)" + "Band Pull-Apart (2×20)" + "Face Pull light (2×20)"
+- Exercise note: "حافظ على الذراع أسفل مستوى الكتف — تجنب الرفع فوق الرأس — اعمل في المدى الخالي من الألم"
+
+WRIST/ELBOW INJURIES (carpal tunnel, TFCC tear, golfer's elbow, tennis elbow, wrist tendinitis):
+- ABSOLUTELY FORBIDDEN: Standard Push-Up (wrist extended under load), Barbell Curl, Front Squat (clean grip), Wrist Curl, any wrist extension under significant load
+- USE INSTEAD: Fist Push-Up or Knuckle Push-Up (neutral wrist), Hammer Curl (neutral grip), Resistance Band Curl, Cable movements (neutral grip), DB movements with neutral wrist alignment
+- WRIST WRAP recommended: note in every relevant exercise
+- Exercise note: "استخدم قبضة محايدة أو قبضة مغلقة — ثبّت الرسغ بتيب إذا لزم — تجنب انثناء الرسغ تحت الحمل"
+
+ANKLE INJURIES (ankle sprain, achilles tendinopathy, plantar fasciitis):
+- ABSOLUTELY FORBIDDEN: Jump Squat, Box Jump, Broad Jump, Depth Jump, Bulgarian Split Squat (rear foot loaded), Running, any high-impact bilateral or unilateral landing
+- USE INSTEAD: Seated Calf Raise (controlled, reduced ROM), Single-Leg Balance (eyes open, flat stable surface only), TRX Squat (supported), Ankle Alphabet (mobility), Leg Press (feet flat, no calf drive at end), Hamstring Curl (no ankle involvement)
+- Exercise note: "سطح ثابت ومستوٍ فقط — تجنب الارتطام والقفز — توقف فوراً عند أي شعور بعدم الاستقرار"
+
+HIP INJURIES (FAI/femoroacetabular impingement, hip labrum tear, hip flexor strain, greater trochanteric bursitis):
+- ABSOLUTELY FORBIDDEN: ATG (Ass-to-Grass) Deep Squat, High Step-Down, aggressive hip flexion exercises, Running, Jumping, Aggressive hip flexor stretches
+- USE INSTEAD: Goblet Squat (limited safe depth), Clamshell, Side-Lying Hip Abduction, Suitcase Carry, Glute Bridge (moderate range), Copenhagen Plank, Lateral Band Walk, Seated Hip External Rotation (gentle)
+- Exercise note: "تجنب الانثناء القصوى للورك — اعمل في المدى الخالي من الألم — لا ضغط محوري على مفصل الورك"
+
+NECK/CERVICAL SPINE INJURIES (cervical disc herniation, neck pain, cervical radiculopathy):
+- ABSOLUTELY FORBIDDEN: Barbell Back Squat (bar on trapezius/neck), Heavy OHP (cervical compression), any exercise requiring cervical spine loading or extreme ranges of motion
+- USE INSTEAD: Safety Bar Squat, Goblet Squat (upright torso), Landmine Press, Seated Neutral-Grip DB Press, all exercises where neck is fully free and unloaded
+- Exercise note: "لا تضع ثقلاً مباشراً على الرقبة أو الكتفين — حافظ على الرقبة في وضع محايد طوال التمرين"
+
+HERNIA (inguinal, umbilical, epigastric):
+- ABSOLUTELY FORBIDDEN: Heavy Deadlift (>70% 1RM), Heavy Squat (>70% 1RM), Heavy Leg Press, any maximal Valsalva maneuver, Sit-Up under load, Leg Raise (heavy/hanging), any exercise causing intra-abdominal pressure spike
+- USE INSTEAD: Goblet Squat (moderate), Leg Press (light-moderate, 40-60% max), Hip Thrust, Bird Dog, Dead Bug, Pallof Press, Suitcase Carry (light)
+- Exercise note: "تنفّس طبيعي في كل تكرار — لا تحبس النفس أبداً — تجنب الضغط البطني الشديد — استشر طبيبك قبل زيادة الأحمال"`
 
 const FALLBACKS = {
   2: {
