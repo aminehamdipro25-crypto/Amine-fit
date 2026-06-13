@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star, RotateCcw } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
-import { COUNTRIES } from '@/lib/countries'
+import { COUNTRIES, COUNTRY_GROUPS } from '@/lib/countries'
 
 const LS_FORM = 'af_reg_form'
 const LS_STEP = 'af_reg_step'
@@ -407,9 +407,18 @@ export default function RegisterPage() {
                   onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
                   className={cls(errors.country)}>
                   <option value="">اختر بلدك...</option>
-                  {COUNTRIES.map(c => (
-                    <option key={c.code} value={c.code}>{c.label}</option>
-                  ))}
+                  {COUNTRY_GROUPS.map(group => {
+                    const groupCountries = group.codes
+                      .map(code => COUNTRIES.find(c => c.code === code))
+                      .filter(Boolean)
+                    return (
+                      <optgroup key={group.label} label={group.label}>
+                        {groupCountries.map(c => (
+                          <option key={c.code} value={c.code}>{c.label}</option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
                 </select>
               </Inp>
               <Inp label="الجنس" required error={errors.gender}>

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calculator, RefreshCw, FileText, ChevronDown, ChevronUp, Sparkles, Info, Users, Search, X, CheckCircle2, Pencil, Check } from 'lucide-react'
 import { ACTIVITY_FACTORS, GOALS, EX, getGoal, getActivity } from '@/lib/nutritionEngine'
-import { COUNTRIES } from '@/lib/countries'
+import { COUNTRIES, COUNTRY_GROUPS } from '@/lib/countries'
 
 /* ─── small helpers ─────────────────────────────────────────────────────── */
 const inp = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition'
@@ -575,9 +575,18 @@ export default function CalculatorPage() {
               </label>
               <select className={sel} value={form.country} onChange={e => set('country', e.target.value)}>
                 <option value="">— غير محدد (عالمي) —</option>
-                {COUNTRIES.map(c => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
-                ))}
+                {COUNTRY_GROUPS.map(group => {
+                  const groupCountries = group.codes
+                    .map(code => COUNTRIES.find(c => c.code === code))
+                    .filter(Boolean)
+                  return (
+                    <optgroup key={group.label} label={group.label}>
+                      {groupCountries.map(c => (
+                        <option key={c.code} value={c.code}>{c.label}</option>
+                      ))}
+                    </optgroup>
+                  )
+                })}
               </select>
             </div>
           </div>
