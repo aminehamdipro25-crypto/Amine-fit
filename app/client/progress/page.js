@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Plus, Trash2, TrendingDown, TrendingUp, Minus, Scale, Ruler, X, CheckCircle2 } from 'lucide-react'
+import { SkeletonList } from '@/components/SkeletonLoader'
 
 const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
 function fmtDate(iso) {
@@ -74,11 +75,7 @@ export default function ProgressPage() {
   const prev   = entries.filter(e => e[activeChart]).at(-2)?.[activeChart]
   const diff   = latest && prev ? (latest - prev).toFixed(1) : null
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <SkeletonList rows={4} />
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dumbbell, ChevronDown, ChevronUp, Star, Clock, Calendar, TrendingUp, Trash2, Loader2 } from 'lucide-react'
+import { SkeletonList } from '@/components/SkeletonLoader'
 
 const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
 
@@ -168,11 +169,7 @@ export default function WorkoutLogPage() {
   const thisWeek  = logs.filter(l => new Date(l.date) >= thisWeekStart)
   const totalMins = logs.reduce((a, l) => a + (l.durationMins || 0), 0)
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin"/>
-    </div>
-  )
+  if (loading) return <SkeletonList rows={4} />
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 pb-8" dir="rtl">

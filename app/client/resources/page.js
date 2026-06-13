@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
+import { SkeletonList } from '@/components/SkeletonLoader'
 
 const TYPE_META = {
   link:  { icon: '🔗', label: 'رابط',   action: 'فتح' },
@@ -112,12 +113,7 @@ export default function ClientResourcesPage() {
       </div>
 
       {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center py-16 text-white/30">
-          <Loader2 className="w-6 h-6 animate-spin ml-2" />
-          <span className="text-sm">جاري التحميل...</span>
-        </div>
-      )}
+      {loading && <SkeletonList rows={4} />}
 
       {/* Error */}
       {!loading && error && (

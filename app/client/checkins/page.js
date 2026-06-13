@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ClipboardList, ChevronDown, ChevronUp } from 'lucide-react'
+import { SkeletonList } from '@/components/SkeletonLoader'
 
 const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
                  'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
@@ -166,11 +167,7 @@ export default function CheckinsPage() {
       .finally(() => setLoading(false))
   }, [router])
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <SkeletonList rows={4} />
 
   const replied = checkins.filter(c => c.coachReply).length
 

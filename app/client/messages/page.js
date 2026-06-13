@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, Loader2, MessageSquare, RefreshCw } from 'lucide-react'
+import { SkeletonMessages } from '@/components/SkeletonLoader'
 
 const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
                  'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
@@ -89,11 +90,7 @@ export default function MessagesPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-10 h-10 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <SkeletonMessages />
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] max-w-2xl mx-auto" dir="rtl">
@@ -179,6 +176,7 @@ export default function MessagesPage() {
       {error && (
         <div className="flex-shrink-0 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 text-red-600 text-sm font-medium mb-2">
           ⚠️ {error}
+          <button onClick={load} className="mt-3 px-4 py-2 bg-[#fbbf24] text-black font-bold rounded-xl text-sm block">إعادة المحاولة</button>
         </div>
       )}
 

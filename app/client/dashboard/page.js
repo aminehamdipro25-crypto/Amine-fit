@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown } from 'lucide-react'
+import { SkeletonDashboard } from '@/components/SkeletonLoader'
 
 const PLAN_DISPLAY = {
   basic:     { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -1227,11 +1228,7 @@ export default function ClientDashboard() {
   }, [router])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+    return <SkeletonDashboard />
   }
 
   if (!client) return null
