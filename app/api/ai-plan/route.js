@@ -173,6 +173,14 @@ TDEE = BMR × معامل النشاط
 أيام السمك حسب البلد: تونس/مغرب → سردين/مرجان | خليج → هامور/نجيل | مصر → بلطي | عالمي → تونة
 
 ══════════════════════════════════════════════
+قواعد التنويع — أساسية لجودة الخطة
+══════════════════════════════════════════════
+• غيِّر مصادر البروتين في كل خطة — الدجاج ليس الخيار الوحيد (استخدم سمك/تونة/كبدة/بيض/سردين/بقوليات)
+• غيِّر النشويات — الأرز ليس الوحيد (بطاطا/كسكسي/معكرونة/شوفان/خبز عربي)
+• غيِّر الفواكه — لا تكرر التفاح أو الموز دائماً (استخدم برتقال/فراولة/مانجو/كيوي/عنب/بطيخ)
+• التنويع في كل خطة فريدة أمر إلزامي — لا تتبع قالباً ثابتاً
+
+══════════════════════════════════════════════
 قواعد نهائية
 ══════════════════════════════════════════════
 1. قائمة أطعمة مسموحة (إذا قُدِّمت) → استخدمها حصراً، لا تضف أي طعام خارجها
@@ -308,7 +316,8 @@ function postProcess(plan) {
 }
 
 // ── Local fallback: uses the rule-based engine ───────────────────────────────
-function localPlan(form) {
+// genSeed: pass Math.floor(Math.random() * 1e6) so each invocation produces fresh menus
+function localPlan(form, genSeed = 0) {
   const bmr    = calcBMR(form.gender, form.weight, form.height, form.age)
   const tdee   = calcTDEE(bmr, form.activity)
   const target = calcTarget(tdee, form.goal, form.gender, {
@@ -330,21 +339,23 @@ function localPlan(form) {
   const country = form.country || ''
 
   if (duration === 'week') {
+    // dayOffset = i ensures each weekday gets its own rotation within the shuffled pools
     const days = DAY_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i * 11, wp?.[i] || 'mixed', country),
+      menu: generateMenu(ex, meals, pref, avoided, i, wp?.[i] || 'mixed', country, genSeed),
     }))
     return { ...base, days, duration: 'week' }
   }
   if (duration === 'month') {
+    // offset by week index so each week's representative day is distinct
     const weeks = WEEK_NAMES.map((name, i) => ({
       name,
-      menu: generateMenu(ex, meals, pref, avoided, i * 13, wp?.[i % 7] || 'mixed', country),
+      menu: generateMenu(ex, meals, pref, avoided, i * 7, wp?.[i % 7] || 'mixed', country, genSeed),
     }))
     return { ...base, weeks, duration: 'month' }
   }
-  // day (default)
-  const menu = generateMenu(ex, meals, pref, avoided, 0, wp?.[0] || 'mixed', country)
+  // day (default) — dayOffset=0; variety comes entirely from genSeed
+  const menu = generateMenu(ex, meals, pref, avoided, 0, wp?.[0] || 'mixed', country, genSeed)
   return { ...base, menu, duration: 'day' }
 }
 
@@ -366,7 +377,7 @@ export async function POST(req) {
   // If no API key → use local engine immediately (never rate-limit)
   if (!process.env.ANTHROPIC_API_KEY) {
     try {
-      return NextResponse.json(postProcess(localPlan(form)))
+      return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
     } catch (e) {
       return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
     }
@@ -377,7 +388,7 @@ export async function POST(req) {
   // Week & Month plans → always use local engine (never rate-limit)
   if (duration === 'week' || duration === 'month') {
     try {
-      return NextResponse.json(postProcess(localPlan(form)))
+      return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
     } catch (e) {
       return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
     }
@@ -460,7 +471,13 @@ ${adjLine}${regionSection}${foodListLine}
 الأطعمة الممنوعة: ${safeAvoided}
 عدد الوجبات: ${form.meals} وجبات يومياً
 
-تذكير إلزامي قبل التوليد:
+═══ التنويع الإلزامي ═══
+⚡ هذه الخطة يجب أن تكون فريدة ومختلفة تماماً — غيِّر مصادر البروتين والنشويات والفواكه عن أي خطة نمطية.
+⚡ لا تلجأ للنمط الآمن الثابت (دجاج+أرز+تفاح) — استكشف التنوع الكامل ضمن الأطعمة المسموحة.
+⚡ اختر مصدر بروتين مختلف عن الدجاج إذا كان النمط مختلطاً (سمك/تونة/كبدة/بيض/بقوليات).
+⚡ غيِّر النشويات: كسكسي أو بطاطا أو معكرونة أو شوفان بدلاً من الأرز دائماً.
+
+تذكير هيكلي قبل التوليد:
 🚫 الخضروات (طماطم/خيار/فلفل/خس...) → حقل salad فقط — ممنوع في items
 🚫 المكسرات (لوز/كاجو/جوز/فستق...) → حقل nuts فقط — ممنوع في items
 🚫 تونس/مغرب/جزائر: سمك السلمون محظور تماماً — استخدم سردين أو مرجان أو تونة
@@ -469,10 +486,11 @@ ${adjLine}${regionSection}${foodListLine}
 ${daySchema}`
 
     const response = await anthropic.messages.create({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 7000,
-      system:     [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages:   [{ role: 'user', content: dayPrompt }],
+      model:       'claude-sonnet-4-6',
+      max_tokens:  7000,
+      temperature: 1.0,
+      system:      [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages:    [{ role: 'user', content: dayPrompt }],
     })
 
     const textBlock = response.content.find(b => b.type === 'text')
@@ -481,13 +499,14 @@ ${daySchema}`
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
     const dayResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
-    await cacheSet(cacheKey, dayResult)
+    // Short TTL (2 min) prevents hammering on accidental double-click but never hides variety
+    await cacheSet(cacheKey, dayResult, 120)
     return NextResponse.json(dayResult)
 
   } catch (err) {
     console.error('AI plan error — falling back to local engine:', err.message)
     try {
-      return NextResponse.json(postProcess(localPlan(form)))
+      return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
     } catch (e2) {
       return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
     }
