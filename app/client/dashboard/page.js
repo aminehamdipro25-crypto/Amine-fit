@@ -16,12 +16,14 @@ const PLAN_NAME_DISPLAY = {
 }
 
 function SubscriptionCard({ client }) {
-  const sub = client.subscriptionPlan && client.subscriptionEndDate
+  const endDateStr   = client.subscriptionEndDate   || client.subscriptionEnd
+  const startDateStr = client.subscriptionStartDate || client.subscriptionStart
+  const sub = client.subscriptionPlan && endDateStr
     ? {
         info:     PLAN_DISPLAY[client.subscriptionPlan],
-        end:      new Date(client.subscriptionEndDate),
-        start:    new Date(client.subscriptionStartDate),
-        msLeft:   new Date(client.subscriptionEndDate).getTime() - Date.now(),
+        end:      new Date(endDateStr),
+        start:    new Date(startDateStr),
+        msLeft:   new Date(endDateStr).getTime() - Date.now(),
       }
     : null
 

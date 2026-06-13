@@ -16,13 +16,15 @@ export const PLAN_NAME_MAP = {
 }
 
 export function subStatus(client) {
-  if (!client.subscriptionEndDate) return null
-  const ms = new Date(client.subscriptionEndDate).getTime() - Date.now()
+  const endDateStr   = client.subscriptionEndDate   || client.subscriptionEnd
+  const startDateStr = client.subscriptionStartDate || client.subscriptionStart
+  if (!endDateStr) return null
+  const ms = new Date(endDateStr).getTime() - Date.now()
   const absH = Math.floor(Math.abs(ms) / 3600000)
   return {
     plan:      client.subscriptionPlan,
-    endDate:   client.subscriptionEndDate,
-    startDate: client.subscriptionStartDate,
+    endDate:   endDateStr,
+    startDate: startDateStr,
     days:      client.subscriptionDays,
     msLeft:    ms,
     daysLeft:  Math.max(0, Math.floor(ms / 86400000)),

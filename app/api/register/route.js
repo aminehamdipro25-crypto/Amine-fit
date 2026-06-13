@@ -70,6 +70,9 @@ export async function POST(req) {
       } catch { /* gift validation failure is non-fatal — fall through to pending */ }
     }
 
+    // Map gift plan keys to subscription plan keys used by the admin panel
+    const GIFT_PLAN_MAP = { training: 'basic', monthly: 'standard', '3months': 'premium' }
+
     const now = Date.now()
     const isGift = validatedGift !== null
     const subStart = isGift ? new Date(now).toISOString() : null
@@ -134,13 +137,14 @@ export async function POST(req) {
       paymentDeadline:     isGift ? null : new Date(now + 72 * 60 * 60 * 1000).toISOString(),
       paymentMethodChosen: null,
       ...(isGift && {
-        subscriptionPlan:     validatedGift.plan,
-        subscriptionPlanName: validatedGift.planName,
-        subscriptionStart:    subStart,
-        subscriptionEnd:      subEnd,
+        subscriptionPlan:      GIFT_PLAN_MAP[validatedGift.plan] || validatedGift.plan,
+        subscriptionPlanName:  validatedGift.planName,
+        subscriptionStartDate: subStart,
+        subscriptionEndDate:   subEnd,
+        subscriptionDays:      validatedGift.duration || 30,
         giftCode,
-        activationCode:       giftActivationCodeHash,
-        approvedAt:           new Date(now).toISOString(),
+        activationCode:        giftActivationCodeHash,
+        approvedAt:            new Date(now).toISOString(),
       }),
     }
 
@@ -188,7 +192,7 @@ export async function POST(req) {
         `🔑 كود التفعيل: <code>${giftActivationCode}</code>\n` +
         `(أُرسل تلقائياً لبريد العميل — احتفظ به للإرسال عبر واتساب إذا لزم)\n\n` +
         `<a href="${BASE}/dashboard/clients">⚡ فتح لوحة التحكم</a>`
-      ).catch(() => {})
+      ).catch(err => console.error('[telegram gift]', err.message))
     } else {
       sendTelegramMessage(
         `🏋️ <b>طلب تسجيل جديد!</b>\n\n` +
