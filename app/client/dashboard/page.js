@@ -45,7 +45,7 @@ function SubscriptionCard({ client }) {
           <div className="flex-1">
             <p className="text-white/60 text-xs font-bold uppercase tracking-wide">اشتراكك الحالي</p>
             <p className="text-white font-extrabold text-lg">{sub.info?.label || client.subscriptionPlan}</p>
-            {client.giftCode && (
+            {(client.giftCode || client.isGift) && (
               <p className="text-white/70 text-xs font-bold mt-0.5">🎁 هدية من المدرب أمين</p>
             )}
           </div>

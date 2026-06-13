@@ -11,7 +11,7 @@ export async function POST(req, { params }) {
   const deny = await requireAdmin()
   if (deny) return deny
 
-  const { plan, durationDays, startDate } = await req.json()
+  const { plan, durationDays, startDate, isGift } = await req.json()
 
   if (!['basic', 'standard', 'premium'].includes(plan)) {
     return NextResponse.json({ error: 'باقة غير صالحة' }, { status: 400 })
@@ -50,8 +50,9 @@ export async function POST(req, { params }) {
     subscriptionStartDate: start.toISOString(),
     subscriptionEndDate:   end.toISOString(),
     subscriptionDays:      days,
-    status:                'active',
+    status: 'active',
   }
+  if (isGift !== undefined) updateFields.isGift = isGift === true ? true : null
   if (activationCode) {
     // Store hash only — raw code sent in email, never in DB
     updateFields.activationCode = crypto.createHash('sha256').update(activationCode).digest('hex')

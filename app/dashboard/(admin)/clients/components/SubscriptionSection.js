@@ -65,6 +65,7 @@ export default function SubscriptionSection({ client, onUpdate }) {
     client.subscriptionDays || PLANS_INFO[defaultPlan]?.days || 30
   )
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10))
+  const [isGift, setIsGift]       = useState(!!(client.giftCode || client.isGift))
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]             = useState(false)
   const [savedMsg, setSavedMsg]       = useState('')
@@ -76,7 +77,7 @@ export default function SubscriptionSection({ client, onUpdate }) {
       const res  = await fetch(`/api/admin/clients/${client.id}/subscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, durationDays: duration, startDate }),
+        body: JSON.stringify({ plan, durationDays: duration, startDate, isGift }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -86,6 +87,7 @@ export default function SubscriptionSection({ client, onUpdate }) {
           subscriptionEndDate:   data.subscription.endDate,
           subscriptionDays:      data.subscription.days,
           status:                'active',
+          isGift:                isGift || null,
         })
         setSavedMsg(data.activationSent ? '✅ تم الحفظ وإرسال رمز التفعيل للعميل' : '✅ تم حفظ الاشتراك')
         setSaved(true)
@@ -201,6 +203,16 @@ export default function SubscriptionSection({ client, onUpdate }) {
               📅 ينتهي الاشتراك في: <strong className="text-slate-700">{previewEnd}</strong>
             </p>
           )}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <div
+              onClick={() => setIsGift(v => !v)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${isGift ? 'bg-violet-500' : 'bg-slate-200'}`}>
+              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isGift ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-xs font-bold text-slate-600">
+              🎁 هدية من المدرب
+            </span>
+          </label>
           <div className="flex gap-2">
             <button
               onClick={saveSubscription} disabled={saving}
