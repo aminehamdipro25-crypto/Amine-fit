@@ -100,15 +100,29 @@ export default function BlogPost({ params }) {
   const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
     dateModified: post.date,
-    author: { '@type': 'Person', name: 'أمين حمدي', url: base },
-    publisher: { '@type': 'Organization', name: 'Amine-Fit', url: base },
+    author: {
+      '@type': 'Person',
+      name: 'أمين حمدي',
+      url: base,
+      jobTitle: 'مدرب شخصي ومدرب تغذية معتمد',
+      sameAs: [base],
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Amine-Fit',
+      url: base,
+      logo: { '@type': 'ImageObject', url: `${base}/icon-512.png` },
+    },
     url: `${base}/blog/${post.slug}`,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${base}/blog/${post.slug}` },
     inLanguage: 'ar',
+    image: { '@type': 'ImageObject', url: `${base}/og-image.png`, width: 1200, height: 630 },
+    keywords: post.category || 'لياقة بدنية، تغذية، تدريب',
   }
 
   return (

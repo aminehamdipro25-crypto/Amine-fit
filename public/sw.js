@@ -74,3 +74,14 @@ self.addEventListener('notificationclick', e => {
     })
   )
 })
+
+// Background sync — notify open clients to flush their message queue
+self.addEventListener('sync', e => {
+  if (e.tag === 'af-send-messages') {
+    e.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list =>
+        list.forEach(c => c.postMessage({ type: 'FLUSH_MESSAGE_QUEUE' }))
+      )
+    )
+  }
+})

@@ -26,6 +26,15 @@ function shouldShowDate(messages, idx) {
   return prev !== curr
 }
 
+const QUEUE_KEY = 'af_msg_queue'
+
+function loadQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]') } catch { return [] }
+}
+function saveQueue(q) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)) } catch {}
+}
+
 export default function MessagesPage() {
   const router      = useRouter()
   const [messages, setMessages] = useState([])
@@ -33,8 +42,11 @@ export default function MessagesPage() {
   const [loading, setLoading]   = useState(true)
   const [sending, setSending]   = useState(false)
   const [error, setError]       = useState('')
+  const [isOnline, setIsOnline] = useState(true)
+  const [pendingMsgs, setPendingMsgs] = useState([])
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
+  const flushingRef = useRef(false)
 
   async function load() {
     try {
@@ -46,11 +58,46 @@ export default function MessagesPage() {
     finally { setLoading(false) }
   }
 
+  async function flushQueue() {
+    if (flushingRef.current) return
+    const queue = loadQueue()
+    if (!queue.length) return
+    flushingRef.current = true
+    const failed = []
+    for (const item of queue) {
+      try {
+        const res = await fetch('/api/client/messages', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: item.text }),
+        })
+        if (res.ok) {
+          const msg = await res.json()
+          setMessages(prev => [...prev.filter(m => m.id !== item.tempId), msg])
+          setPendingMsgs(prev => prev.filter(m => m.tempId !== item.tempId))
+        } else { failed.push(item) }
+      } catch { failed.push(item) }
+    }
+    saveQueue(failed)
+    flushingRef.current = false
+  }
+
   useEffect(() => { load() }, [])
 
   useEffect(() => {
+    // Restore any pending messages from queue into UI
+    const queue = loadQueue()
+    if (queue.length) {
+      const pending = queue.map(q => ({
+        id: q.tempId, tempId: q.tempId, from: 'client',
+        text: q.text, date: q.date, pending: true,
+      }))
+      setPendingMsgs(pending)
+    }
+  }, [])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, pendingMsgs])
 
   // Poll for new messages every 30 seconds
   useEffect(() => {
@@ -58,11 +105,49 @@ export default function MessagesPage() {
     return () => clearInterval(iv)
   }, [])
 
+  // Online/offline detection + SW message listener
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const goOnline = () => { setIsOnline(true); setError(''); flushQueue() }
+    const goOffline = () => setIsOnline(false)
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+
+    // Listen for SW background sync trigger
+    const onSwMsg = e => { if (e.data?.type === 'FLUSH_MESSAGE_QUEUE') flushQueue() }
+    navigator.serviceWorker?.addEventListener('message', onSwMsg)
+
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+      navigator.serviceWorker?.removeEventListener('message', onSwMsg)
+    }
+  }, [])
+
   async function send() {
     const text = input.trim()
     if (!text || sending) return
     setInput('')
     setError('')
+
+    // Optimistically add message to UI
+    const tempId = `temp-${Date.now()}`
+    const tempMsg = { id: tempId, tempId, from: 'client', text, date: new Date().toISOString(), pending: !isOnline }
+
+    if (!isOnline) {
+      // Queue for later
+      const queue = loadQueue()
+      queue.push({ tempId, text, date: tempMsg.date })
+      saveQueue(queue)
+      setPendingMsgs(prev => [...prev, tempMsg])
+      // Register background sync if supported
+      navigator.serviceWorker?.ready.then(reg => {
+        reg.sync?.register('af-send-messages').catch(() => {})
+      }).catch(() => {})
+      return
+    }
+
+    setMessages(prev => [...prev, tempMsg])
     setSending(true)
     try {
       const res = await fetch('/api/client/messages', {
@@ -72,12 +157,14 @@ export default function MessagesPage() {
       })
       const data = await res.json()
       if (!res.ok) {
+        setMessages(prev => prev.filter(m => m.id !== tempId))
         setError(data.error || 'حدث خطأ')
         setInput(text)
       } else {
-        setMessages(prev => [...prev, data])
+        setMessages(prev => prev.map(m => m.id === tempId ? data : m))
       }
     } catch {
+      setMessages(prev => prev.filter(m => m.id !== tempId))
       setError('تعذّر الإرسال — تحقق من اتصالك')
       setInput(text)
     } finally {
@@ -120,9 +207,16 @@ export default function MessagesPage() {
         </div>
       </div>
 
+      {/* Offline banner */}
+      {!isOnline && (
+        <div className="flex-shrink-0 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-2 flex items-center gap-2">
+          <span className="text-amber-600 font-bold text-xs">📡 أنت غير متصل — ستُرسل الرسائل تلقائياً عند عودة الاتصال</span>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-1 pb-4">
-        {messages.length === 0 ? (
+        {messages.length === 0 && pendingMsgs.length === 0 ? (
           <div className="text-center py-16 space-y-3">
             <p className="text-5xl">👋</p>
             <p className="font-extrabold text-slate-700">ابدأ محادثة مع مدربك</p>
@@ -131,7 +225,8 @@ export default function MessagesPage() {
             </p>
           </div>
         ) : (
-          messages.map((msg, i) => {
+          <>
+          {messages.map((msg, i) => {
             const isClient = msg.from === 'client'
             const showDate = shouldShowDate(messages, i)
             return (
@@ -161,14 +256,27 @@ export default function MessagesPage() {
                     <span className="text-[10px] text-slate-300 font-medium px-1">
                       {fmtTime(msg.date)}
                       {isClient && (
-                        <span className="mr-1">{msg.read ? ' ✓✓' : ' ✓'}</span>
+                        <span className="mr-1">{msg.pending ? ' ⏳' : msg.read ? ' ✓✓' : ' ✓'}</span>
                       )}
                     </span>
                   </div>
                 </div>
               </div>
             )
-          })
+          })}
+          {pendingMsgs.map(msg => (
+            <div key={msg.tempId} className="flex flex-row-reverse gap-2 mb-1">
+              <div className="max-w-[75%] space-y-0.5 items-end flex flex-col">
+                <div className="px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed bg-[#0a0a0a]/70 text-white/70 rounded-tl-sm border border-white/10">
+                  {msg.text}
+                </div>
+                <span className="text-[10px] text-slate-300 font-medium px-1">
+                  {fmtTime(msg.date)} <span className="mr-1">⏳ في الانتظار</span>
+                </span>
+              </div>
+            </div>
+          ))}
+          </>
         )}
         <div ref={bottomRef} />
       </div>

@@ -39,20 +39,34 @@ export default function ProgressPage() {
   async function save() {
     if (!form.weight && !form.waist && !form.chest) return
     setSaving(true)
+
+    // Optimistically add entry immediately
+    const tempId = `temp-${Date.now()}`
+    const tempEntry = {
+      id: tempId,
+      date: new Date().toISOString(),
+      ...Object.fromEntries(Object.entries(form).filter(([,v]) => v).map(([k,v]) => [k, isNaN(v) ? v : Number(v)])),
+      _pending: true,
+    }
+    setEntries(prev => [...prev, tempEntry])
+    setForm({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
+    setShowForm(false)
+
     try {
       const res = await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      if (!res.ok) return
       const entry = await res.json()
-      if (entry && !entry.error) {
-        setEntries(prev => [...prev, entry])
-        setForm({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
-        setShowForm(false)
+      if (res.ok && entry && !entry.error) {
+        setEntries(prev => prev.map(e => e.id === tempId ? entry : e))
+      } else {
+        setEntries(prev => prev.filter(e => e.id !== tempId))
       }
-    } catch {} finally {
+    } catch {
+      setEntries(prev => prev.filter(e => e.id !== tempId))
+    } finally {
       setSaving(false)
     }
   }

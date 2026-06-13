@@ -67,7 +67,30 @@ const jsonLd = {
   telephone: '+97430653759',
   address: { '@type': 'PostalAddress', addressLocality: 'الدوحة', addressCountry: 'QA' },
   priceRange: '50–300 TND',
-  aggregateRating: { '@type': 'AggregateRating', ratingValue: '5', reviewCount: '100', bestRating: '5' },
+  aggregateRating: { '@type': 'AggregateRating', ratingValue: '5', reviewCount: '100', bestRating: '5', worstRating: '1' },
+  review: [
+    {
+      '@type': 'Review',
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      author: { '@type': 'Person', name: 'أ. م.' },
+      reviewBody: 'كنت أحاول لسنوات بدون نتيجة. مع أمين وخطة التبادل الغذائي، فقدت 18 كغ في 4 أشهر فقط. المتابعة الأسبوعية وبوابة العميل غيّرت كل شيء.',
+      name: 'فقد 18 كغ في 4 أشهر',
+    },
+    {
+      '@type': 'Review',
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      author: { '@type': 'Person', name: 'س. ب.' },
+      reviewBody: 'الخطة الغذائية دقيقة جداً ومناسبة لظروفي كأم لثلاثة أطفال. البرنامج مرن وعملي ومشرح بالتفصيل.',
+      name: 'بنت 8 كغ عضلات في 6 أشهر',
+    },
+    {
+      '@type': 'Review',
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      author: { '@type': 'Person', name: 'ي. ع.' },
+      reviewBody: 'الخلفية العسكرية لأمين تظهر في أسلوبه — منضبط، واضح، ومباشر. لأول مرة أفهم التغذية فعلاً.',
+      name: 'تحسّن ملحوظ في اللياقة والطاقة',
+    },
+  ],
   founder: {
     '@type': 'Person',
     name: 'أمين حمدي',
