@@ -47,3 +47,30 @@ self.addEventListener('fetch', e => {
     )
   }
 })
+
+self.addEventListener('push', e => {
+  let data = { title: 'AmineFit', body: 'رسالة جديدة من مدربك', url: '/client/messages' }
+  try { data = { ...data, ...JSON.parse(e.data?.text() || '{}') } } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: 'coach-message',
+      renotify: true,
+      data: { url: data.url }
+    })
+  )
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = e.notification.data?.url || '/client/messages'
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes('/client'))
+      if (existing) { existing.focus(); existing.navigate(url) }
+      else clients.openWindow(url)
+    })
+  )
+})

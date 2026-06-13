@@ -18,6 +18,7 @@ import ClientPhotosPanel from './components/ClientPhotosPanel'
 import ClientReceiptPanel from './components/ClientReceiptPanel'
 import ClientTasksPanel from './components/ClientTasksPanel'
 import ClientMessagesPanel from './components/ClientMessagesPanel'
+import WorkoutLogPanel from './components/WorkoutLogPanel'
 import ClientCard from './components/ClientCard'
 
 // ── Online status helpers ─────────────────────────────────────────────────────
@@ -513,6 +514,9 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
 
           {/* Direct messaging */}
           <ClientMessagesPanel clientId={client.id} clientName={client.name} />
+
+          {/* Workout log */}
+          <WorkoutLogPanel clientId={client.id} />
         </div>
 
         {/* Footer actions */}

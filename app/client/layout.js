@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck } from 'lucide-react'
 
 const navItems = [
   { href: '/client/dashboard',        icon: LayoutDashboard, label: 'الرئيسية' },
   { href: '/client/plan/nutrition',   icon: Utensils,        label: 'الخطة الغذائية' },
   { href: '/client/plan/training',    icon: Dumbbell,        label: 'الخطة التدريبية' },
+  { href: '/client/workout-log',      icon: BookCheck,       label: 'سجل تدريبي 🏋️' },
   { href: '/client/lab',             icon: FlaskConical,    label: 'المختبر 🔬' },
   { href: '/client/progress',         icon: TrendingUp,      label: 'متابعة التقدم' },
   { href: '/client/messages',         icon: MessageSquare,   label: 'رسائلي 📩' },

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   CheckCircle2, Dumbbell, Star, Flame, Wind, Play, X,
   ChevronLeft, ChevronRight, ChevronDown, Printer,
+  BookCheck, Clock, Loader2,
 } from 'lucide-react'
 
 // ─── Schedule Patterns ────────────────────────────────────────────────────────
@@ -233,7 +234,7 @@ function SectionBanner({type}) {
 }
 
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
-function ExerciseRow({ex, isLast, number, onComplete}) {
+function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
   const name       = normalizeName(ex.name)
   const videoId    = getVideoId(ex.videoUrl)
   const ytThumb    = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null
@@ -254,6 +255,7 @@ function ExerciseRow({ex, isLast, number, onComplete}) {
   const allDone  = doneSets === numSets
 
   useEffect(() => { onComplete?.(allDone) }, [allDone]) // eslint-disable-line
+  useEffect(() => { onSetsUpdate?.(sets) }, [sets])    // eslint-disable-line
 
   // Fetch exercise illustration if no YouTube thumbnail
   useEffect(() => {
@@ -495,12 +497,138 @@ function WeekNavigator({today, selectedDate, onSelect, schedule, startDate}) {
   )
 }
 
+// ─── Workout Save Modal ───────────────────────────────────────────────────────
+function WorkoutSaveModal({ day, dayIndex, workoutSets, sessionStart, onClose, onSaved }) {
+  const [duration, setDuration] = useState(() => Math.max(1, Math.round((Date.now() - sessionStart) / 60000)))
+  const [rating,   setRating]   = useState(4)
+  const [notes,    setNotes]    = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [saved,    setSaved]    = useState(false)
+
+  const exList = day.exercises || []
+
+  async function handleSave() {
+    setSaving(true)
+    const exercises = exList.map((ex, i) => ({
+      name: ex.name,
+      sets: (workoutSets[i] || []).map(s => ({ weight: s.weight ? +s.weight : 0, reps: s.reps ? +s.reps : 0, done: !!s.done })),
+    }))
+    try {
+      const res = await fetch('/api/client/workout-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dayIndex: dayIndex ?? 0,
+          dayName:  day.name  || 'Workout',
+          focus:    day.focus || '',
+          durationMins: Math.min(300, Math.max(1, +duration || 1)),
+          exercises,
+          notes:  notes.trim().slice(0, 500),
+          rating: Math.min(5, Math.max(1, +rating)),
+        }),
+      })
+      if (res.ok) { setSaved(true); setTimeout(() => { onSaved?.(); onClose() }, 1500) }
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-[70] flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="bg-[#0a0a0a] px-6 py-5 flex items-center justify-between">
+          <div>
+            <p className="text-[#fbbf24] text-xs font-extrabold uppercase tracking-widest mb-0.5">سجّل جلستك</p>
+            <p className="text-white font-extrabold text-base">{day.name}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition">
+            <X className="w-4 h-4"/>
+          </button>
+        </div>
+
+        {saved ? (
+          <div className="px-6 py-10 text-center">
+            <div className="text-5xl mb-3">🏆</div>
+            <p className="text-xl font-extrabold text-slate-800">تم الحفظ!</p>
+            <p className="text-slate-400 text-sm mt-1">أحسنت — جلستك سُجّلت بنجاح</p>
+          </div>
+        ) : (
+          <div className="px-6 py-5 space-y-5">
+            {/* Duration */}
+            <div>
+              <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5"/> مدة التمرين (دقيقة)
+              </label>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setDuration(d => Math.max(1, d-5))} className="w-9 h-9 rounded-xl bg-slate-100 font-extrabold text-slate-600 hover:bg-slate-200 transition text-lg">-</button>
+                <input type="number" value={duration} onChange={e => setDuration(+e.target.value)} min={1} max={300}
+                  className="flex-1 text-center text-2xl font-extrabold text-slate-800 outline-none bg-slate-50 rounded-xl py-2"/>
+                <button onClick={() => setDuration(d => Math.min(300, d+5))} className="w-9 h-9 rounded-xl bg-slate-100 font-extrabold text-slate-600 hover:bg-slate-200 transition text-lg">+</button>
+              </div>
+            </div>
+
+            {/* Rating */}
+            <div>
+              <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">كيف كانت الجلسة؟</label>
+              <div className="flex gap-2 justify-center">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setRating(n)}
+                    className={`w-10 h-10 rounded-xl text-xl transition-all ${n <= rating ? 'bg-[#fbbf24]/20 scale-110' : 'bg-slate-100 opacity-40'}`}>
+                    ⭐
+                  </button>
+                ))}
+              </div>
+              <p className="text-center text-xs text-slate-400 mt-1 font-medium">
+                {['','ضعيف','مقبول','جيد','ممتاز','رائع! 🔥'][rating]}
+              </p>
+            </div>
+
+            {/* Exercises summary */}
+            <div className="bg-slate-50 rounded-2xl px-4 py-3 space-y-1.5">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">{exList.length} تمارين</p>
+              {exList.map((ex, i) => {
+                const sets = workoutSets[i] || []
+                const doneSets = sets.filter(s => s.done).length
+                return (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600 truncate max-w-[180px]">{ex.name}</span>
+                    <span className={`text-xs font-extrabold ${doneSets === (sets.length || ex.sets) ? 'text-emerald-500' : 'text-slate-400'}`}>
+                      {doneSets}/{sets.length || ex.sets} جولة
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">ملاحظات (اختياري)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} rows={2}
+                placeholder="كيف شعرت؟ هل زدت الأوزان؟..."
+                className="w-full text-sm text-slate-700 bg-slate-50 rounded-2xl px-4 py-3 outline-none resize-none placeholder:text-slate-300 font-medium"
+                dir="rtl"/>
+            </div>
+
+            <button onClick={handleSave} disabled={saving}
+              className="w-full py-3.5 bg-[#0a0a0a] text-[#fbbf24] font-extrabold rounded-2xl flex items-center justify-center gap-2 hover:bg-[#1a1a1a] transition disabled:opacity-60">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <BookCheck className="w-4 h-4"/>}
+              {saving ? 'جاري الحفظ...' : 'سجّل الجلسة'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Workout Card ─────────────────────────────────────────────────────────────
-function WorkoutCard({day, date, isToday}) {
+function WorkoutCard({day, date, isToday, dayIndex}) {
   const exList   = day.exercises || []
   const total    = exList.length
   const info     = getMuscleInfo(day.focus)
   const [doneExercises, setDoneExercises] = useState(new Set())
+  const [workoutSets,   setWorkoutSets]   = useState({})
+  const [showSave,      setShowSave]      = useState(false)
+  const [sessionStart]                    = useState(Date.now)
 
   const handleComplete = useCallback((idx, done) => {
     setDoneExercises(prev => {
@@ -510,10 +638,15 @@ function WorkoutCard({day, date, isToday}) {
     })
   }, [])
 
+  const handleSetsUpdate = useCallback((idx, sets) => {
+    setWorkoutSets(prev => ({...prev, [idx]: sets}))
+  }, [])
+
   const doneCount = doneExercises.size
   const allDone   = doneCount === total && total > 0
 
   return (
+    <>
     <div className="rounded-3xl overflow-hidden" style={{boxShadow:'0 20px 60px -10px rgba(0,0,0,0.35)'}}>
 
       {/* Hero */}
@@ -569,6 +702,7 @@ function WorkoutCard({day, date, isToday}) {
                   key={i} ex={ex} number={i+1}
                   isLast={i===exList.length-1}
                   onComplete={(done) => handleComplete(i, done)}
+                  onSetsUpdate={(sets) => handleSetsUpdate(i, sets)}
                 />
               ))}
             </div>
@@ -581,9 +715,29 @@ function WorkoutCard({day, date, isToday}) {
               🏆 Workout Complete! Great job!
             </div>
           )}
+          {/* Save workout button — visible once at least 1 exercise is started */}
+          {doneCount > 0 && (
+            <button onClick={() => setShowSave(true)}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-[#fbbf24] font-extrabold rounded-2xl transition-all active:scale-95 shadow-lg mt-1">
+              <BookCheck className="w-4 h-4"/>
+              سجّل جلستك {allDone ? '🏆' : `(${doneCount}/${total})`}
+            </button>
+          )}
         </div>
       </div>
     </div>
+
+    {showSave && (
+      <WorkoutSaveModal
+        day={day}
+        dayIndex={dayIndex}
+        workoutSets={workoutSets}
+        sessionStart={sessionStart}
+        onClose={() => setShowSave(false)}
+        onSaved={() => {}}
+      />
+    )}
+    </>
   )
 }
 
@@ -706,7 +860,7 @@ export default function TrainingPlan() {
 
       {/* Workout or Rest */}
       {currentDay
-        ? <WorkoutCard key={selectedDate.toISOString()} day={currentDay} date={selectedDate} isToday={isToday}/>
+        ? <WorkoutCard key={selectedDate.toISOString()} day={currentDay} date={selectedDate} isToday={isToday} dayIndex={planDayIdx}/>
         : <RestCard                                                        date={selectedDate} isToday={isToday}/>
       }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
 import { sendEmail } from '@/lib/mailer'
+import { sendPushToClient } from '@/lib/webPush'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,9 @@ export async function POST(req, { params }) {
     }
     const messages = [...(client.messages || []), entry].slice(-100)
     await updateSubmission(params.id, { messages })
+
+    // Notify client via push notification
+    await sendPushToClient(params.id, '💬 رسالة من مدربك', clean.slice(0, 80), '/client/messages').catch(() => {})
 
     // Notify client by email
     if (client.email) {
