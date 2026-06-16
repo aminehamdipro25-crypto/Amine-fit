@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs'
+
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
   { key: 'X-Frame-Options',            value: 'DENY' },
@@ -16,8 +18,8 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://img.youtube.com https://raw.githubusercontent.com https://wger.de https://www.google-analytics.com https://www.googletagmanager.com",
-      // GA reporting + Upstash Redis calls happen server-side but GA beacon is client-side
-      "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
+      // GA reporting + Upstash Redis calls happen server-side but GA beacon is client-side; Sentry error reporting
+      "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.sentry.io",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -33,4 +35,18 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  // Sentry org/project — set via env vars in Vercel
+  org:     process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Suppress Sentry CLI output during builds
+  silent: true,
+  // Don't upload source maps unless SENTRY_AUTH_TOKEN is set
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  // Disable automatic instrumentation for routes to keep bundle lean
+  autoInstrumentServerFunctions: false,
+  autoInstrumentMiddleware: false,
+  autoInstrumentAppDirectory: false,
+})
