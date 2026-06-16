@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Users, TrendingUp, ClipboardList, CheckCircle2,
-  ArrowUpRight, Clock, Eye, Zap, Tag, X, Flame,
+  ArrowUpRight, Clock, Eye, Zap, Tag, X, Flame, Send, MessageSquare,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell,
@@ -261,6 +261,96 @@ function OfferManager() {
   )
 }
 
+function BroadcastMessage() {
+  const [msg,       setMsg]       = useState('')
+  const [title,     setTitle]     = useState('رسالة من المدرب أمين')
+  const [audience,  setAudience]  = useState('active')
+  const [withEmail, setWithEmail] = useState(false)
+  const [sending,   setSending]   = useState(false)
+  const [result,    setResult]    = useState(null)
+
+  async function send() {
+    if (!msg.trim()) return
+    setSending(true)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/broadcast', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ message: msg, title, audience, withEmail }),
+      })
+      const d = await res.json()
+      if (d.ok) {
+        setResult({ ok: true, text: `✅ أُرسلت إلى ${d.total} عميل — Push: ${d.pushSent}${d.emailSent ? ` • إيميل: ${d.emailSent}` : ''}` })
+        setMsg('')
+      } else {
+        setResult({ ok: false, text: d.error || 'فشل الإرسال' })
+      }
+    } catch (e) { setResult({ ok: false, text: e.message }) }
+    finally { setSending(false) }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+          <MessageSquare className="w-4 h-4 text-blue-500" />
+        </div>
+        <div>
+          <p className="text-sm font-extrabold text-slate-800">إذاعة جماعية</p>
+          <p className="text-xs text-slate-400 mt-0.5">أرسل إشعاراً لعملائك</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">العنوان</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} maxLength={80}
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-300 transition" />
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">الرسالة</label>
+          <textarea rows={3} value={msg} onChange={e => setMsg(e.target.value)} maxLength={500}
+            placeholder="اكتب رسالتك هنا..."
+            className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-300 transition resize-none" />
+          <p className="text-right text-[10px] text-slate-300 mt-0.5">{msg.length}/500</p>
+        </div>
+
+        <div className="flex gap-3 flex-wrap">
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">الجمهور</label>
+            <select value={audience} onChange={e => setAudience(e.target.value)}
+              className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-300 transition bg-white">
+              <option value="active">النشطاء فقط</option>
+              <option value="all">الكل</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 mt-5 cursor-pointer">
+            <input type="checkbox" checked={withEmail} onChange={e => setWithEmail(e.target.checked)}
+              className="w-4 h-4 rounded accent-blue-500" />
+            <span className="text-xs font-medium text-slate-600">إيميل أيضاً</span>
+          </label>
+        </div>
+
+        <button onClick={send} disabled={sending || !msg.trim()}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition disabled:opacity-50">
+          {sending
+            ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            : <Send className="w-4 h-4" />}
+          {sending ? 'جاري الإرسال...' : 'إرسال'}
+        </button>
+
+        {result && (
+          <p className={`text-xs font-bold text-center ${result.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+            {result.text}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function TelegramTest() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -419,6 +509,9 @@ export default function DashboardClient({ submissions }) {
 
       {/* Offer Manager */}
       <OfferManager />
+
+      {/* Broadcast message */}
+      <BroadcastMessage />
 
       {/* Telegram test */}
       <TelegramTest />

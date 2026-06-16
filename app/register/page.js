@@ -162,16 +162,19 @@ export default function RegisterPage() {
   const [errors, setErrors]     = useState({})
   const [loading, setLoad]      = useState(false)
   const [apiErr, setApiErr]     = useState('')
-  const [giftCode, setGiftCode] = useState('')
-  const [giftValid, setGiftValid] = useState(null)
-  const [giftInfo, setGiftInfo]   = useState(null)
-  const [hasSaved, setHasSaved]   = useState(false)
+  const [giftCode,   setGiftCode]   = useState('')
+  const [giftValid,  setGiftValid]  = useState(null)
+  const [giftInfo,   setGiftInfo]   = useState(null)
+  const [hasSaved,   setHasSaved]   = useState(false)
+  const [referredBy, setReferredBy] = useState('')
 
   // On mount: restore localStorage + read URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const plan   = params.get('plan') || ''
     const gift   = params.get('gift')?.toUpperCase().trim() || ''
+    const ref    = params.get('ref')?.trim() || ''
+    if (ref) setReferredBy(ref)
 
     // Restore saved form data
     try {
@@ -260,7 +263,8 @@ export default function RegisterPage() {
     setLoad(true); setApiErr('')
     try {
       const body = { ...form }
-      if (giftCode) body.giftCode = giftCode
+      if (giftCode)   body.giftCode   = giftCode
+      if (referredBy) body.referredBy = referredBy
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

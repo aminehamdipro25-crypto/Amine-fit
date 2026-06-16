@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown, Share2, Download } from 'lucide-react'
 import { SkeletonDashboard } from '@/components/SkeletonLoader'
 import PushSubscriber from '@/components/PushSubscriber'
 
@@ -1197,6 +1197,44 @@ const goalLabels = {
   maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي',
 }
 
+/* ── Referral card ───────────────────────────────────────────────────────── */
+function ReferralCard({ clientId }) {
+  const [copied, setCopied] = useState(false)
+  const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://amine-fit.com'
+  const link = `${BASE}/register?ref=${clientId}`
+
+  function copy() {
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  return (
+    <div className="bg-gradient-to-l from-violet-50 to-purple-50 border border-violet-100 rounded-2xl p-5">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Share2 className="w-4 h-4 text-violet-600" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">شارك وساعد صديقك</p>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">أرسل الرابط لمن يريد الانضمام مع المدرب أمين</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-white border border-violet-100 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 truncate dir-ltr text-left">
+          {link}
+        </div>
+        <button onClick={copy}
+          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all
+            ${copied ? 'bg-emerald-500 text-white' : 'bg-violet-600 text-white hover:bg-violet-700'}`}>
+          {copied ? '✓ نُسخ' : 'نسخ'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── First-time onboarding modal ─────────────────────────────────────────── */
 const ONBOARDING_KEY = 'af_onboarded_v1'
 
@@ -1597,6 +1635,18 @@ export default function ClientDashboard() {
             <CheckCircle2 className="w-3.5 h-3.5" /> نشط
           </div>
         )}
+      </div>
+
+      {/* Referral card */}
+      {client.status === 'active' && <ReferralCard clientId={client.id} />}
+
+      {/* Data export */}
+      <div className="flex justify-center pb-1">
+        <a href="/api/client/export" download
+          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 transition px-4 py-2 rounded-xl hover:bg-slate-50">
+          <Download className="w-3.5 h-3.5" />
+          تنزيل بياناتي
+        </a>
       </div>
 
       <p className="text-center text-slate-400 text-xs font-medium pb-2">

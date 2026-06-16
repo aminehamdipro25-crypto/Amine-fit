@@ -134,6 +134,7 @@ export async function POST(req) {
       previousPrograms:    sanitizeStr(body.previousPrograms),
       commitment:          sanitizeStr(body.commitment),
       heardFrom:           sanitizeStr(body.heardFrom),
+      referredBy:          sanitizeStr(body.referredBy, 50),
       notes:               sanitizeStr(body.notes),
       interestedPlan:      isGift ? validatedGift.plan : sanitizeStr(body.interestedPlan, 100),
       status:              isGift ? 'active' : 'pending',
