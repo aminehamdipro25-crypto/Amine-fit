@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2, Wallet } from 'lucide-react'
+import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2, Wallet, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/gtag'
 
@@ -73,6 +73,8 @@ export default function PaymentPage() {
   const [copiedFawra, setCopiedFawra] = useState(false)
   const [step, setStep]             = useState(1)
   const [method, setMethod]         = useState(null)
+  const [cardEmail, setCardEmail]   = useState('')
+  const [cardLoading, setCardLoading] = useState(false)
   const [giftCode, setGiftCode]     = useState('')
   const [giftStatus, setGiftStatus] = useState(null)
   const [giftData, setGiftData]     = useState(null)
@@ -137,6 +139,24 @@ export default function PaymentPage() {
     navigator.clipboard.writeText(CCP_IBAN.replace(/\s/g, '')).catch(() => {})
     setCopiedCCP(true)
     setTimeout(() => setCopiedCCP(false), 2000)
+  }
+
+  async function payByCard() {
+    if (!selected || !cardEmail.trim()) return
+    setCardLoading(true)
+    try {
+      const res = await fetch('/api/payment/stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selected, email: cardEmail.trim() }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        trackEvent('payment_stripe_redirect', { plan_name: plan?.name })
+        window.location.href = data.url
+      }
+    } catch {}
+    finally { setCardLoading(false) }
   }
 
   function copyFawra() {
@@ -321,20 +341,29 @@ export default function PaymentPage() {
             <>
               <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
               {isGulf ? (
-                /* Gulf: Fawra only */
-                <div className="flex justify-center mb-6">
+                /* Gulf: Fawra + Card */
+                <div className="grid grid-cols-2 gap-3 mb-6">
                   <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }) }}
-                    className="bg-[#1a1a1a] hover:bg-white/5 border border-[#fbbf24]/40 rounded-3xl p-6 flex flex-col items-center gap-2 transition w-44">
-                    <Wallet className="w-8 h-8 text-[#fbbf24]" />
+                    className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
+                    <Wallet className="w-7 h-7 text-[#fbbf24]" />
                     <div className="text-center">
-                      <p className="text-white font-extrabold text-sm">فورا</p>
-                      <p className="text-white/40 text-xs mt-0.5">تحويل فوري — قطر</p>
+                      <p className="text-white font-extrabold text-xs">فورا</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">تحويل فوري — قطر</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }) }}
+                    className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
+                    <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
+                    <CreditCard className="w-7 h-7 text-[#fbbf24]" />
+                    <div className="text-center">
+                      <p className="text-white font-extrabold text-xs">بطاقة بنكية</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">Visa / Mastercard</p>
                     </div>
                   </button>
                 </div>
               ) : (
-                /* Maghreb: D17 + Post */
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                /* Maghreb: D17 + Post + Card */
+                <div className="grid grid-cols-3 gap-3 mb-6">
                   <button
                     onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
                     disabled={!D17_READY}
@@ -344,7 +373,7 @@ export default function PaymentPage() {
                     )}
                     <Smartphone className="w-7 h-7 text-[#fbbf24]" />
                     <div className="text-center">
-                      <p className="text-white font-extrabold text-xs">تطبيق D17</p>
+                      <p className="text-white font-extrabold text-xs">D17</p>
                       <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                     </div>
                   </button>
@@ -356,9 +385,50 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                     </div>
                   </button>
+                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }) }}
+                    className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
+                    <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
+                    <CreditCard className="w-7 h-7 text-[#fbbf24]" />
+                    <div className="text-center">
+                      <p className="text-white font-extrabold text-xs">بطاقة</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">دولية</p>
+                    </div>
+                  </button>
                 </div>
               )}
             </>
+          )}
+
+          {/* Card payment */}
+          {method === 'card' && (
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl p-6 mb-4">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-[#fbbf24]" />
+                  <h2 className="text-white font-extrabold text-base">الدفع بالبطاقة البنكية</h2>
+                </div>
+                <button onClick={() => setMethod(null)} className="text-xs text-white/25 hover:text-white/50 underline transition">تغيير</button>
+              </div>
+              <p className="text-white/50 text-xs mb-4">أدخل بريدك الإلكتروني المسجّل في Amine-Fit لربط الدفع بحسابك تلقائياً.</p>
+              <input
+                type="email"
+                value={cardEmail}
+                onChange={e => setCardEmail(e.target.value)}
+                placeholder="بريدك الإلكتروني"
+                dir="ltr"
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder-white/20 outline-none focus:border-[#fbbf24]/40 transition mb-4"
+              />
+              <button
+                onClick={payByCard}
+                disabled={cardLoading || !cardEmail.trim() || !cardEmail.includes('@')}
+                className="w-full py-4 bg-[#fbbf24] text-black rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#f59e0b] transition disabled:opacity-40">
+                {cardLoading
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <CreditCard className="w-5 h-5" />}
+                {cardLoading ? 'جاري التحويل...' : `ادفع ${pPrice(plan)} ${pCur(plan)} بالبطاقة`}
+              </button>
+              <p className="text-white/20 text-[10px] text-center mt-3">مدفوعات آمنة عبر Stripe • Visa / Mastercard / Apple Pay</p>
+            </div>
           )}
 
           {/* D17 instructions */}

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown } from 'lucide-react'
 import { SkeletonDashboard } from '@/components/SkeletonLoader'
+import PushSubscriber from '@/components/PushSubscriber'
 
 const PLAN_DISPLAY = {
   basic:     { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
@@ -1403,9 +1404,12 @@ export default function ClientDashboard() {
                 ? 'برنامجك التدريبي جاهز — الخطة الغذائية قيد الإعداد'
                 : 'يعمل المدرب أمين على تحضير خطتك المخصصة — ستصلك قريباً'}
             </p>
-            <div className="flex items-center gap-2 mt-4">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-emerald-400 text-xs font-bold">حسابك نشط</span>
+            <div className="flex items-center gap-3 mt-4 flex-wrap">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-emerald-400 text-xs font-bold">حسابك نشط</span>
+              </span>
+              <PushSubscriber />
             </div>
           </div>
           <div className="w-14 h-14 bg-gold-400 rounded-2xl flex items-center justify-center text-black font-extrabold text-2xl flex-shrink-0 shadow-lg shadow-gold-400/20">
