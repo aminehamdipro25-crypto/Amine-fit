@@ -811,6 +811,84 @@ function NoPlan() {
   )
 }
 
+// ─── Plan Feedback ────────────────────────────────────────────────────────────
+function PlanFeedback({ type }) {
+  const [feedback, setFeedback] = useState(undefined)  // undefined=loading, null=none
+  const [rating,   setRating]   = useState(0)
+  const [note,     setNote]     = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [saved,    setSaved]    = useState(false)
+
+  useEffect(() => {
+    fetch('/api/client/plan-feedback')
+      .then(r => r.ok ? r.json() : { feedback: null })
+      .then(d => setFeedback(d.feedback?.[type] || null))
+      .catch(() => setFeedback(null))
+  }, [type])
+
+  async function submit() {
+    if (!rating) return
+    setSaving(true)
+    try {
+      await fetch('/api/client/plan-feedback', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ type, rating, note }),
+      })
+      setFeedback({ rating, note, ratedAt: new Date().toISOString() })
+      setSaved(true)
+    } finally { setSaving(false) }
+  }
+
+  if (feedback === undefined) return null
+
+  const existing = feedback
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
+      <p className="text-sm font-extrabold text-slate-800 mb-3">
+        {existing ? '⭐ تقييمك للبرنامج التدريبي' : 'كيف تجد البرنامج التدريبي؟'}
+      </p>
+      {existing && !saved ? (
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {[1,2,3,4,5].map(n => (
+              <span key={n} className={`text-2xl ${n <= existing.rating ? 'opacity-100' : 'opacity-20'}`}>⭐</span>
+            ))}
+          </div>
+          {existing.note && <p className="text-xs text-slate-500 font-medium flex-1 truncate">"{existing.note}"</p>}
+          <button onClick={() => { setRating(existing.rating); setNote(existing.note || ''); setSaved(false); setFeedback(null) }}
+            className="text-xs text-slate-400 hover:text-slate-600 transition font-medium flex-shrink-0">تعديل</button>
+        </div>
+      ) : saved ? (
+        <p className="text-emerald-600 text-sm font-bold">✅ شكراً على تقييمك!</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex gap-2 justify-center">
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setRating(n)}
+                className={`text-3xl transition-all active:scale-90 ${n <= rating ? 'opacity-100 scale-110' : 'opacity-25 hover:opacity-60'}`}>
+                ⭐
+              </button>
+            ))}
+          </div>
+          {rating > 0 && (
+            <>
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} maxLength={300}
+                placeholder="ملاحظاتك (اختياري)..."
+                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-amber-400 transition resize-none" />
+              <button onClick={submit} disabled={saving}
+                className="w-full py-2.5 bg-[#0a0a0a] text-[#fbbf24] font-bold rounded-xl text-sm hover:bg-[#1a1a1a] transition disabled:opacity-50">
+                {saving ? 'جاري الإرسال...' : 'إرسال التقييم'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TrainingPlan() {
   const router = useRouter()
@@ -881,6 +959,9 @@ export default function TrainingPlan() {
           </div>
         </div>
       )}
+
+      {/* Plan Feedback */}
+      <PlanFeedback type="training" />
 
       <p className="text-center text-slate-400 text-xs pb-2">
         أسئلة؟ <a href="tel:+97430653759" className="text-[#c9973b] font-bold hover:underline">تواصل مع المدرب أمين</a>
