@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck, UtensilsCrossed, CalendarDays } from 'lucide-react'
 import PwaInstallBanner from '@/components/PwaInstallBanner'
 
 const navItems = [
@@ -13,6 +13,8 @@ const navItems = [
   { href: '/client/lab',             icon: FlaskConical,    label: 'المختبر 🔬' },
   { href: '/client/progress',         icon: TrendingUp,      label: 'متابعة التقدم' },
   { href: '/client/messages',         icon: MessageSquare,   label: 'رسائلي 📩' },
+  { href: '/client/food-log',          icon: UtensilsCrossed, label: 'سجل طعامي 🍽️' },
+  { href: '/client/appointments',     icon: CalendarDays,    label: 'مواعيدي 📅' },
   { href: '/client/checkins',         icon: ClipboardList,   label: 'تقاريري 📋' },
   { href: '/client/chat',             icon: MessageCircle,   label: 'مساعدي 💬' },
   { href: '/client/journal',          icon: BookOpen,        label: 'يوميتي 💧' },

@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList, LogOut, ExternalLink, BarChart2, Dumbbell, Star, FolderOpen } from 'lucide-react'
+import { LayoutDashboard, Users, Calculator, X, Zap, ArrowUpLeft, ClipboardList, LogOut, ExternalLink, BarChart2, Dumbbell, Star, FolderOpen, CalendarDays } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard',                    icon: LayoutDashboard, label: 'لوحة التحكم' },
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard/training-planner',   icon: Dumbbell,        label: 'معد البرامج' },
   { href: '/dashboard/analytics',          icon: BarChart2,       label: 'الإحصائيات' },
   { href: '/dashboard/testimonials',       icon: Star,            label: 'التقييمات' },
+  { href: '/dashboard/appointments',      icon: CalendarDays,    label: 'المواعيد' },
 ]
 
 export default function Sidebar({ open, collapsed, onClose }) {
