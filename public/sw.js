@@ -75,13 +75,15 @@ self.addEventListener('notificationclick', e => {
   )
 })
 
-// Background sync — notify open clients to flush their message queue
+// Background sync — notify open clients to flush their message queue.
+// If no window is open, reject so the browser retries when one opens.
 self.addEventListener('sync', e => {
   if (e.tag === 'af-send-messages') {
     e.waitUntil(
-      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list =>
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+        if (!list.length) throw new Error('no open client windows')
         list.forEach(c => c.postMessage({ type: 'FLUSH_MESSAGE_QUEUE' }))
-      )
+      })
     )
   }
 })

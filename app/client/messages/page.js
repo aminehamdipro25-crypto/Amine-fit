@@ -92,6 +92,8 @@ export default function MessagesPage() {
         text: q.text, date: q.date, pending: true,
       }))
       setPendingMsgs(pending)
+      // If already online on mount, flush immediately instead of waiting for online event
+      if (navigator.onLine) flushQueue()
     }
   }, [])
 

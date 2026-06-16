@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSubmissions } from '@/lib/submissions'
 import { sendEmail } from '@/lib/mailer'
+import { getClientLogs } from '@/lib/clientLogs'
 import { Redis } from '@upstash/redis'
 
 export const dynamic = 'force-dynamic'
@@ -165,10 +166,10 @@ export async function GET(req) {
       }
     }
 
-    // Gather water from logs
+    // Gather water from logs — uses the same key as lib/clientLogs.js
     let waterAvg = 0
-    if (redis) {
-      const logs = await redisGet(redis, `client_logs:${client.id}`)
+    try {
+      const logs = await getClientLogs(client.id)
       if (Array.isArray(logs)) {
         const weekLogs = logs.filter(l => l.date && new Date(l.date) >= weekAgo)
         if (weekLogs.length > 0) {
@@ -176,22 +177,19 @@ export async function GET(req) {
           waterAvg = Math.round(totalWater / weekLogs.length)
         }
       }
-    }
+    } catch {}
 
-    // Last check-in from this week
+    // Last check-in from this week — stored inside the submission record
     let checkin = null
     let weightChange = null
-    if (redis) {
-      const checkins = await redisGet(redis, `checkins:${client.id}`)
-      if (Array.isArray(checkins) && checkins.length) {
-        const recent = checkins.filter(c => c.date && new Date(c.date) >= weekAgo)
-        if (recent.length) {
-          checkin = recent.at(-1)
-          // Weight change vs previous check-in
-          const prev = checkins.filter(c => c.date && new Date(c.date) < weekAgo && c.weight).at(-1)
-          if (prev?.weight && checkin.weight) {
-            weightChange = +(checkin.weight - prev.weight).toFixed(1)
-          }
+    const checkins = client.checkins
+    if (Array.isArray(checkins) && checkins.length) {
+      const recent = checkins.filter(c => c.date && new Date(c.date) >= weekAgo)
+      if (recent.length) {
+        checkin = recent.at(-1)
+        const prev = checkins.filter(c => c.date && new Date(c.date) < weekAgo && c.weight).at(-1)
+        if (prev?.weight && checkin.weight) {
+          weightChange = +(checkin.weight - prev.weight).toFixed(1)
         }
       }
     }

@@ -394,14 +394,7 @@ export async function POST(req) {
     }
   }
 
-  // ── Redis cache check (24h) — avoid repeat API calls for identical inputs ──
-  const cacheKey    = planCacheKey(form)
-  const cachedPlan  = await cacheGet(cacheKey)
-  if (cachedPlan) {
-    return NextResponse.json({ ...cachedPlan, cached: true, date: new Date().toISOString() })
-  }
-
-  // Rate-limit: only for actual fresh Claude API calls (day plan, uncached)
+  // Rate-limit: only for actual fresh Claude API calls (day plan)
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (await isRateLimited(`ai_plan:${ip}`, 20, 3600)) {
     return NextResponse.json({ error: 'تجاوزت الحد المسموح (20 خطة/ساعة) — حاول لاحقاً' }, { status: 429 })
@@ -499,8 +492,6 @@ ${daySchema}`
     const plan = JSON.parse(raw)
     if (plan.target) plan.target = Math.max(floor, plan.target)
     const dayResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
-    // Short TTL (2 min) prevents hammering on accidental double-click but never hides variety
-    await cacheSet(cacheKey, dayResult, 120)
     return NextResponse.json(dayResult)
 
   } catch (err) {

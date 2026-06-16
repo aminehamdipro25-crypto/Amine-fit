@@ -242,8 +242,8 @@ export default function TrainingPlannerPage() {
       savedInjuries.includes(chip.ar)
     ).map(c => c.id)
     setInjuryChips(detected)
-    // Any text not matching chips goes into the free-text note
-    setInjuryNote(detected.length > 0 ? '' : savedInjuries)
+    // Always preserve the full injury description as additional context for the AI
+    setInjuryNote(savedInjuries.trim())
     setForm(f => ({
       ...f,
       age:    c.age    || '',

@@ -25,6 +25,7 @@ export default function ProgressPage() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
   const [activeChart, setActiveChart] = useState('weight')
   const [form, setForm] = useState({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
@@ -39,6 +40,10 @@ export default function ProgressPage() {
   async function save() {
     if (!form.weight && !form.waist && !form.chest) return
     setSaving(true)
+    setSaveError('')
+
+    // Snapshot form before clearing so we can restore it on failure
+    const snapshot = { ...form }
 
     // Optimistically add entry immediately
     const tempId = `temp-${Date.now()}`
@@ -56,16 +61,22 @@ export default function ProgressPage() {
       const res = await fetch('/api/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(snapshot),
       })
       const entry = await res.json()
       if (res.ok && entry && !entry.error) {
         setEntries(prev => prev.map(e => e.id === tempId ? entry : e))
       } else {
         setEntries(prev => prev.filter(e => e.id !== tempId))
+        setForm(snapshot)
+        setShowForm(true)
+        setSaveError(entry?.error || 'فشل حفظ القياس — حاول مجدداً')
       }
     } catch {
       setEntries(prev => prev.filter(e => e.id !== tempId))
+      setForm(snapshot)
+      setShowForm(true)
+      setSaveError('تعذّر الحفظ — تحقق من اتصالك بالإنترنت')
     } finally {
       setSaving(false)
     }
@@ -216,6 +227,9 @@ export default function ProgressPage() {
                 placeholder="كيف تشعر اليوم؟"
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-[#fbbf24] transition resize-none" />
             </div>
+            {saveError && (
+              <p className="text-red-500 text-xs font-bold mb-3 bg-red-50 rounded-lg px-3 py-2">⚠️ {saveError}</p>
+            )}
             <button onClick={save} disabled={saving || (!form.weight && !form.waist && !form.chest)}
               className="w-full py-3 bg-[#0a0a0a] text-[#fbbf24] rounded-xl font-extrabold text-sm disabled:opacity-40 flex items-center justify-center gap-2 hover:bg-[#1a1a1a] transition">
               {saving ? <div className="w-4 h-4 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
