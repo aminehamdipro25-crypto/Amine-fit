@@ -22,6 +22,11 @@ function formatAgo(iso) {
   return new Date(iso).toLocaleDateString('ar', { month:'short', day:'numeric' })
 }
 
+function formatTime(iso) {
+  if (!iso) return null
+  return new Date(iso).toLocaleTimeString('ar', { hour:'2-digit', minute:'2-digit', hour12: true, timeZone: 'Asia/Qatar' })
+}
+
 const goalMap = {
   loss:        { label:'خسارة وزن',       color:'bg-amber-50 text-amber-700 border border-amber-200',   icon:'📉' },
   gain:        { label:'بناء عضلات',       color:'bg-blue-50 text-blue-700 border border-blue-200',      icon:'💪' },
@@ -75,11 +80,13 @@ export default function ClientCard({ client: c, onlineInfo, onSelect, onApprove,
                 <span className="text-[9px] font-extrabold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-200 uppercase">تواصل</span>
               )}
             </div>
-            <p className="text-xs text-slate-400 truncate max-w-[140px] mt-0.5">
+            <p className="text-xs text-slate-400 truncate max-w-[160px] mt-0.5">
               {getOnlineStatus(onlineInfo) === 'online' ? (
                 <span className="text-emerald-600 font-bold">● داخل المنصة الآن</span>
               ) : onlineInfo?.lastSeen ? (
                 <span className="text-slate-400">{formatAgo(onlineInfo?.lastSeen)}</span>
+              ) : onlineInfo?.loginTime ? (
+                <span className="text-slate-400">آخر دخول {formatTime(onlineInfo.loginTime)}</span>
               ) : (c.email || c.phone)}
             </p>
           </div>
