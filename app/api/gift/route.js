@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isRateLimited } from '@/lib/rateLimit'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,8 @@ export async function GET(req) {
   if (!raw) return NextResponse.json({ valid: false, reason: 'invalid' })
 
   let gift
-  try { gift = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw)) } catch {
+  try { gift = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw)) } catch (err) {
+    logger.error('gift', 'Corrupted gift code data', { code, err: err.message })
     return NextResponse.json({ valid: false, reason: 'invalid' })
   }
 
@@ -78,7 +80,8 @@ export async function POST(req) {
   if (!raw) return NextResponse.json({ ok: false, reason: 'not_found' })
 
   let gift
-  try { gift = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw)) } catch {
+  try { gift = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw)) } catch (err) {
+    logger.error('gift', 'Corrupted gift code data on redeem', { code: upperCode, err: err.message })
     return NextResponse.json({ ok: false }, { status: 400 })
   }
 

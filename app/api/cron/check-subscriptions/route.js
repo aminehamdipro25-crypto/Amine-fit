@@ -3,8 +3,11 @@ import { getSubmissions, updateSubmission } from '@/lib/submissions'
 import { deleteClientSession } from '@/lib/clientSession'
 import { sendEmail } from '@/lib/mailer'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+
+const BATCH_LIMIT = 40 // bound per-run work so the function can't exceed Vercel's duration limit
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
 
@@ -72,8 +75,10 @@ export async function GET(req) {
   let paymentExpired = 0
   let reminders7d = 0
   let reminders1d = 0
+  let processed = 0
 
   for (const client of clients) {
+    if (processed >= BATCH_LIMIT) break
     const endMs = client.subscriptionEndDate
       ? new Date(client.subscriptionEndDate).getTime()
       : null
@@ -86,6 +91,7 @@ export async function GET(req) {
       })
       await deleteClientSession(client.id).catch(() => {})
       suspended++
+      processed++
       continue
     }
 
@@ -116,8 +122,9 @@ export async function GET(req) {
           ).catch(() => {})
           await updateSubmission(client.id, { reminderSent7d: true })
           reminders7d++
+          processed++
         } catch (e) {
-          console.error('[cron reminder 7d]', client.email, e.message)
+          logger.error('cron-check-subscriptions', 'reminder 7d failed', { email: client.email, err: e.message })
         }
       }
 
@@ -136,8 +143,9 @@ export async function GET(req) {
           ).catch(() => {})
           await updateSubmission(client.id, { reminderSent1d: true })
           reminders1d++
+          processed++
         } catch (e) {
-          console.error('[cron reminder 1d]', client.email, e.message)
+          logger.error('cron-check-subscriptions', 'reminder 1d failed', { email: client.email, err: e.message })
         }
       }
 
@@ -161,6 +169,7 @@ export async function GET(req) {
         paymentExpiredAt: new Date().toISOString(),
       })
       paymentExpired++
+      processed++
     }
   }
 

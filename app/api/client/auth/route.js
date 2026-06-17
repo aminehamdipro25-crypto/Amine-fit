@@ -6,8 +6,36 @@ import { createClientSession, deleteClientSession } from '@/lib/clientSession'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+
+function redisCfg() {
+  const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+  return url && token ? { url: url.replace(/\/$/, ''), token } : null
+}
+
+// Atomic one-time claim — SET ... NX guarantees only the first of any
+// concurrent activation requests for this client can proceed, closing the
+// race where two requests with the same valid code both pass verification
+// and the second silently overwrites the first's password.
+async function claimActivation(clientId) {
+  const cfg = redisCfg()
+  if (!cfg) return true // no Redis configured (dev) — best-effort, don't block
+  try {
+    const res = await fetch(`${cfg.url}/pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['SET', `activate_lock:${clientId}`, '1', 'NX', 'EX', '60']]),
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    return data[0]?.result === 'OK'
+  } catch {
+    return true // fail open — a Redis hiccup shouldn't block a legitimate activation
+  }
+}
 
 async function setClientCookie(res, clientId) {
   await deleteClientSession(clientId)
@@ -61,6 +89,11 @@ async function handleActivation(email, activationCode, password, confirmPassword
 
   if (!codeMatch) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كود التفعيل غير صحيح' }, { status: 401 })
+  }
+
+  const claimed = await claimActivation(client.id)
+  if (!claimed) {
+    return NextResponse.json({ error: 'تم استخدام هذا الكود بالفعل' }, { status: 401 })
   }
 
   await updateSubmission(client.id, {
@@ -123,7 +156,7 @@ export async function POST(req) {
     }
     return await handleLogin(body.email, body.password)
   } catch (err) {
-    console.error('[client auth]', err.message)
+    logger.error('client-auth', 'Unhandled error', { err: err.message })
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

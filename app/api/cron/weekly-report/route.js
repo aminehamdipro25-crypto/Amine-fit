@@ -3,10 +3,12 @@ import { getSubmissions } from '@/lib/submissions'
 import { sendEmail } from '@/lib/mailer'
 import { getClientLogs } from '@/lib/clientLogs'
 import { Redis } from '@upstash/redis'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+const BATCH_LIMIT = 40 // bound per-run sends so the function can't exceed Vercel's duration limit
 
 function getRedis() {
   const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL
@@ -143,8 +145,10 @@ export async function GET(req) {
 
   let sent = 0
   let skipped = 0
+  let processed = 0
 
   for (const client of clients) {
+    if (processed >= BATCH_LIMIT) break
     if (client.status !== 'active' || !client.email) { skipped++; continue }
 
     // Deduplicate — only send once per week per client
@@ -206,8 +210,9 @@ export async function GET(req) {
       // Mark as sent for this week (TTL 8 days)
       if (redis) await redis.set(sentKey, '1', { ex: 8 * 86400 }).catch(() => {})
       sent++
+      processed++
     } catch (e) {
-      console.error('[weekly-report] send error', client.email, e.message)
+      logger.error('cron-weekly-report', 'send error', { email: client.email, err: e.message })
     }
   }
 

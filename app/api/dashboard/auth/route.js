@@ -83,7 +83,8 @@ export async function POST(req) {
       secure: process.env.NODE_ENV === 'production',
     })
     return res
-  } catch {
+  } catch (err) {
+    logger.error('admin-auth', 'Unhandled error', { err: err.message })
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

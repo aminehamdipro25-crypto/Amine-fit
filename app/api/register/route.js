@@ -16,6 +16,8 @@ function sanitizeStr(v, max = STR_MAX) {
 }
 
 export async function POST(req) {
+  let giftCode = null
+  let isGift = false
   try {
     // Rate-limit: 5 registrations per hour per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
@@ -59,7 +61,7 @@ export async function POST(req) {
     }
 
     // Validate gift code early so we can set subscription fields before saving
-    const giftCode = sanitizeStr(body.giftCode, 12).toUpperCase()
+    giftCode = sanitizeStr(body.giftCode, 12).toUpperCase()
     let validatedGift = null
     if (giftCode) {
       try {
@@ -74,7 +76,7 @@ export async function POST(req) {
     const GIFT_PLAN_MAP = { training: 'basic', monthly: 'standard', '3months': 'premium' }
 
     const now = Date.now()
-    const isGift = validatedGift !== null
+    isGift = validatedGift !== null
     const subStart = isGift ? new Date(now).toISOString() : null
 
     // Pre-generate activation code for gift clients so they can log in immediately
@@ -217,7 +219,13 @@ export async function POST(req) {
         loginUrl: '/client/login',
       }, { status: 409 })
     }
-    logger.critical('register', 'Registration failed', { err: err.message })
+    if (isGift && giftCode) {
+      // Gift was already marked used before this failure — no account was created,
+      // so the code is effectively burned. Needs the admin to manually reissue it.
+      logger.critical('register', 'Gift code burned but account creation failed — needs manual reissue', { giftCode, err: err.message })
+    } else {
+      logger.critical('register', 'Registration failed', { err: err.message })
+    }
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 })
   }
 }

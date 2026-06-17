@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSubmissions, updateSubmission } from '@/lib/submissions'
 import { sendEmail } from '@/lib/mailer'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,7 +68,7 @@ export async function GET(req) {
         reminderSentAt: client.reminderSentAt || new Date().toISOString(),
       })
     } catch (writeErr) {
-      console.error('[abandoned-reminder] redis write error', client.email, writeErr.message)
+      logger.error('cron-abandoned-reminder', 'redis write error', { email: client.email, err: writeErr.message })
       continue
     }
 
@@ -75,7 +76,7 @@ export async function GET(req) {
       await sendEmail({ to: client.email, subject, html, text })
       reminded++
     } catch (emailErr) {
-      console.error('[abandoned-reminder] email error', client.email, emailErr.message)
+      logger.error('cron-abandoned-reminder', 'email error', { email: client.email, err: emailErr.message })
       // Roll back counter so the email is retried tomorrow
       try {
         await updateSubmission(client.id, {

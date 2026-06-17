@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isRateLimited } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,11 @@ async function redisCommand(cfg, command) {
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (await isRateLimited(`waitlist_ip:${ip}`, 5, 3600)) {
+      return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد ساعة' }, { status: 429 })
+    }
+
     const { email } = await req.json()
     const normalized = (email || '').toLowerCase().trim()
     if (!normalized || !/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(normalized)) {

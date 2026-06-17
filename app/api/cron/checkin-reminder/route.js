@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSubmissions } from '@/lib/submissions'
 import { sendPushToClient } from '@/lib/webPush'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,7 @@ const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000
 export async function GET(req) {
   const secret = process.env.CRON_SECRET
   if (!secret) {
-    console.error('[cron/checkin-reminder] CRON_SECRET not set — endpoint disabled')
+    logger.critical('cron-checkin-reminder', 'CRON_SECRET not set — endpoint disabled')
     return NextResponse.json({ error: 'not configured' }, { status: 503 })
   }
 
@@ -23,7 +24,7 @@ export async function GET(req) {
   try {
     clients = await getSubmissions()
   } catch (err) {
-    console.error('[cron/checkin-reminder] getSubmissions failed:', err.message)
+    logger.error('cron-checkin-reminder', 'getSubmissions failed', { err: err.message })
     return NextResponse.json({ error: 'failed to load clients' }, { status: 500 })
   }
 
@@ -64,7 +65,7 @@ export async function GET(req) {
         console.log(`[cron/checkin-reminder] push sent → ${client.id} (${client.name || client.email})`)
       }
     } catch (err) {
-      console.error(`[cron/checkin-reminder] push failed for ${client.id}:`, err.message)
+      logger.error('cron-checkin-reminder', 'push failed', { clientId: client.id, err: err.message })
     }
   }
 
