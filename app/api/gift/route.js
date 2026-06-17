@@ -3,8 +3,9 @@ import { isRateLimited } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
-const GIFT_PREFIX = 'gift_code:'
-const GIFT_TTL    = 60 * 24 * 60 * 60 // 60 days in seconds
+const GIFT_PREFIX      = 'gift_code:'
+const GIFT_LOCK_PREFIX = 'gift_lock:'
+const GIFT_TTL         = 60 * 24 * 60 * 60 // 60 days in seconds
 
 function getCfg() {
   const url   = process.env.UPSTASH_REDIS_REST_URL   || process.env.KV_REST_API_URL
@@ -82,6 +83,12 @@ export async function POST(req) {
   }
 
   if (gift.used) return NextResponse.json({ ok: false, reason: 'already_used' })
+
+  // Atomic redemption lock — SET ... NX guarantees only the first of any
+  // concurrent requests for this code can win, closing the GET-then-SETEX
+  // race that would otherwise let the same code be redeemed multiple times.
+  const lockAcquired = await redisCmd(cfg, 'SET', GIFT_LOCK_PREFIX + upperCode, email.toLowerCase().trim(), 'NX', 'EX', String(GIFT_TTL))
+  if (!lockAcquired) return NextResponse.json({ ok: false, reason: 'already_used' })
 
   // Mark as used — preserve TTL by re-setting with SETEX
   const updated = JSON.stringify({ ...gift, used: true, usedBy: email.toLowerCase().trim(), usedAt: new Date().toISOString() })

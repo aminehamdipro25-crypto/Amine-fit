@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { updateStatus, updateSubmission, deleteSubmission } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
+import { deleteClientSession } from '@/lib/clientSession'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export async function PATCH(req, { params }) {
       if (!allowed.includes(body.status)) return NextResponse.json({ error: 'قيمة غير صالحة' }, { status: 400 })
       const updated = await updateStatus(params.id, body.status)
       if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
+      if (body.status === 'suspended') await deleteClientSession(params.id)
       return NextResponse.json({ success: true, entry: updated })
     }
 

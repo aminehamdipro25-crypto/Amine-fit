@@ -59,23 +59,16 @@ async function verifyAdminSession(token) {
   } catch { return false }
 }
 
-// Check if client is suspended
+// Check if client is suspended — reads the per-record key (sub:{id}), not the
+// legacy single-blob key, which is permanently deleted after the one-time migration.
 async function isClientSuspended(clientId) {
-  const c = redisCfg()
-  if (!c) return false
+  const raw = await redisGet(`sub:${clientId}`)
+  if (raw === null || raw === undefined) return false
   try {
-    const res = await fetch(`${c.url}/get/amine_fit_submissions`, {
-      headers: { Authorization: `Bearer ${c.token}` },
-      cache: 'no-store',
-    })
-    if (!res.ok) return false
-    const data = await res.json()
-    let list = data.result
-    if (list === null || list === undefined) return false
-    if (typeof list === 'string') list = JSON.parse(list)
-    if (typeof list === 'string') list = JSON.parse(list)
-    if (!Array.isArray(list)) return false
-    return list.find(s => s.id === clientId)?.status === 'suspended'
+    let entry = raw
+    if (typeof entry === 'string') entry = JSON.parse(entry)
+    if (typeof entry === 'string') entry = JSON.parse(entry)
+    return entry?.status === 'suspended'
   } catch { return false }
 }
 
