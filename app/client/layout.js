@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck, UtensilsCrossed, CalendarDays } from 'lucide-react'
+import { Zap, LayoutDashboard, Utensils, Dumbbell, TrendingUp, LogOut, Menu, X, Eye, ArrowRight, Pencil, BookOpen, Paperclip, FlaskConical, ShoppingCart, Camera, MessageCircle, ClipboardList, MessageSquare, BookCheck, UtensilsCrossed, CalendarDays, Bell } from 'lucide-react'
 import PwaInstallBanner from '@/components/PwaInstallBanner'
 
 const navItems = [
@@ -171,6 +171,11 @@ export default function ClientLayout({ children }) {
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
+          <Link href="/client/notifications"
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition
+              ${pathname === '/client/notifications' ? 'bg-gold-400 text-black' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+            <Bell className="w-4 h-4" />
+          </Link>
           <div className="w-8 h-8 rounded-full bg-[#0a0a0a] text-gold-400 flex items-center justify-center font-extrabold text-sm">
             {clientInitial}
           </div>

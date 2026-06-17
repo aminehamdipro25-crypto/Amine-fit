@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown, Share2, Download } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar, X, Send, ClipboardList, Upload, ImageIcon, Loader2, Trash2, Trophy, Dumbbell, MessageCircle, TrendingDown, Share2, Download, Utensils } from 'lucide-react'
 import { SkeletonDashboard } from '@/components/SkeletonLoader'
 import PushSubscriber from '@/components/PushSubscriber'
 
@@ -235,6 +235,68 @@ function WaterWidget() {
         {pct >= 100 && (
           <p className="text-xs font-bold text-blue-600 text-center">🎉 وصلت هدف اليوم! ممتاز</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Food log widget ────────────────────────────────────────────────────── */
+function FoodLogWidget() {
+  const [calories, setCalories] = useState(0)
+  const [target,   setTarget]   = useState(0)
+  const [loaded,   setLoaded]   = useState(false)
+
+  const today = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/client/me').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/client/food-log?date=${today}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([client, log]) => {
+      const t = client?.plan?.nutrition?.calories || client?.nutritionCalcPlan?.target || 0
+      setTarget(t)
+      const entries = Array.isArray(log?.entries) ? log.entries : []
+      setCalories(entries.reduce((s, e) => s + (e.calories || 0), 0))
+      setLoaded(true)
+    })
+  }, [today])
+
+  if (!loaded || !target) return null
+
+  const pct = Math.min(100, Math.round((calories / target) * 100))
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+            <Utensils className="w-4 h-4 text-amber-500" />
+          </div>
+          <div>
+            <p className="font-extrabold text-slate-800 text-sm">سعراتي اليوم</p>
+            <p className="text-[10px] text-slate-400 font-medium">من سجل طعامك</p>
+          </div>
+        </div>
+        <Link href="/client/food-log"
+          className="text-xs font-bold text-amber-500 hover:text-amber-600 transition">
+          عرض السجل ←
+        </Link>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-extrabold text-slate-800">{calories} / {target} سعرة</span>
+          <span className="text-xs font-bold text-slate-400">{pct}%</span>
+        </div>
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
     </div>
   )
@@ -1597,6 +1659,9 @@ export default function ClientDashboard() {
 
       {/* Water tracker */}
       <WaterWidget />
+
+      {/* Food log */}
+      <FoodLogWidget />
 
       {/* Weekly check-in */}
       <WeeklyCheckin />

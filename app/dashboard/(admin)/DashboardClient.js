@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Users, TrendingUp, ClipboardList, CheckCircle2,
-  ArrowUpRight, Clock, Eye, Zap, Tag, X, Flame, Send, MessageSquare,
+  ArrowUpRight, Clock, Eye, Zap, Tag, X, Flame, Send, MessageSquare, CalendarDays,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell,
@@ -351,6 +351,39 @@ function BroadcastMessage() {
   )
 }
 
+function AppointmentsWidget() {
+  const [pending, setPending] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/admin/appointments?status=pending')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPending(Array.isArray(d?.appointments) ? d.appointments : []))
+      .catch(() => setPending([]))
+  }, [])
+
+  return (
+    <Link href="/dashboard/appointments"
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center justify-between gap-4 hover:-translate-y-1 transition-transform">
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
+          <CalendarDays className="w-5 h-5 text-indigo-500" />
+        </div>
+        <div>
+          <p className="font-extrabold text-slate-800 text-sm">طلبات المواعيد</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {pending === null ? 'جاري التحميل...' : pending.length > 0 ? `${pending.length} طلب يحتاج موافقتك` : 'لا توجد طلبات معلقة'}
+          </p>
+        </div>
+      </div>
+      {pending !== null && pending.length > 0 && (
+        <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 flex-shrink-0">
+          {pending.length}
+        </span>
+      )}
+    </Link>
+  )
+}
+
 function TelegramTest() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -503,6 +536,9 @@ export default function DashboardClient({ submissions }) {
           </div>
         </div>
       </div>
+
+      {/* Appointments */}
+      <AppointmentsWidget />
 
       {/* Pricing Manager */}
       <PricingManager />
