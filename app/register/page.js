@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Dumbbell, CheckCircle2, Loader2, Star, RotateCcw } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
+import { trackPixel } from '@/lib/pixel'
 import { COUNTRIES, COUNTRY_GROUPS } from '@/lib/countries'
 
 const LS_FORM = 'af_reg_form'
@@ -234,6 +235,26 @@ export default function RegisterPage() {
     }, 60)
   }
 
+  // Saves a snapshot of the in-progress form so the lead isn't fully lost
+  // if the visitor abandons before the final submit — fire-and-forget.
+  function saveDraftRemote(nextForm, nextStep) {
+    if (!nextForm.email) return
+    fetch('/api/register/draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: nextForm.email,
+        name: nextForm.name,
+        phone: nextForm.phone,
+        country: nextForm.country,
+        goal: nextForm.goal,
+        interestedPlan: nextForm.interestedPlan,
+        heardFrom: nextForm.heardFrom,
+        step: nextStep,
+      }),
+    }).catch(() => {})
+  }
+
   function next() {
     const errs = validate(step, form)
     if (Object.keys(errs).length) {
@@ -243,7 +264,10 @@ export default function RegisterPage() {
     }
     setErrors({})
     trackEvent('form_step_complete', { step_number: step + 1, step_name: STEPS[step].title })
-    setStep(s => s + 1)
+    if (step === 0) trackPixel('Lead', { content_name: 'registration_step_0' })
+    const nextStep = step + 1
+    setStep(nextStep)
+    saveDraftRemote(form, nextStep)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -278,6 +302,7 @@ export default function RegisterPage() {
         gender: form.gender,
         heard_from: form.heardFrom,
       })
+      trackPixel('CompleteRegistration', { content_name: form.interestedPlan || 'none' })
       // Clear saved data after successful submission
       try { localStorage.removeItem(LS_FORM); localStorage.removeItem(LS_STEP) } catch {}
       const planParam  = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, Loader2, Wallet, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { trackEvent } from '@/lib/gtag'
+import { trackPixel } from '@/lib/pixel'
 
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
@@ -103,6 +104,7 @@ export default function PaymentPage() {
     const g = params.get('gift')
     if (g) { setGiftCode(g.toUpperCase()); validateGift(g.toUpperCase()) }
     trackEvent('payment_page_view')
+    trackPixel('ViewContent', { content_name: 'payment_page' })
   }, [])
 
   async function validateGift(code) {
@@ -153,6 +155,7 @@ export default function PaymentPage() {
       const data = await res.json()
       if (data.url) {
         trackEvent('payment_stripe_redirect', { plan_name: plan?.name })
+        trackPixel('AddPaymentInfo', { content_name: plan?.name })
         window.location.href = data.url
       }
     } catch {}
@@ -205,7 +208,7 @@ export default function PaymentPage() {
           <div className="max-w-4xl mx-auto px-4 pb-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
             {PLANS.map(p => (
               <div key={p.id}
-                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: Number(p.price) }) }}
+                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: Number(p.price) }); trackPixel('AddToCart', { content_name: p.name, value: Number(p.price), currency: 'TND' }) }}
                 className={`rounded-3xl p-6 border cursor-pointer transition-all ${
                   p.highlight
                     ? selected === p.id
@@ -343,7 +346,7 @@ export default function PaymentPage() {
               {isGulf ? (
                 /* Gulf: Fawra + Card */
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }) }}
+                  <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.priceQar), currency: 'QAR' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
                     <Wallet className="w-7 h-7 text-[#fbbf24]" />
                     <div className="text-center">
@@ -351,7 +354,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تحويل فوري — قطر</p>
                     </div>
                   </button>
-                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }) }}
+                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.priceQar), currency: 'QAR' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
                     <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
                     <CreditCard className="w-7 h-7 text-[#fbbf24]" />
@@ -365,7 +368,7 @@ export default function PaymentPage() {
                 /* Maghreb: D17 + Post + Card */
                 <div className="grid grid-cols-3 gap-3 mb-6">
                   <button
-                    onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }) } }}
+                    onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.price), currency: 'TND' }) } }}
                     disabled={!D17_READY}
                     className={`bg-[#1a1a1a] border border-white/10 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative ${D17_READY ? 'hover:bg-white/5 hover:border-[#fbbf24]/40 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                     {!D17_READY && (
@@ -377,7 +380,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                     </div>
                   </button>
-                  <button onClick={() => { setMethod('post'); trackEvent('payment_method_selected', { method: 'post', plan_name: plan?.name }) }}
+                  <button onClick={() => { setMethod('post'); trackEvent('payment_method_selected', { method: 'post', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.price), currency: 'TND' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
                     <MapPin className="w-7 h-7 text-[#fbbf24]" />
                     <div className="text-center">
@@ -385,7 +388,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                     </div>
                   </button>
-                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }) }}
+                  <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.price), currency: 'TND' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
                     <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
                     <CreditCard className="w-7 h-7 text-[#fbbf24]" />
@@ -473,7 +476,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
-                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'd17', plan_name: plan?.name, plan_price: Number(plan?.price) })}
+                onClick={() => { trackEvent('whatsapp_payment_clicked', { method: 'd17', plan_name: plan?.name, plan_price: Number(plan?.price) }); trackPixel('Contact', { content_name: plan?.name }) }}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب
@@ -524,7 +527,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
-                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'post', plan_name: plan?.name, plan_price: Number(plan?.price) })}
+                onClick={() => { trackEvent('whatsapp_payment_clicked', { method: 'post', plan_name: plan?.name, plan_price: Number(plan?.price) }); trackPixel('Contact', { content_name: plan?.name }) }}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب
@@ -576,7 +579,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <a href={`https://wa.me/${WA}?text=${waMessage()}`} target="_blank" rel="noreferrer"
-                onClick={() => trackEvent('whatsapp_payment_clicked', { method: 'fawra', plan_name: plan?.name, plan_price: Number(plan?.priceQar) })}
+                onClick={() => { trackEvent('whatsapp_payment_clicked', { method: 'fawra', plan_name: plan?.name, plan_price: Number(plan?.priceQar) }); trackPixel('Contact', { content_name: plan?.name }) }}
                 className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4">
                 <MessageCircle className="w-5 h-5" fill="white" />
                 أرسل إثبات الدفع على واتساب

@@ -4,6 +4,7 @@ import { saveSubmission, getSubmissionByEmail, updateSubmission } from '@/lib/su
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendEmail } from '@/lib/mailer'
+import { deleteDraft } from '@/lib/leadDraft'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -173,8 +174,8 @@ export async function POST(req) {
     }
 
     const entry = await saveSubmission(safeEntry)
-    console.log('[register] saved OK:', entry.id, isGift ? '(gift)' : '(pending)')
-    sendEmailNotification(entry).catch(err => console.error('[email error]', err.message))
+    deleteDraft(emailLower).catch(() => {})
+    sendEmailNotification(entry).catch(err => logger.error('register', 'notification email failed', { err: err.message }))
 
     // Telegram push notification to admin
     const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
