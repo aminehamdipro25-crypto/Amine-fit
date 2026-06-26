@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById, updateSubmission } from '@/lib/submissions'
+import { processReferralReward } from '@/lib/referral'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,8 @@ export async function POST(req, { params }) {
     sendActivationEmail(client, activationCode).catch(e => console.error('[subscription activation email]', e.message))
     activationSent = true
   }
+
+  if (client.referredBy) processReferralReward(params.id).catch(() => {})
 
   return NextResponse.json({
     success: true,
