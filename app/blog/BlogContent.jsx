@@ -21,7 +21,16 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fb]" dir="rtl">
       {/* Hero */}
-      <div className="bg-[#0a0a0a] text-white pt-20 pb-16 px-4 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0a0a0a] to-[#161616] text-white pt-20 pb-16 px-4 relative overflow-hidden">
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',
+            backgroundSize: '50px 50px',
+          }} />
+        {/* Gold glows */}
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-amber-400/6 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute inset-0 opacity-5 pointer-events-none select-none">
           {['🥗','🏋️','🔬','💪','🌙','📊'].map((e, i) => (
             <span key={i} className="absolute text-7xl" style={{
@@ -32,9 +41,11 @@ export default function BlogPage() {
           ))}
         </div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <p className="text-amber-400 text-xs font-extrabold uppercase tracking-widest mb-4">مدونة Amine-Fit</p>
+          <div className="inline-flex items-center gap-2 border border-amber-400/25 bg-amber-400/5 rounded-full px-4 py-1.5 mb-5">
+            <span className="text-amber-400 text-xs font-extrabold uppercase tracking-widest">مدونة Amine-Fit</span>
+          </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
-            تغذية · لياقة · علم
+            تغذية · لياقة · <span className="text-amber-400">علم</span>
           </h1>
           <p className="text-white/40 text-base font-medium max-w-xl mx-auto mb-8">
             مقالات علمية مبسّطة من المدرب أمين حمدي — مدرب شخصي معتمد في الدوحة، قطر

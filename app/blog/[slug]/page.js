@@ -35,6 +35,13 @@ const colorMap = {
   gold:    'bg-amber-100 text-amber-700',
 }
 
+const glowMap = {
+  emerald: 'bg-emerald-400/10',
+  blue:    'bg-blue-400/10',
+  sky:     'bg-sky-400/10',
+  gold:    'bg-amber-400/10',
+}
+
 function slugify(text, index) {
   const cleaned = text
     .replace(/\*\*/g, '')
@@ -170,7 +177,15 @@ export default function BlogPost({ params }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
       {/* Hero */}
-      <div className="bg-[#0a0a0a] text-white py-16 px-4 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0a0a0a] to-[#161616] text-white py-16 px-4 relative overflow-hidden">
+        {/* Grid overlay */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)',
+            backgroundSize: '50px 50px',
+          }} />
+        {/* Category-tinted glow */}
+        <div className={`absolute top-0 left-1/3 w-[450px] h-[450px] rounded-full blur-3xl pointer-events-none ${glowMap[post.categoryColor] || 'bg-amber-400/8'}`} />
         <div className="absolute -left-10 -top-10 text-[10rem] opacity-5 select-none pointer-events-none">{post.emoji}</div>
         <div className="max-w-2xl mx-auto relative z-10">
           <Link href="/blog" className="inline-flex items-center gap-2 text-white/40 hover:text-white text-sm font-medium mb-6 transition-colors">
