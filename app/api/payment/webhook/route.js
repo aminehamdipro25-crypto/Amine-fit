@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendEmail } from '@/lib/mailer'
+import { processReferralReward } from '@/lib/referral'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -102,6 +103,8 @@ export async function POST(req) {
       `(أُرسل تلقائياً للعميل)\n\n` +
       `<a href="${BASE}/dashboard/clients">⚡ لوحة التحكم</a>`
     ).catch(() => {})
+
+    if (client.referredBy) processReferralReward(client.id).catch(() => {})
 
     console.log('[webhook] activated client:', client.id, plan)
   } catch (err) {

@@ -5,6 +5,7 @@ import { isRateLimited } from '@/lib/rateLimit'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendEmail } from '@/lib/mailer'
 import { deleteDraft } from '@/lib/leadDraft'
+import { processReferralReward } from '@/lib/referral'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -176,6 +177,9 @@ export async function POST(req) {
     const entry = await saveSubmission(safeEntry)
     deleteDraft(emailLower).catch(() => {})
     sendEmailNotification(entry).catch(err => logger.error('register', 'notification email failed', { err: err.message }))
+    // Gift signups are active with a subscriptionEndDate immediately — eligible for referral reward now.
+    // Paid signups stay 'pending' here and get processed later when the admin sets their subscription.
+    if (isGift && entry.referredBy) processReferralReward(entry.id).catch(() => {})
 
     // Telegram push notification to admin
     const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
