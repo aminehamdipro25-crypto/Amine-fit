@@ -18,7 +18,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [banner, setBanner] = useState(true)
+  const [banner, setBanner] = useState(false)
+  const [offerLabel, setOfferLabel] = useState('')
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -28,6 +29,18 @@ export default function Navbar() {
 
   useEffect(() => {
     fetch('/api/dashboard/auth').then(r => { if (r.ok) setIsAdmin(true) }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/offer')
+      .then(r => r.ok ? r.json() : null)
+      .then(offer => {
+        if (offer?.active) {
+          setOfferLabel(`خصم ${offer.discount}% على جميع الباقات — ${offer.label}`)
+          setBanner(true)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   async function logout() {
@@ -43,7 +56,7 @@ export default function Navbar() {
         <div className="relative bg-gradient-to-r from-red-700 via-red-600 to-red-700 text-white text-center py-2.5 px-10">
           <div className="flex items-center justify-center gap-2 text-sm font-bold">
             <Flame className="w-4 h-4 animate-pulse flex-shrink-0" />
-            <span>🎉 عرض الإطلاق — خصم <strong>50%</strong> على جميع الباقات لفترة محدودة</span>
+            <span>🎉 {offerLabel}</span>
             <a href="#pricing"
               className="mr-2 border border-white/40 text-white text-xs font-extrabold px-3 py-0.5 rounded-full hover:bg-white/10 transition flex-shrink-0">
               احجز الآن
