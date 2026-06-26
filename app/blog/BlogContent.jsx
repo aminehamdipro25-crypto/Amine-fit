@@ -154,13 +154,17 @@ export default function BlogPage() {
         )}
 
         {/* CTA */}
-        <div className="mt-14 bg-[#0a0a0a] rounded-3xl p-8 text-center">
-          <p className="text-white font-extrabold text-xl mb-2">هل تريد خطة مخصصة لك؟</p>
-          <p className="text-white/40 text-sm mb-6">برنامج تغذية وتدريب مصمم خصيصاً بناءً على جسمك وأهدافك</p>
-          <Link href="/register"
-            className="inline-block px-7 py-3.5 bg-amber-400 text-black font-extrabold rounded-2xl hover:bg-amber-300 transition-all shadow-lg shadow-amber-400/20 text-sm">
-            ⚡ ابدأ رحلتك الآن
-          </Link>
+        <div className="mt-14 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] border border-white/5 p-8 text-center shadow-xl shadow-black/30">
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <p className="text-white font-extrabold text-xl mb-2">هل تريد خطة مخصصة لك؟</p>
+            <p className="text-white/40 text-sm mb-6">برنامج تغذية وتدريب مصمم خصيصاً بناءً على جسمك وأهدافك</p>
+            <Link href="/register"
+              className="inline-block px-7 py-3.5 bg-amber-400 text-black font-extrabold rounded-2xl hover:bg-amber-300 transition-all shadow-lg shadow-amber-400/20 text-sm">
+              ⚡ ابدأ رحلتك الآن
+            </Link>
+          </div>
         </div>
       </div>
     </div>

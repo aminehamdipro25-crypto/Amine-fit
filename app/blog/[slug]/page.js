@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getPostBySlug, posts } from '@/lib/blogPosts'
-import { ArrowRight, List, BadgeCheck } from 'lucide-react'
+import { ArrowRight, List, BadgeCheck, Zap } from 'lucide-react'
 import ShareBar from '@/components/blog/ShareBar'
 
 export function generateStaticParams() {
@@ -261,13 +261,20 @@ export default function BlogPost({ params }) {
         )}
 
         {/* CTA */}
-        <div className="mt-12 bg-[#0a0a0a] rounded-2xl p-6 text-center">
-          <p className="text-white font-extrabold text-lg mb-2">هل تريد خطة مخصصة؟</p>
-          <p className="text-white/40 text-sm mb-4">احصل على برنامج تغذية وتدريب مصمم خصيصاً لك</p>
-          <Link href="/register"
-            className="inline-block px-6 py-3 bg-[#fbbf24] text-black font-extrabold rounded-xl hover:bg-[#f59e0b] transition text-sm">
-            ابدأ الآن
-          </Link>
+        <div className="mt-12 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] border border-white/5 p-8 text-center shadow-xl shadow-black/30">
+          <div className="absolute -top-10 -right-10 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-400/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-400/10 mb-4">
+              <Zap className="w-6 h-6 text-amber-400" fill="currentColor" />
+            </div>
+            <p className="text-white font-extrabold text-xl mb-2">هل تريد خطة مخصصة؟</p>
+            <p className="text-white/40 text-sm mb-6">احصل على برنامج تغذية وتدريب مصمم خصيصاً لك بناءً على جسمك وأهدافك</p>
+            <Link href="/register"
+              className="inline-block px-7 py-3.5 bg-amber-400 text-black font-extrabold rounded-2xl hover:bg-amber-300 transition-all shadow-lg shadow-amber-400/20 text-sm">
+              ⚡ ابدأ رحلتك الآن
+            </Link>
+          </div>
         </div>
       </div>
     </div>
