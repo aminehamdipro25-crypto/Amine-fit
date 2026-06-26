@@ -64,11 +64,25 @@ function FAQItem({ q, a, open, toggle }) {
   )
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+}
+
 export default function FAQ() {
   const [openIdx, setOpenIdx] = useState(0)
 
   return (
     <section id="faq" className="py-24 bg-[#0a0a0a]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div className="flex items-center justify-center gap-2 mb-3">

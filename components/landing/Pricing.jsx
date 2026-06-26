@@ -182,7 +182,7 @@ function Digit({ val, label }) {
   )
 }
 
-function PlanModal({ plan, onClose, zone }) {
+function PlanModal({ plan, onClose, zone, offerActive }) {
   const isGold   = plan.color === 'gold'
   const isGulf   = zone === 'gulf'
   const dispPrice = isGulf ? plan.salePriceQar : plan.salePrice
@@ -225,12 +225,16 @@ function PlanModal({ plan, onClose, zone }) {
           <div className="flex items-end gap-2 mt-4 flex-wrap">
             <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{dispPrice}</span>
             <div className="mb-1">
-              <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{dispOrig} {dispCur}</span>
+              {offerActive && (
+                <span className={`line-through text-sm block ${isGold ? 'text-black/30' : 'text-white/25'}`}>{dispOrig} {dispCur}</span>
+              )}
               <span className={`text-xs font-bold ${isGold ? 'text-black/40' : 'text-white/30'}`}>{dispCur} {plan.period}</span>
             </div>
-            <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">
-              -{discPct}%
-            </span>
+            {offerActive && (
+              <span className="mb-2 bg-red-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">
+                -{discPct}%
+              </span>
+            )}
           </div>
         </div>
 
@@ -333,6 +337,7 @@ export default function Pricing() {
   const { time: { d, h, m, s, expired, loaded }, label: offerLabel } = useCountdown()
   const { pricing, zone } = usePricingAndGeo()
   const plans = buildPlans(pricing)
+  const offerActive = loaded && !expired
 
   // Per-plan price helper based on visitor zone
   function pPrice(p)     { return zone === 'gulf' ? p.salePriceQar  : p.salePrice }
@@ -342,7 +347,7 @@ export default function Pricing() {
 
   return (
     <section id="pricing" className="py-24 bg-[#0f0f0f]">
-      {activePlan && <PlanModal plan={activePlan} onClose={() => setActivePlan(null)} zone={zone} />}
+      {activePlan && <PlanModal plan={activePlan} onClose={() => setActivePlan(null)} zone={zone} offerActive={offerActive} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -415,11 +420,13 @@ export default function Pricing() {
                     {p.badge}
                   </div>
                 )}
-                <div className="absolute -top-3.5 left-6">
-                  <span className="flex items-center gap-1 bg-red-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
-                    <Tag className="w-3 h-3" />-50%
-                  </span>
-                </div>
+                {offerActive && (
+                  <div className="absolute -top-3.5 left-6">
+                    <span className="flex items-center gap-1 bg-red-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
+                      <Tag className="w-3 h-3" />-50%
+                    </span>
+                  </div>
+                )}
 
                 {/* Plan header */}
                 <div className="flex items-center gap-3 mb-5 mt-1">
@@ -431,17 +438,21 @@ export default function Pricing() {
                 </div>
 
                 {/* Price */}
-                <div className="flex items-end gap-2 mb-1">
+                <div className={`flex items-end gap-2 ${offerActive ? 'mb-1' : 'mb-5'}`}>
                   <span className={`text-4xl font-extrabold ${isGold ? 'text-black' : 'text-white'}`}>{pPrice(p)}</span>
                   <div className="mb-1">
-                    <span className={`line-through text-xs block font-bold ${isGold ? 'text-black/30' : 'text-white/25'}`}>{pOrig(p)} {pCurrency(p)}</span>
+                    {offerActive && (
+                      <span className={`line-through text-xs block font-bold ${isGold ? 'text-black/30' : 'text-white/25'}`}>{pOrig(p)} {pCurrency(p)}</span>
+                    )}
                     <span className={`text-xs font-medium ${isGold ? 'text-black/50' : 'text-white/30'}`}>{pCurrency(p)} {pPeriod(p)}</span>
                   </div>
                 </div>
-                <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full mb-5
-                  ${isGold ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                  💰 توفير {Number(pOrig(p)) - Number(pPrice(p))} {pCurrency(p)}
-                </div>
+                {offerActive && (
+                  <div className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-0.5 rounded-full mb-5
+                    ${isGold ? 'bg-black/10 text-black' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    💰 توفير {Number(pOrig(p)) - Number(pPrice(p))} {pCurrency(p)}
+                  </div>
+                )}
 
                 {/* Highlights preview */}
                 <ul className="space-y-2.5 mb-6">

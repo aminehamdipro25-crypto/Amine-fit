@@ -1,4 +1,11 @@
-export const metadata = { title: 'شروط الاستخدام — AmineFit' }
+const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+
+export const metadata = {
+  title: 'شروط الاستخدام — AmineFit',
+  description: 'شروط استخدام خدمات Amine-Fit للتدريب الشخصي والتخطيط الغذائي عن بُعد — الاشتراك، الدفع، والتزامات العميل.',
+  alternates: { canonical: `${BASE}/legal/terms` },
+  robots: { index: true, follow: true },
+}
 
 export default function Terms() {
   return (

@@ -32,21 +32,21 @@ export default function WaitingList() {
 
         <div className="inline-flex items-center gap-2 border border-gold-400/25 bg-gold-400/5 rounded-full px-4 py-2 mb-6">
           <Bell className="w-4 h-4 text-gold-400" />
-          <span className="text-gold-400 text-xs font-extrabold uppercase tracking-wider">الأماكن محدودة</span>
+          <span className="text-gold-400 text-xs font-extrabold uppercase tracking-wider">نصائح أسبوعية مجانية</span>
         </div>
 
         <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 tracking-tight">
-          لا تفوّت الإطلاق الرسمي
+          لست جاهزاً للاشتراك الآن؟
         </h2>
         <p className="text-white/40 text-sm leading-relaxed mb-8 font-medium max-w-md mx-auto">
-          سجّل بريدك الإلكتروني لتكون من أوائل المسجلين وتحصل على عرض حصري عند الإطلاق الرسمي.
+          سجّل بريدك الإلكتروني واحصل على نصائح تغذية وتدريب أسبوعية من المدرب أمين، وعرض حصري عندما تكون جاهزاً.
         </p>
 
         {status === 'done' ? (
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-7 flex flex-col items-center gap-3">
             <CheckCircle2 className="w-12 h-12 text-emerald-400" />
             <p className="text-white font-extrabold text-lg">تم التسجيل بنجاح!</p>
-            <p className="text-white/40 text-sm">سنرسل لك إشعاراً قبل الإطلاق مباشرة.</p>
+            <p className="text-white/40 text-sm">ستصلك النصائح والعروض الحصرية على بريدك.</p>
           </div>
         ) : (
           <form onSubmit={submit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -72,7 +72,7 @@ export default function WaitingList() {
         )}
 
         <p className="text-white/20 text-xs mt-5 font-medium">
-          لن نرسل لك سبام — فقط إشعار الإطلاق وعرض حصري للمسجلين الأوائل
+          لن نرسل لك سبام — فقط نصائح مفيدة وعروض حصرية من وقت لآخر
         </p>
       </div>
     </section>

@@ -1,4 +1,11 @@
-export const metadata = { title: 'سياسة الإلغاء — AmineFit' }
+const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+
+export const metadata = {
+  title: 'سياسة الإلغاء — AmineFit',
+  description: 'سياسة إلغاء الاشتراك والاسترداد في Amine-Fit — ضمان استرداد كامل خلال 7 أيام وضمان النتيجة للباقة الاحترافية.',
+  alternates: { canonical: `${BASE}/legal/cancellation` },
+  robots: { index: true, follow: true },
+}
 
 export default function Cancellation() {
   return (

@@ -1,4 +1,11 @@
-export const metadata = { title: 'سياسة الخصوصية — AmineFit' }
+const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
+
+export const metadata = {
+  title: 'سياسة الخصوصية — AmineFit',
+  description: 'كيف يجمع ويستخدم ويحمي Amine-Fit بياناتك الشخصية والصحية — لا نبيع أو نشارك بياناتك مع أي طرف ثالث.',
+  alternates: { canonical: `${BASE}/legal/privacy` },
+  robots: { index: true, follow: true },
+}
 
 export default function Privacy() {
   return (
