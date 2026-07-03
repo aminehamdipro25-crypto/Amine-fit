@@ -33,7 +33,14 @@ export async function POST(req) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     if (await isRateLimited(`admin_login:${ip}`, 5, 900)) {
-      sendSecurityAlert({ type: 'admin_brute_force', ip, detail: 'تجاوز 5 محاولات خاطئة في 15 دقيقة' }).catch(() => {})
+      // Deduplicate alerts: only fire one email per IP per 15-minute window
+      const c = redisCfg()
+      if (c) {
+        const alertResults = await redisPipeline(c, [['SET', `admin_brute_alerted:${ip}`, '1', 'NX', 'EX', '900']])
+        if (alertResults[0]?.result === 'OK') {
+          sendSecurityAlert({ type: 'admin_brute_force', ip, detail: 'تجاوز 5 محاولات خاطئة في 15 دقيقة' }).catch(() => {})
+        }
+      }
       return NextResponse.json({ error: 'محاولات كثيرة — حاول بعد 15 دقيقة' }, { status: 429 })
     }
 
@@ -62,7 +69,7 @@ export async function POST(req) {
     if (hasTelegram()) {
       const c = redisCfg()
       if (c) {
-        const otp          = String(Math.floor(100000 + Math.random() * 900000))
+        const otp          = String(crypto.randomInt(100000, 1000000))
         const pendingToken = crypto.randomBytes(24).toString('base64url')
         await redisPipeline(c, [
           ['SET', `admin_pending:${pendingToken}`, otp, 'EX', '300'],

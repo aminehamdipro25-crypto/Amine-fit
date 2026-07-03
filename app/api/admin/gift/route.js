@@ -50,6 +50,7 @@ export async function POST(req) {
     .map(b => chars[b % chars.length]).join('')
 
   const gift = {
+    giftCode: code,
     plan,
     planName: PLAN_INFO[plan].name,
     price: PLAN_INFO[plan].price,

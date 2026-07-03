@@ -75,18 +75,20 @@ export async function POST(req) {
   catch { return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 }) }
 
   const { data, filename, mimeType } = body
-  const ALLOWED_MIME = ['data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp']
-  if (!data || typeof data !== 'string' || !ALLOWED_MIME.some(m => data.startsWith(m + ','))) {
+  const ALLOWED_MIME_PREFIXES = ['data:image/jpeg;base64,', 'data:image/jpg;base64,', 'data:image/png;base64,', 'data:image/webp;base64,']
+  const ALLOWED_MIME_TYPES    = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  if (!data || typeof data !== 'string' || !ALLOWED_MIME_PREFIXES.some(m => data.startsWith(m))) {
     return NextResponse.json({ error: 'نوع الملف غير مدعوم، استخدم JPG أو PNG فقط' }, { status: 400 })
   }
   if (data.length > 5_500_000) {
     return NextResponse.json({ error: 'حجم الصورة كبير جداً (الحد الأقصى 4 ميغابايت)' }, { status: 400 })
   }
+  const safeMimeType = ALLOWED_MIME_TYPES.includes(String(mimeType)) ? String(mimeType) : 'image/jpeg'
 
   const receipt = {
     data,
     filename:   String(filename || 'receipt.jpg').slice(0, 200),
-    mimeType:   String(mimeType || 'image/jpeg'),
+    mimeType:   safeMimeType,
     uploadedAt: new Date().toISOString(),
     size:       data.length,
     clientId:   payload.id,

@@ -68,7 +68,10 @@ export async function POST(req) {
     if (giftCode) {
       try {
         const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-        const giftRes = await fetch(`${BASE}/api/gift?code=${encodeURIComponent(giftCode)}`, { cache: 'no-store' })
+        const giftRes = await fetch(`${BASE}/api/gift?code=${encodeURIComponent(giftCode)}`, {
+          cache: 'no-store',
+          headers: process.env.CRON_SECRET ? { 'x-internal-secret': process.env.CRON_SECRET } : {},
+        })
         const giftData = await giftRes.json()
         if (giftData.valid) validatedGift = giftData
       } catch { /* gift validation failure is non-fatal — fall through to pending */ }
@@ -162,7 +165,10 @@ export async function POST(req) {
         const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
         const markRes = await fetch(`${BASE}/api/gift`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(process.env.CRON_SECRET ? { 'x-internal-secret': process.env.CRON_SECRET } : {}),
+          },
           body: JSON.stringify({ code: giftCode, email: emailLower }),
         })
         const markData = await markRes.json()

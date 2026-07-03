@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createAdminSession } from '@/lib/adminSession'
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
@@ -37,7 +38,11 @@ export async function POST(req) {
     const results   = await redisPipeline(c, [['GETDEL', `admin_pending:${pending}`]])
     const storedOtp = results[0]?.result
 
-    if (!storedOtp || storedOtp !== String(otp).trim()) {
+    // Use constant-time comparison to prevent timing side-channel on OTP
+    const storedBuf = Buffer.from(String(storedOtp || '').padEnd(6, '\0'), 'utf8')
+    const inputBuf  = Buffer.from(String(otp || '').trim().padEnd(6, '\0'), 'utf8')
+    const otpMatch  = storedOtp && storedBuf.length === inputBuf.length && crypto.timingSafeEqual(storedBuf, inputBuf)
+    if (!otpMatch) {
       sendSecurityAlert({ type: 'admin_otp_fail', ip, detail: 'رمز 2FA غير صحيح' }).catch(() => {})
       return NextResponse.json({ error: 'رمز التحقق غير صحيح أو منتهي الصلاحية' }, { status: 401 })
     }

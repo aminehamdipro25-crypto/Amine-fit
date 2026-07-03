@@ -61,12 +61,14 @@ export async function GET(req) {
   })
 }
 
-// POST /api/gift/redeem — mark a gift code as used after successful registration
-// Called internally from the register flow with { code, email }
+// POST /api/gift — mark a gift code as used after successful registration
+// Internal-only: requires X-Internal-Secret header matching CRON_SECRET.
+// This prevents unauthenticated external callers from burning codes.
 export async function POST(req) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (await isRateLimited(`gift_redeem:${ip}`, 5, 3600)) {
-    return NextResponse.json({ ok: false }, { status: 429 })
+  const secret = process.env.CRON_SECRET
+  const provided = req.headers.get('x-internal-secret')
+  if (!secret || !provided || provided !== secret) {
+    return NextResponse.json({ ok: false }, { status: 401 })
   }
 
   const { code, email } = await req.json().catch(() => ({}))

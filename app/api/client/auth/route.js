@@ -4,6 +4,10 @@ import { getSubmissionByEmail, updateSubmission } from '@/lib/submissions'
 import { createToken } from '@/lib/clientAuth'
 import { createClientSession, deleteClientSession } from '@/lib/clientSession'
 import { hashPassword, verifyPassword } from '@/lib/password'
+
+// Precomputed at module init — used for constant-time login checks when user does not exist,
+// preventing timing-based account enumeration attacks.
+const DUMMY_HASH = hashPassword('__amine_fit_dummy_never_matches__')
 import { isRateLimited } from '@/lib/rateLimit'
 import { sendSecurityAlert } from '@/lib/securityAlert'
 import { logger } from '@/lib/logger'
@@ -116,8 +120,9 @@ async function handleLogin(email, password) {
   }
 
   const client = await getSubmissionByEmail(email.toLowerCase().trim())
-  const stored = client?.clientPassword || ''
-  const match  = stored && verifyPassword(password, stored)
+  const stored = client?.clientPassword
+  // Always call verifyPassword (even against dummy hash) to prevent timing oracle
+  const match  = verifyPassword(password, stored || DUMMY_HASH) && !!stored
 
   if (!client || !match) {
     return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 })
