@@ -103,7 +103,7 @@ function SuccessContent() {
           {[
             { n: 1, label: 'التسجيل',  done: true  },
             { n: 2, label: 'الدفع',    done: false, active: true },
-            { n: 3, label: 'التفعيل',  done: false },
+            { n: 3, label: 'التفعيل',  done: false, href: '/client/login' },
           ].map((s, i) => (
             <div key={s.n} className="flex items-center gap-1">
               <div className="flex flex-col items-center gap-1">
@@ -114,7 +114,11 @@ function SuccessContent() {
                 }`}>
                   {s.done ? '✓' : s.n}
                 </div>
-                <span className={`text-xs font-bold ${s.active ? 'text-[#fbbf24]' : s.done ? 'text-emerald-400' : 'text-white/25'}`}>{s.label}</span>
+                {s.href ? (
+                  <Link href={s.href} className={`text-xs font-bold underline underline-offset-2 ${s.active ? 'text-[#fbbf24]' : s.done ? 'text-emerald-400' : 'text-white/25 hover:text-white/40'}`}>{s.label}</Link>
+                ) : (
+                  <span className={`text-xs font-bold ${s.active ? 'text-[#fbbf24]' : s.done ? 'text-emerald-400' : 'text-white/25'}`}>{s.label}</span>
+                )}
               </div>
               {i < 2 && <div className="w-10 h-px bg-white/10 mb-4" />}
             </div>
@@ -246,16 +250,29 @@ function SuccessContent() {
         )}
 
         {method === 'later' && confirmed && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 mb-5">
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
-              <div>
-                <p className="text-amber-400 font-extrabold text-sm">تم تسجيل موعد الدفع</p>
-                <p className="text-white/40 text-xs mt-0.5">
-                  موعدك: {laterDate ? new Date(laterDate).toLocaleDateString('ar') : ''}
-                  {' '} — لا تنسَ إرسال وصل الإيداع بعد الدفع
-                </p>
+          <div className="space-y-3 mb-5">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                <div>
+                  <p className="text-amber-400 font-extrabold text-sm">تم تسجيل موعد الدفع</p>
+                  <p className="text-white/40 text-xs mt-0.5">
+                    موعدك: {laterDate ? new Date(laterDate).toLocaleDateString('ar') : ''}
+                    {' '} — لا تنسَ إرسال وصل الإيداع بعد الدفع
+                  </p>
+                </div>
               </div>
+            </div>
+            <div className="bg-[#fbbf24]/5 border border-[#fbbf24]/20 rounded-2xl p-5">
+              <p className="text-white/60 text-xs text-center mb-1 font-bold">📩 بعد تأكيد دفعك، ستصلك رسالة بكود التفعيل:</p>
+              <p className="text-white/30 text-xs text-center mb-3">استخدم الرابط التالي لتفعيل حسابك</p>
+              <Link
+                href="/client/login"
+                className="block w-full py-3.5 bg-[#fbbf24] hover:bg-amber-300 text-black rounded-xl font-extrabold text-sm text-center transition"
+              >
+                بوابة العميل — تفعيل الحساب
+              </Link>
+              <p className="text-white/20 text-xs text-center mt-2 font-mono" dir="ltr">amine-fit.com/client/login</p>
             </div>
           </div>
         )}
@@ -271,9 +288,22 @@ function SuccessContent() {
         )}
 
         {sent && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 text-center mb-4">
-            <p className="text-emerald-400 font-extrabold text-base mb-1">✅ ممتاز! في انتظار تأكيد أمين</p>
-            <p className="text-white/40 text-xs">ستصلك رسالة تفعيل على بريدك الإلكتروني خلال ساعة</p>
+          <div className="space-y-3 mb-4">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 text-center">
+              <p className="text-emerald-400 font-extrabold text-base mb-1">✅ ممتاز! في انتظار تأكيد أمين</p>
+              <p className="text-white/40 text-xs">ستصلك رسالة تفعيل على بريدك الإلكتروني خلال ساعة</p>
+            </div>
+            <div className="bg-[#fbbf24]/5 border border-[#fbbf24]/20 rounded-2xl p-5">
+              <p className="text-white/60 text-xs text-center mb-1 font-bold">📩 عند وصول رسالة التفعيل — ادخل من هنا:</p>
+              <p className="text-white/30 text-xs text-center mb-3">الرسالة ستحتوي كود التفعيل الخاص بك</p>
+              <Link
+                href="/client/login"
+                className="block w-full py-3.5 bg-[#fbbf24] hover:bg-amber-300 text-black rounded-xl font-extrabold text-sm text-center transition"
+              >
+                بوابة العميل — تفعيل الحساب
+              </Link>
+              <p className="text-white/20 text-xs text-center mt-2 font-mono" dir="ltr">amine-fit.com/client/login</p>
+            </div>
           </div>
         )}
 
