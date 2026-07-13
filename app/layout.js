@@ -1,6 +1,7 @@
 import { Cairo } from 'next/font/google'
 import Script from 'next/script'
 import SwRegister from '@/components/SwRegister'
+import { safeJsonLd } from '@/lib/jsonLd'
 import './globals.css'
 
 const cairo = Cairo({
@@ -113,7 +114,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#fbbf24" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
