@@ -1,5 +1,6 @@
 import BlogContent from './BlogContent'
 import { posts } from '@/lib/blogPosts'
+import { safeJsonLd } from '@/lib/jsonLd'
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
 
@@ -35,8 +36,8 @@ export default function BlogPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(itemList) }} />
       <BlogContent />
     </>
   )

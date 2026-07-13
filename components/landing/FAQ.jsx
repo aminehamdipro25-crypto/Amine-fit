@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ChevronDown, HelpCircle } from 'lucide-react'
+import { safeJsonLd } from '@/lib/jsonLd'
 
 const faqs = [
   {
@@ -81,7 +82,7 @@ export default function FAQ() {
     <section id="faq" className="py-24 bg-[#0a0a0a]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqJsonLd) }}
       />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 

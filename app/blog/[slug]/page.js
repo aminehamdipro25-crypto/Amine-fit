@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getPostBySlug, posts } from '@/lib/blogPosts'
 import { ArrowRight, List, BadgeCheck, Zap } from 'lucide-react'
 import ShareBar from '@/components/blog/ShareBar'
+import { safeJsonLd } from '@/lib/jsonLd'
 
 export function generateStaticParams() {
   return posts.map(p => ({ slug: p.slug }))
@@ -174,7 +175,7 @@ export default function BlogPost({ params }) {
     <div className="min-h-screen bg-white" dir="rtl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(articleSchema) }}
       />
       {/* Hero */}
       <div className="bg-gradient-to-br from-[#0a0a0a] to-[#161616] text-white py-16 px-4 relative overflow-hidden">
