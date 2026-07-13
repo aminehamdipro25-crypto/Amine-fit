@@ -75,11 +75,22 @@ async function isClientSuspended(clientId) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl
 
+  // Build a guaranteed same-origin redirect target. Cloning request.nextUrl and
+  // overwriting only pathname/search means the origin is always the current
+  // (Next-validated) request origin — the destination can never be influenced by
+  // user input, so an open redirect is structurally impossible here.
+  const sameOrigin = (path, search = '') => {
+    const url = request.nextUrl.clone()
+    url.pathname = path
+    url.search   = search
+    return url
+  }
+
   // ── Admin dashboard ──────────────────────────────────────────────────────
   if (pathname.startsWith('/dashboard') && pathname !== '/dashboard/login') {
     const token = request.cookies.get('admin_token')?.value
     const valid = await verifyAdminSession(token)
-    if (!valid) return NextResponse.redirect(new URL('/dashboard/login', request.url))
+    if (!valid) return NextResponse.redirect(sameOrigin('/dashboard/login'))
   }
 
   // ── Client portal ────────────────────────────────────────────────────────
@@ -91,7 +102,7 @@ export async function middleware(request) {
     const payload = await verifyClientToken(token)
 
     if (!payload) {
-      const res = NextResponse.redirect(new URL('/client/login', request.url))
+      const res = NextResponse.redirect(sameOrigin('/client/login'))
       res.cookies.set('client_token', '', { maxAge: 0, path: '/' })
       return res
     }
@@ -99,7 +110,7 @@ export async function middleware(request) {
     const suspended = await isClientSuspended(payload.id)
     if (suspended) {
       const msg = encodeURIComponent('تم تعليق حسابك. تواصل مع المدرب أمين للاستفسار.')
-      const res = NextResponse.redirect(new URL(`/client/login?suspended=1&msg=${msg}`, request.url))
+      const res = NextResponse.redirect(sameOrigin('/client/login', `?suspended=1&msg=${msg}`))
       res.cookies.set('client_token', '', { maxAge: 0, path: '/' })
       return res
     }
