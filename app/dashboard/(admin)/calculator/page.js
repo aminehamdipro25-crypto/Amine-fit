@@ -1189,6 +1189,11 @@ export default function CalculatorPage() {
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
                             )}
                           </p>
+                          {item.alternatives?.length > 0 && (
+                            <p className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
+                              <span className="font-bold">🔄 أو:</span> {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex-shrink-0 mr-2">
