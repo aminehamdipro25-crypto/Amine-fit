@@ -1629,7 +1629,7 @@ export async function POST(req) {
   const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority, cardio } = body
 
   const VALID_GOALS   = new Set(['bulk', 'cut', 'recomp', 'strength', 'performance', 'fitness', 'gain', 'loss', 'maintain'])
-  const VALID_LEVELS  = new Set(['beginner', 'intermediate', 'advanced'])
+  const VALID_LEVELS  = new Set(['beginner', 'intermediate', 'advanced', 'returning'])
   const VALID_EQUIP   = new Set(['gym', 'home', 'bodyweight'])
   const VALID_GENDER  = new Set(['male', 'female'])
   const VALID_SPLITS  = new Set(['auto', 'ppl', 'ul', 'fb', 'bro'])
@@ -1657,7 +1657,7 @@ export async function POST(req) {
     loss:        'fat loss and metabolic conditioning',
     maintain:    'general fitness and maintenance',
   }
-  const levelMap = { beginner: 'beginner (0-1 year)', intermediate: 'intermediate (1-3 years)', advanced: 'advanced (3+ years)' }
+  const levelMap = { beginner: 'beginner (0-1 year)', intermediate: 'intermediate (1-3 years)', advanced: 'advanced (3+ years)', returning: 'previously trained but detrained after a long break' }
   const equipMap = { gym: 'full commercial gym', home: 'home gym (dumbbells, bands, pull-up bar)', bodyweight: 'bodyweight only' }
   const splitMap  = { auto: 'auto — choose optimal split', ppl: 'Push/Pull/Legs', ul: 'Upper/Lower', fb: 'Full Body', bro: 'Bro Split (one muscle group per day)' }
   const muscleMap = { chest: 'chest (pectorals)', back: 'back (lats, rhomboids, traps)', shoulders: 'shoulders (deltoids)', arms: 'arms (biceps + triceps)', legs: 'legs (quads, hamstrings, calves)', glutes: 'glutes and hip complex', core: 'core (abs, obliques, lower back)' }
@@ -1716,6 +1716,8 @@ export async function POST(req) {
     ? `- Level: BEGINNER — MANDATORY: 2-3 sets only, 90s+ rest, use movement regressions (Knee Push-Up not Push-Up, Inverted Row not Pull-Up, Goblet Squat not Barbell Squat), technique note required on every exercise, no supersets`
     : safeLevel === 'advanced'
     ? `- Level: ADVANCED — use complex variations (Paused/Deficit lifts, Archer Push-Up, Nordic Curl, Single-Leg), include intensity techniques (drop sets, supersets, rest-pause), 4-5 sets, higher total volume`
+    : safeLevel === 'returning'
+    ? `- Level: RETURNING AFTER A LONG BREAK — MANDATORY reintroduction protocol: this client trained before but has been inactive. Start light — 2-3 sets at ~50-60% of former effort, moderate reps (10-15), leave 3-4 reps in reserve (RPE 6-7). Prefer full-body or upper/lower to rebuild the movement pattern. Keep total volume low to AVOID heavy soreness the first 2 weeks. Add a note on the note field for main lifts: "ابدأ بوزن خفيف وارفعه تدريجياً — الهدف إعادة بناء الأساس دون إجهاد". No advanced intensity techniques, no maximal loads.`
     : `- Level: ${levelMap[safeLevel]}`
 
   const cardioDirective = safeCardio === 'finisher'

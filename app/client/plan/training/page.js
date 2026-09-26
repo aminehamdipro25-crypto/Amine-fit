@@ -180,6 +180,20 @@ function getVideoId(url) {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
   return m ? m[1] : null
 }
+// Parse a rest string ("90s", "2 min", "٩٠ ثانية", "3 min") into seconds
+function parseRestSeconds(rest) {
+  const s = String(rest || '').toLowerCase().trim()
+  const min = s.match(/(\d+)\s*(min|m\b|دقيقة|دقائق|د)/)
+  if (min) return parseInt(min[1], 10) * 60
+  const sec = s.match(/(\d+)\s*(s|sec|ث|ثانية|ثوان)/)
+  if (sec) return parseInt(sec[1], 10)
+  const num = s.match(/^(\d+)/)
+  return num ? parseInt(num[1], 10) : 0
+}
+function fmtRest(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60
+  return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`
+}
 function getThumb(url) {
   const id = getVideoId(url)
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
@@ -280,12 +294,27 @@ function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
     Array.from({length: numSets}, () => ({done:false, reps:'', weight:''}))
   )
   const [imgSrc, setImgSrc] = useState(ytThumb)
+  const [restEnd,  setRestEnd]  = useState(0)   // timestamp when the rest ends
+  const [restLeft, setRestLeft] = useState(0)   // seconds remaining (drives the UI)
 
   const doneSets = sets.filter(s=>s.done).length
   const allDone  = doneSets === numSets
 
   useEffect(() => { onComplete?.(allDone) }, [allDone]) // eslint-disable-line
   useEffect(() => { onSetsUpdate?.(sets) }, [sets])    // eslint-disable-line
+
+  // Rest countdown — ticks while a rest is active; vibrates when it ends
+  useEffect(() => {
+    if (!restEnd) { setRestLeft(0); return }
+    const tick = () => {
+      const left = Math.ceil((restEnd - Date.now()) / 1000)
+      if (left <= 0) { setRestEnd(0); setRestLeft(0); try { navigator.vibrate?.([120,60,120]) } catch {} }
+      else setRestLeft(left)
+    }
+    tick()
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, [restEnd])
 
   // Fetch exercise illustration if no YouTube thumbnail
   useEffect(() => {
@@ -302,7 +331,15 @@ function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
     setSets(prev => prev.map((s,j) => j===i ? {...s,[field]:val} : s))
   }
   function toggleSet(i) {
-    setSets(prev => prev.map((s,j) => j===i ? {...s, done:!s.done} : s))
+    setSets(prev => {
+      const next = prev.map((s,j) => j===i ? {...s, done:!s.done} : s)
+      // Starting a rest when a set is newly completed (not the final set)
+      if (next[i].done && !prev[i].done && i < numSets - 1) {
+        const rs = parseRestSeconds(ex.rest)
+        if (rs > 0) setRestEnd(Date.now() + rs * 1000)
+      }
+      return next
+    })
   }
 
   // YouTube search fallback URL for exercises with no image/video
@@ -466,6 +503,21 @@ function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
               </div>
 
             </div>
+
+            {restLeft > 0 && (
+              <div className="mt-2 flex items-center gap-3 bg-[#0a0a0a] rounded-xl px-4 py-2.5">
+                <span className="text-base flex-shrink-0">⏱️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-wide">راحة بين المجموعات</p>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mt-1">
+                    <div className="h-full bg-[#fbbf24] transition-all duration-300 ease-linear"
+                      style={{ width: `${Math.min(100, (restLeft / Math.max(1, parseRestSeconds(ex.rest))) * 100)}%` }} />
+                  </div>
+                </div>
+                <span className="text-[#fbbf24] font-extrabold text-lg tabular-nums flex-shrink-0">{fmtRest(restLeft)}</span>
+                <button onClick={() => setRestEnd(0)} className="text-white/30 hover:text-white/60 text-xs font-bold flex-shrink-0">تخطي</button>
+              </div>
+            )}
           </div>
         )}
       </div>

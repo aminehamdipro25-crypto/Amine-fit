@@ -66,6 +66,7 @@ const LEVEL_OPTIONS = [
   { v: 'beginner',     l: 'مبتدئ' },
   { v: 'intermediate', l: 'متوسط' },
   { v: 'advanced',     l: 'متقدم' },
+  { v: 'returning',    l: 'عائد بعد انقطاع' },
 ]
 
 const CARDIO_OPTIONS = [
@@ -81,7 +82,7 @@ const EQUIP_OPTIONS = [
   { v: 'bodyweight', l: 'بدون معدات', icon: '🤸' },
 ]
 
-const LEVEL_AR = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' }
+const LEVEL_AR = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', returning: 'عائد بعد انقطاع' }
 const GOAL_AR = {
   bulk: 'تضخيم', cut: 'تنشيف', recomp: 'إعادة التشكيل',
   strength: 'قوة قصوى', performance: 'أداء رياضي', fitness: 'لياقة عامة',
@@ -460,7 +461,7 @@ export default function TrainingPlannerPage() {
                 {/* Level */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-white/40 uppercase tracking-widest">المستوى</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {LEVEL_OPTIONS.map(o => (
                       <button key={o.v} onClick={() => set('level', o.v)}
                         className={`py-2.5 rounded-xl border-2 transition-all text-xs font-bold
