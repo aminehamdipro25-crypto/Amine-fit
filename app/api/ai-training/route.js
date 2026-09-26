@@ -1626,7 +1626,7 @@ export async function POST(req) {
   }
 
   const body = await req.json()
-  const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority, cardio } = body
+  const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority, cardio, duration } = body
 
   const VALID_GOALS   = new Set(['bulk', 'cut', 'recomp', 'strength', 'performance', 'fitness', 'gain', 'loss', 'maintain'])
   const VALID_LEVELS  = new Set(['beginner', 'intermediate', 'advanced', 'returning'])
@@ -1643,6 +1643,7 @@ export async function POST(req) {
   const safeSplit  = VALID_SPLITS.has(split)     ? split     : 'auto'
   const safeMuscle = VALID_MUSCLES.has(musclePriority) ? (musclePriority || '') : ''
   const safeCardio = VALID_CARDIO.has(cardio)    ? cardio    : 'none'
+  const safeDuration = [45, 60, 75, 90].includes(parseInt(duration)) ? parseInt(duration) : 60
   const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
   const safeAge = age && /^\d{1,3}$/.test(String(age)) ? parseInt(age) : null
 
@@ -1664,12 +1665,13 @@ export async function POST(req) {
 
   if (!process.env.ANTHROPIC_API_KEY) {
     const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
-    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, ai: false })
+    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false })
   }
+
 
   const schema = `{
   "daysPerWeek": ${n},
-  "duration": <minutes per session>,
+  "duration": ${safeDuration},
   "level": "<beginner|intermediate|advanced>",
   "note": "<Arabic motivational note>",
   "tips": ["<Arabic tip>", "<Arabic tip>", "<Arabic tip>"],
@@ -1736,6 +1738,7 @@ ${genderDirective}
 ${levelDirective}
 ${cardioDirective}
 - Equipment: ${equipMap[safeEquip]}
+- Session duration: ${safeDuration} minutes — size the workout (number of exercises and sets) so it realistically fits this time, including warmup and cooldown.
 - Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
 
@@ -1756,7 +1759,7 @@ ${schema}`
     let response
     try {
       response = await anthropic.messages.create(
-        { model: 'claude-haiku-4-5-20251001', max_tokens: 4096, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
+        { model: 'claude-haiku-4-5-20251001', max_tokens: 8000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
         { signal: controller.signal },
       )
     } finally {
@@ -1775,6 +1778,6 @@ ${schema}`
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
     const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
-    return NextResponse.json({ ...fb, daysPerWeek: n, ai: false })
+    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false })
   }
 }
