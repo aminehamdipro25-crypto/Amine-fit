@@ -5,10 +5,11 @@ import { isRateLimited } from '@/lib/rateLimit'
 export const dynamic = 'force-dynamic'
 
 const METHOD_LABELS = {
-  d17:        'تطبيق D17 (البريد التونسي)',
-  post:       'مكتب البريد — إيداع نقدي',
-  later_d17:  'سيدفع لاحقاً عبر D17',
-  later_post: 'سيدفع لاحقاً في مكتب البريد',
+  d17:         'تطبيق D17 (البريد التونسي)',
+  post:        'مكتب البريد — إيداع نقدي',
+  fawra:       'فورا (قطر) — تحويل فوري',
+  later_d17:   'سيدفع لاحقاً عبر D17',
+  later_post:  'سيدفع لاحقاً في مكتب البريد',
 }
 
 export async function POST(req) {
