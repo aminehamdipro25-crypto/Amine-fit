@@ -233,6 +233,36 @@ function SectionBanner({type}) {
   )
 }
 
+// ─── Cardio Section (shown when the coach added cardio to the program) ─────────
+function CardioSection({cardio}) {
+  if (!cardio?.has_cardio) return null
+  return (
+    <div className="rounded-2xl bg-gradient-to-br from-[#0a0a0a] to-[#161616] px-4 py-3.5 border border-[#fbbf24]/15">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#fbbf24]/10 flex items-center justify-center flex-shrink-0">
+            <span className="text-base">🏃</span>
+          </div>
+          <div>
+            <p className="text-white font-extrabold text-sm tracking-wide">CARDIO</p>
+            {cardio.type && <p className="text-white/55 text-[11px] font-medium">{cardio.type}</p>}
+          </div>
+        </div>
+        {cardio.duration && (
+          <span className="text-[#fbbf24] font-extrabold text-xs bg-[#fbbf24]/10 px-3 py-1 rounded-full flex-shrink-0">
+            {cardio.duration}
+          </span>
+        )}
+      </div>
+      {(cardio.note || cardio.intensity) && (
+        <p className="text-white/40 text-[11px] mt-2 leading-relaxed">
+          {cardio.note || ''}{cardio.intensity ? `${cardio.note ? ' · ' : ''}شدة ${cardio.intensity}` : ''}
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
 function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
   const name       = normalizeName(ex.name)
@@ -710,6 +740,7 @@ function WorkoutCard({day, date, isToday, dayIndex}) {
             <div className="py-8 text-center text-slate-300 text-sm">No exercises for this day</div>
           )}
           <SectionBanner type="cooldown"/>
+          <CardioSection cardio={day.cardio}/>
           {allDone && (
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center py-4 rounded-2xl font-extrabold text-sm shadow-lg shadow-emerald-500/25">
               🏆 Workout Complete! Great job!

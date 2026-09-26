@@ -28,6 +28,7 @@ const INIT = {
   daysPerWeek: '3',
   equipment: 'gym',
   duration: '60',
+  cardio: 'none',
   age: '',
   gender: 'male',
   injuries: '',
@@ -65,6 +66,13 @@ const LEVEL_OPTIONS = [
   { v: 'beginner',     l: 'مبتدئ' },
   { v: 'intermediate', l: 'متوسط' },
   { v: 'advanced',     l: 'متقدم' },
+]
+
+const CARDIO_OPTIONS = [
+  { v: 'none',     l: 'بدون',        desc: 'قوة فقط' },
+  { v: 'finisher', l: 'خاتمة كارديو', desc: '5-10 دقائق بعد كل جلسة' },
+  { v: 'hiit',     l: 'HIIT',        desc: 'عالي الكثافة متقطّع' },
+  { v: 'liss',     l: 'كارديو هادئ',  desc: 'مشي/دراجة منخفض الشدة' },
 ]
 
 const EQUIP_OPTIONS = [
@@ -187,6 +195,22 @@ function DayCard({ day }) {
               </div>
             </div>
           ))}
+          {day.cardio?.has_cardio && (
+            <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-[#fbbf24]/5 border border-[#fbbf24]/20">
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-lg bg-[#fbbf24]/10 flex items-center justify-center flex-shrink-0 text-xs">🏃</span>
+                <div>
+                  <p className="text-sm font-semibold text-[#fbbf24]">كارديو — {day.cardio.type}</p>
+                  {day.cardio.note && <p className="text-xs text-white/30 mt-0.5">{day.cardio.note}</p>}
+                </div>
+              </div>
+              {day.cardio.duration && (
+                <span className="text-xs font-extrabold text-[#fbbf24] bg-[#fbbf24]/10 px-2.5 py-1 rounded-lg flex-shrink-0">
+                  {day.cardio.duration}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -444,6 +468,23 @@ export default function TrainingPlannerPage() {
                             ? 'bg-white text-black border-white'
                             : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
                         {o.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cardio */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">🏃 الكارديو</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CARDIO_OPTIONS.map(o => (
+                      <button key={o.v} onClick={() => set('cardio', o.v)}
+                        className={`flex flex-col items-start gap-0.5 p-3 rounded-xl border-2 transition-all text-right
+                          ${form.cardio === o.v
+                            ? 'bg-[#fbbf24]/10 border-[#fbbf24]'
+                            : 'border-[#2a2a2a] hover:border-[#3a3a3a]'}`}>
+                        <span className={`text-xs font-bold ${form.cardio === o.v ? 'text-[#fbbf24]' : 'text-white/60'}`}>{o.l}</span>
+                        <span className="text-[10px] text-white/30">{o.desc}</span>
                       </button>
                     ))}
                   </div>
