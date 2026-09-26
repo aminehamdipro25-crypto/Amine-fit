@@ -1604,6 +1604,18 @@ function getFallback(n, equipment, gender) {
   return FALLBACKS[n] || FALLBACKS[3]
 }
 
+// Static cardio blocks appended to fallback (non-AI) programs when the coach
+// requested cardio, so the "mix cardio + strength" choice is honored even offline.
+const CARDIO_FALLBACK = {
+  finisher: { has_cardio: true, type: 'حبل القفز أو دراجة ثابتة', duration: '5-10 دقائق', intensity: 'متوسطة', note: 'خاتمة بعد التمرين لرفع الحرق وتحسين اللياقة القلبية' },
+  hiit:     { has_cardio: true, type: 'HIIT — 30ث عمل / 30ث راحة', duration: '10-15 دقيقة', intensity: 'عالية', note: 'بيربي + تسلّق الجبل + قفز القرفصاء — 8 جولات' },
+  liss:     { has_cardio: true, type: 'مشي سريع أو دراجة ثابتة', duration: '20-30 دقيقة', intensity: 'منخفضة', note: 'بوتيرة تسمح بالحديث — حرق دهون دون إجهاد العضلات' },
+}
+function withCardio(plan, cardio) {
+  if (!plan?.days || cardio === 'none' || !CARDIO_FALLBACK[cardio]) return plan
+  return { ...plan, days: plan.days.map(d => ({ ...d, cardio: CARDIO_FALLBACK[cardio] })) }
+}
+
 export async function POST(req) {
   const deny = await requireAdmin()
   if (deny) return deny
@@ -1614,7 +1626,7 @@ export async function POST(req) {
   }
 
   const body = await req.json()
-  const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority } = body
+  const { goal, level, daysPerWeek, equipment, injuries, age, gender, split, musclePriority, cardio } = body
 
   const VALID_GOALS   = new Set(['bulk', 'cut', 'recomp', 'strength', 'performance', 'fitness', 'gain', 'loss', 'maintain'])
   const VALID_LEVELS  = new Set(['beginner', 'intermediate', 'advanced'])
@@ -1622,6 +1634,7 @@ export async function POST(req) {
   const VALID_GENDER  = new Set(['male', 'female'])
   const VALID_SPLITS  = new Set(['auto', 'ppl', 'ul', 'fb', 'bro'])
   const VALID_MUSCLES = new Set(['', 'chest', 'back', 'shoulders', 'arms', 'legs', 'glutes', 'core'])
+  const VALID_CARDIO  = new Set(['none', 'finisher', 'hiit', 'liss'])
 
   const safeGoal   = VALID_GOALS.has(goal)      ? goal      : 'fitness'
   const safeLevel  = VALID_LEVELS.has(level)     ? level     : 'intermediate'
@@ -1629,6 +1642,7 @@ export async function POST(req) {
   const safeGender = VALID_GENDER.has(gender)    ? gender    : null
   const safeSplit  = VALID_SPLITS.has(split)     ? split     : 'auto'
   const safeMuscle = VALID_MUSCLES.has(musclePriority) ? (musclePriority || '') : ''
+  const safeCardio = VALID_CARDIO.has(cardio)    ? cardio    : 'none'
   const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
   const safeAge = age && /^\d{1,3}$/.test(String(age)) ? parseInt(age) : null
 
@@ -1649,7 +1663,7 @@ export async function POST(req) {
   const muscleMap = { chest: 'chest (pectorals)', back: 'back (lats, rhomboids, traps)', shoulders: 'shoulders (deltoids)', arms: 'arms (biceps + triceps)', legs: 'legs (quads, hamstrings, calves)', glutes: 'glutes and hip complex', core: 'core (abs, obliques, lower back)' }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    const fb = getFallback(n, safeEquip, safeGender)
+    const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
     return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, ai: false })
   }
 
@@ -1672,7 +1686,8 @@ export async function POST(req) {
       ],
       "cooldown": [
         { "name": "<English stretch>", "duration": "<e.g. 30s hold>", "note": "<Arabic>" }
-      ]
+      ],
+      "cardio": { "has_cardio": ${safeCardio !== 'none'}, "type": "<Arabic cardio name e.g. حبل القفز>", "duration": "<e.g. 10 دقائق>", "intensity": "<Arabic e.g. متوسطة>", "note": "<Arabic tip>" }
     }
   ]
 }`
@@ -1703,12 +1718,21 @@ export async function POST(req) {
     ? `- Level: ADVANCED — use complex variations (Paused/Deficit lifts, Archer Push-Up, Nordic Curl, Single-Leg), include intensity techniques (drop sets, supersets, rest-pause), 4-5 sets, higher total volume`
     : `- Level: ${levelMap[safeLevel]}`
 
+  const cardioDirective = safeCardio === 'finisher'
+    ? `- Cardio: add a "cardio" object to EVERY day — a 5-10 min conditioning finisher AFTER the strength work (Jump Rope, Rowing, Stationary Bike, Incline Walk, or a short 3-move circuit). Vary it across days. Fill type/duration/intensity/note in Arabic, has_cardio:true.`
+    : safeCardio === 'hiit'
+    ? `- Cardio: add a "cardio" object to EVERY day — 10-15 min HIIT (e.g. 30s work / 30s rest × 8-10 of Burpee, Mountain Climber, Jump Squat, High Knees). Vary it across days. type/duration/intensity/note in Arabic, has_cardio:true.`
+    : safeCardio === 'liss'
+    ? `- Cardio: add a "cardio" object to EVERY day — 20-30 min steady low-intensity cardio (brisk walk, incline treadmill, or stationary bike at a conversational pace). type/duration/intensity/note in Arabic, has_cardio:true.`
+    : `- Cardio: NONE — set "cardio": { "has_cardio": false } on every day and add no conditioning work.`
+
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}
 - Split Type: ${splitMap[safeSplit]}
 ${safeMuscle ? `- Muscle Priority: ${muscleMap[safeMuscle]} — add 1 extra exercise and +1 set on all exercises targeting this muscle group` : ''}
 ${genderDirective}
 ${levelDirective}
+${cardioDirective}
 - Equipment: ${equipMap[safeEquip]}
 - Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
@@ -1748,7 +1772,7 @@ ${schema}`
     return NextResponse.json({ ...validatedPlan, ai: true })
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
-    const fb = getFallback(n, safeEquip, safeGender)
+    const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
     return NextResponse.json({ ...fb, daysPerWeek: n, ai: false })
   }
 }
