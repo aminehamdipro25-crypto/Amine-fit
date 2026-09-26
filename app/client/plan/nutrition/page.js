@@ -127,9 +127,16 @@ function MealCard({ meal, idx, open, onToggle }) {
           {meal.items?.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {meal.items.map((item, j) => (
-                <div key={j} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                  <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
-                  <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2.5 py-1 rounded-full">{item.amount}</span>
+                <div key={j} className="py-2 border-b border-slate-50 last:border-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
+                    <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2.5 py-1 rounded-full flex-shrink-0">{item.amount}</span>
+                  </div>
+                  {item.alternatives?.length > 0 && (
+                    <p className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
+                      🔄 أو: {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -589,9 +596,16 @@ export default function NutritionPlan() {
                       {meal.items?.length > 0 && (
                         <div className="space-y-1 mt-2">
                           {meal.items.map((item, ji) => (
-                            <div key={ji} className="flex items-center justify-between text-sm py-1 border-b border-slate-50 last:border-0">
-                              <span className="text-slate-400 text-xs">{item.amount}</span>
-                              <span className="text-slate-700 font-semibold">{item.food}</span>
+                            <div key={ji} className="text-sm py-1 border-b border-slate-50 last:border-0">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-400 text-xs">{item.amount}</span>
+                                <span className="text-slate-700 font-semibold">{item.food}</span>
+                              </div>
+                              {item.alternatives?.length > 0 && (
+                                <p className="text-[10px] text-emerald-600/90 mt-0.5 text-right leading-relaxed">
+                                  🔄 أو: {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
+                                </p>
+                              )}
                             </div>
                           ))}
                         </div>
