@@ -13,7 +13,7 @@ export async function GET() {
   const client = await getSubmissionById(payload.id)
   if (!client) return NextResponse.json({ error: 'لم يُعثر على البيانات' }, { status: 404 })
 
-  const { clientPassword, activationCode, emailOTP, emailOTPExpiry, ...safe } = client
+  const { clientPassword, activationCode, emailOTP, emailOTPExpiry, passwordResetCode, passwordResetExpiry, ...safe } = client
 
   const filename = `amine-fit-${safe.name?.replace(/\s+/g, '-') || safe.id}-${new Date().toISOString().slice(0, 10)}.json`
 

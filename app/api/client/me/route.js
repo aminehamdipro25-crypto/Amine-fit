@@ -29,6 +29,6 @@ export async function GET() {
     return NextResponse.json({ error: 'تم تعليق حسابك، تواصل مع المدرب' }, { status: 403 })
   }
 
-  const { clientPassword, activationCode, emailOTP, emailOTPExpiry, ...safe } = client
+  const { clientPassword, activationCode, emailOTP, emailOTPExpiry, passwordResetCode, passwordResetExpiry, ...safe } = client
   return NextResponse.json(safe)
 }
