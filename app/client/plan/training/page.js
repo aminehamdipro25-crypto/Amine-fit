@@ -245,6 +245,11 @@ function VideoModal({ videoId, onClose }) {
             allowFullScreen
           />
         </div>
+        {/* Guaranteed fallback — opens the tutorial on YouTube directly if the embed fails */}
+        <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer"
+          className="mt-3 flex items-center justify-center gap-1.5 text-white/50 hover:text-white text-xs font-bold transition">
+          <Play className="w-3 h-3" fill="currentColor"/> افتح الشرح على يوتيوب
+        </a>
       </div>
     </div>
   )
