@@ -71,10 +71,12 @@ function normalizeMeal(meal) {
     const isNut = _NUT.some(k => f.includes(k))
 
     if (isVeg) {
-      // Detect preparation method from food name keywords
+      // Detect preparation method from food name keywords so the label matches
+      // the actual vegetables (cooked spinach/mushroom must NOT read "fresh salad").
       if (!vegPrep) {
-        if (f.includes('مشوي') || f.includes('مشوية') || f.includes('مشوو') || g.includes('مشوي')) vegPrep = 'خضار مشوية'
-        else if (f.includes('بخار') || f.includes('مطهو') || f.includes('مسلوق'))                  vegPrep = 'خضار على البخار'
+        if (f.includes('مشوي') || f.includes('مشوية') || g.includes('مشوي'))                 vegPrep = 'خضار مشوية بزيت الزيتون'
+        else if (f.includes('بخار') || f.includes('على البخار'))                              vegPrep = 'خضار على البخار'
+        else if (f.includes('مطبوخ') || f.includes('مطبوخة') || f.includes('مسلوق') || f.includes('مطهو') || f.includes('سوتيه')) vegPrep = 'خضار مطبوخة بزيت الزيتون'
       }
       vegNames.push(f)
       const m = String(item.amount || '').match(/^(\d+)/)
@@ -1231,7 +1233,7 @@ export default function CalculatorPage() {
                                 </button>
                               </div>
                             )}
-                            <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة'} · خضروات مجمَّعة</p>
+                            <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة بزيت الزيتون والليمون'}</p>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0 mr-2">
