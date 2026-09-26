@@ -1,11 +1,43 @@
 'use client'
 import { useState } from 'react'
-import { Key, Loader2, Mail, CheckCircle2 } from 'lucide-react'
+import { Key, Loader2, Mail, CheckCircle2, Pencil, X, Check } from 'lucide-react'
 
 export default function ClientAccessSection({ client, onUpdate }) {
   const [sending, setSending]   = useState(false)
   const [sentMsg, setSentMsg]   = useState('')
   const isActive = !!client.clientPassword
+
+  // ── Email correction ──
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [newEmail, setNewEmail]         = useState(client.email || '')
+  const [savingEmail, setSavingEmail]   = useState(false)
+  const [emailErr, setEmailErr]         = useState('')
+
+  async function saveEmail() {
+    const val = newEmail.trim().toLowerCase()
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { setEmailErr('بريد إلكتروني غير صالح'); return }
+    if (val === (client.email || '').toLowerCase()) { setEditingEmail(false); return }
+    setSavingEmail(true)
+    setEmailErr('')
+    try {
+      const res  = await fetch(`/api/admin/clients/${client.id}/email`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: val }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        onUpdate(client.id, { email: data.email })
+        setEditingEmail(false)
+      } else {
+        setEmailErr(data.error || 'تعذّر التحديث')
+      }
+    } catch {
+      setEmailErr('خطأ في الاتصال')
+    } finally {
+      setSavingEmail(false)
+    }
+  }
 
   async function sendActivation() {
     if (!confirm(`إرسال رمز التفعيل إلى ${client.email}؟`)) return
@@ -52,6 +84,49 @@ export default function ClientAccessSection({ client, onUpdate }) {
           </div>
         </div>
 
+        {/* Email — with inline correction (fixes typos made at registration) */}
+        <div className="bg-white border border-slate-200 rounded-xl px-3 py-2.5">
+          {!editingEmail ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">البريد الإلكتروني</p>
+                <p className="text-sm font-bold text-slate-700 truncate" dir="ltr">{client.email || '— غير مسجّل —'}</p>
+              </div>
+              <button
+                onClick={() => { setNewEmail(client.email || ''); setEmailErr(''); setEditingEmail(true) }}
+                className="flex items-center gap-1 text-xs font-bold text-[#0a0a0a] hover:text-black bg-slate-100 hover:bg-slate-200 rounded-lg px-2.5 py-1.5 transition flex-shrink-0">
+                <Pencil className="w-3 h-3" /> تصحيح
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">تصحيح البريد الإلكتروني</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email" dir="ltr" value={newEmail}
+                  onChange={e => { setNewEmail(e.target.value); setEmailErr('') }}
+                  onKeyDown={e => e.key === 'Enter' && saveEmail()}
+                  placeholder="correct@email.com"
+                  className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#fbbf24]"
+                  autoFocus
+                />
+                <button onClick={saveEmail} disabled={savingEmail}
+                  className="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-500 transition disabled:opacity-50">
+                  {savingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button onClick={() => { setEditingEmail(false); setEmailErr('') }} disabled={savingEmail}
+                  className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {emailErr && <p className="text-xs font-bold text-red-500 mt-1.5">{emailErr}</p>}
+              <p className="text-[10px] text-slate-400 mt-1.5">
+                سيُحدَّث فهرس الدخول تلقائياً — يستطيع العميل التفعيل/الدخول بالبريد الجديد فوراً
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Send activation button */}
         {client.email && (
           <div className="space-y-2">
@@ -83,3 +158,4 @@ export default function ClientAccessSection({ client, onUpdate }) {
     </div>
   )
 }
+

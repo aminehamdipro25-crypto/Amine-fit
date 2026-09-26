@@ -2,18 +2,20 @@
 import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, Clock, Calendar } from 'lucide-react'
+import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, Clock, Calendar, Wallet } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
 
 const WA         = '97430653759'
 const D17_NUMBER = 'XX XXX XXX' // ← يُحدَّث بعد التفعيل
+const FAWRA_NUMBER = '30653759'
 const CCP_IBAN   = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME   = 'HAMDI AMINE B JALOUL'
+const GULF_COUNTRIES = new Set(['QA', 'AE', 'SA', 'KW', 'BH', 'OM'])
 
 const PLANS = {
-  'برنامج التدريب': { price: '50',  label: 'برنامج التدريب',  emoji: '🏋️' },
-  'الباقة الشهرية': { price: '125', label: 'الباقة الشهرية',  emoji: '⚡' },
-  'باقة 3 أشهر':   { price: '300', label: 'باقة 3 أشهر',    emoji: '🏆' },
+  'برنامج التدريب': { price: '50',  priceQar: '199', label: 'برنامج التدريب',  emoji: '🏋️' },
+  'الباقة الشهرية': { price: '125', priceQar: '449', label: 'الباقة الشهرية',  emoji: '⚡' },
+  'باقة 3 أشهر':   { price: '300', priceQar: '999', label: 'باقة 3 أشهر',    emoji: '🏆' },
 }
 
 // Get tomorrow's date as min for date picker
@@ -47,11 +49,24 @@ function SuccessContent() {
   const email    = params.get('email') || ''
   const plan     = PLANS[planName]
 
+  // 'maghreb' | 'gulf' — decides D17/post vs Fawra + currency
+  const [zone, setZone] = useState('maghreb')
+  const isGulf = zone === 'gulf'
+  const price  = plan ? (isGulf ? plan.priceQar : plan.price) : ''
+  const cur    = isGulf ? 'ر.ق' : 'د.ت'
+
+  useEffect(() => {
+    fetch('/api/geo')
+      .then(r => (r.ok ? r.json() : {}))
+      .then(geo => { if (geo.country && GULF_COUNTRIES.has(geo.country)) setZone('gulf') })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     trackEvent('registration_success_page', { plan_name: planName || 'none' })
   }, [planName])
 
-  // 'none' | 'd17' | 'post' | 'later'
+  // 'none' | 'd17' | 'post' | 'fawra' | 'later'
   const [method, setMethod]       = useState(null)
   const [laterDate, setLaterDate] = useState('')
   const [copied, setCopied]       = useState(false)
@@ -80,10 +95,10 @@ function SuccessContent() {
   }
 
   function waMsg() {
-    const via = method === 'post' ? 'عبر البريد التونسي (إيداع)' : 'عبر D17'
+    const via = method === 'fawra' ? 'عبر فورا' : method === 'post' ? 'عبر البريد التونسي (إيداع)' : 'عبر D17'
     return encodeURIComponent(
       `مرحباً أمين 👋\nلقد أكملت تسجيل الاستبيان وسأرسل الدفع ${via}.\n` +
-      (plan ? `الباقة: ${plan.label} — ${plan.price} د.ت\n` : '') +
+      (plan ? `الباقة: ${plan.label} — ${price} ${cur}\n` : '') +
       `أرجو تفعيل حسابي. شكراً!`
     )
   }
@@ -143,8 +158,8 @@ function SuccessContent() {
               <p className="text-white font-extrabold text-base">{plan.label}</p>
             </div>
             <div className="mr-auto text-left">
-              <p className="text-[#fbbf24] font-extrabold text-2xl">{plan.price}</p>
-              <p className="text-white/30 text-xs">د.ت</p>
+              <p className="text-[#fbbf24] font-extrabold text-2xl">{price}</p>
+              <p className="text-white/30 text-xs">{cur}</p>
             </div>
           </div>
         )}
@@ -153,29 +168,62 @@ function SuccessContent() {
         {!method && (
           <div>
             <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <button onClick={() => handleMethodSelect('d17')}
-                className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
-                <Smartphone className="w-7 h-7 text-[#fbbf24]" />
-                <div className="text-center">
-                  <p className="text-white font-extrabold text-sm">تطبيق D17</p>
-                  <p className="text-white/30 text-xs mt-0.5">تحويل فوري</p>
+            {isGulf ? (
+              /* Gulf: Fawra */
+              <button onClick={() => handleMethodSelect('fawra')}
+                className="w-full bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex items-center gap-4 transition cursor-pointer mb-3">
+                <Wallet className="w-7 h-7 text-[#fbbf24] flex-shrink-0" />
+                <div className="text-right">
+                  <p className="text-white font-extrabold text-sm">فورا (Fawran)</p>
+                  <p className="text-white/30 text-xs mt-0.5">تحويل فوري داخل قطر</p>
                 </div>
               </button>
-              <button onClick={() => handleMethodSelect('post')}
-                className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
-                <MapPin className="w-7 h-7 text-[#fbbf24]" />
-                <div className="text-center">
-                  <p className="text-white font-extrabold text-sm">مكتب البريد</p>
-                  <p className="text-white/30 text-xs mt-0.5">إيداع نقدي</p>
-                </div>
-              </button>
-            </div>
+            ) : (
+              /* Maghreb: D17 + post office */
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <button onClick={() => handleMethodSelect('d17')}
+                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
+                  <Smartphone className="w-7 h-7 text-[#fbbf24]" />
+                  <div className="text-center">
+                    <p className="text-white font-extrabold text-sm">تطبيق D17</p>
+                    <p className="text-white/30 text-xs mt-0.5">تحويل فوري</p>
+                  </div>
+                </button>
+                <button onClick={() => handleMethodSelect('post')}
+                  className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex flex-col items-center gap-3 transition cursor-pointer">
+                  <MapPin className="w-7 h-7 text-[#fbbf24]" />
+                  <div className="text-center">
+                    <p className="text-white font-extrabold text-sm">مكتب البريد</p>
+                    <p className="text-white/30 text-xs mt-0.5">إيداع نقدي</p>
+                  </div>
+                </button>
+              </div>
+            )}
             <button onClick={() => handleMethodSelect('later')}
               className="w-full bg-white/3 hover:bg-white/5 border border-white/8 hover:border-white/15 rounded-2xl py-3 px-4 flex items-center justify-center gap-2 transition cursor-pointer">
               <Clock className="w-4 h-4 text-white/40" />
               <span className="text-white/40 text-sm font-bold">سأدفع لاحقاً — حدد موعداً</span>
             </button>
+          </div>
+        )}
+
+        {/* ─── Fawra instructions (Gulf) ─── */}
+        {method === 'fawra' && (
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-[#fbbf24]" />
+                <p className="text-white font-extrabold text-sm">الدفع عبر فورا</p>
+              </div>
+              <button onClick={() => setMethod(null)} className="text-white/25 text-xs hover:text-white/50 underline">تغيير</button>
+            </div>
+            <div className="space-y-4">
+              <Step n={1} title="افتح تطبيق فورا على هاتفك" sub="تحويل فوري داخل قطر" />
+              <Step n={2} title={`أرسل ${price} ${cur} إلى:`}>
+                <NumberBox value={FAWRA_NUMBER} onCopy={() => copy(FAWRA_NUMBER)} copied={copied} />
+              </Step>
+              <Step n={3} title="أرسل إثبات التحويل على واتساب" sub="صورة من فورا تؤكد التحويل" />
+            </div>
           </div>
         )}
 
@@ -191,7 +239,7 @@ function SuccessContent() {
             </div>
             <div className="space-y-4">
               <Step n={1} title="افتح تطبيق D17" sub="أو اتصل بـ *194#" />
-              <Step n={2} title={`أرسل ${plan?.price || ''} د.ت إلى:`}>
+              <Step n={2} title={`أرسل ${price} ${cur} إلى:`}>
                 <NumberBox value={D17_NUMBER} onCopy={() => copy(D17_NUMBER)} copied={copied} />
               </Step>
               <Step n={3} title="أرسل إثبات الدفع على واتساب" sub="صورة من D17 تؤكد التحويل" />
@@ -211,7 +259,7 @@ function SuccessContent() {
             </div>
             <div className="space-y-4">
               <Step n={1} title="اذهب لأقرب مكتب بريد تونسي" sub="معك بطاقتك الوطنية" />
-              <Step n={2} title={`أودع ${plan?.price || ''} د.ت — IBAN:`}>
+              <Step n={2} title={`أودع ${price} ${cur} — IBAN:`}>
                 <NumberBox value={CCP_IBAN} onCopy={() => copy(CCP_IBAN)} copied={copied} />
                 <p className="text-white/25 text-xs text-center mt-1">{CCP_NAME}</p>
               </Step>
@@ -278,7 +326,7 @@ function SuccessContent() {
         )}
 
         {/* ─── WhatsApp CTA ─── */}
-        {(method === 'd17' || method === 'post') && !sent && (
+        {(method === 'd17' || method === 'post' || method === 'fawra') && !sent && (
           <a href={`https://wa.me/${WA}?text=${waMsg()}`} target="_blank" rel="noreferrer"
             onClick={() => { setSent(true); trackEvent('whatsapp_payment_clicked', { method, plan_name: planName, source: 'success_page' }) }}
             className="w-full py-4 bg-[#25d366] text-white rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 hover:bg-[#22c55e] transition mb-4 shadow-lg shadow-green-900/30">
