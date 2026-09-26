@@ -40,7 +40,10 @@ export default function ClientAccessSection({ client, onUpdate }) {
   }
 
   async function sendActivation() {
-    if (!confirm(`إرسال رمز التفعيل إلى ${client.email}؟`)) return
+    const warn = isActive
+      ? `⚠️ تنبيه: هذا الحساب مفعّل بالفعل وللعميل كلمة مرور.\n\nإعادة إرسال رمز التفعيل ستُلغي كلمة مروره الحالية ويجب أن يُفعّل الحساب من جديد.\n\nإن كان العميل يريد فقط استعادة كلمة المرور، اطلب منه استخدام "نسيت كلمة المرور".\n\nهل تريد فعلاً إرسال رمز تفعيل جديد إلى ${client.email}؟`
+      : `إرسال رمز التفعيل إلى ${client.email}؟`
+    if (!confirm(warn)) return
     setSending(true)
     setSentMsg('')
     try {
