@@ -199,6 +199,7 @@ function fmtRest(sec) {
 // stable). Anything not here falls back to the reliable YouTube search link, so a
 // link is never broken. Keyed by lowercased exercise name (+ common aliases).
 const EXERCISE_VIDEOS = {
+  // ── Core compound lifts ──
   'barbell back squat':     'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
   'back squat':             'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
   'barbell squat':          'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
@@ -214,6 +215,28 @@ const EXERCISE_VIDEOS = {
   'pull-up':                'https://www.youtube.com/watch?v=6zyx46Vpato',
   'pull up':                'https://www.youtube.com/watch?v=6zyx46Vpato',
   'wide-grip pull-up':      'https://www.youtube.com/watch?v=6zyx46Vpato',
+  // ── Common accessories ──
+  'romanian deadlift':          'https://www.youtube.com/watch?v=uhghy9pFIPY',
+  'barbell romanian deadlift':  'https://www.youtube.com/watch?v=uhghy9pFIPY',
+  'dumbbell romanian deadlift': 'https://www.youtube.com/watch?v=uhghy9pFIPY',
+  'lat pulldown':               'https://www.youtube.com/watch?v=SALxEARiMkw',
+  'dumbbell shoulder press':    'https://www.youtube.com/watch?v=guW_ENwLOMI',
+  'shoulder press':             'https://www.youtube.com/watch?v=guW_ENwLOMI',
+  'dumbbell lateral raise':     'https://www.youtube.com/watch?v=Y29xKcze8Ik',
+  'lateral raise':              'https://www.youtube.com/watch?v=Y29xKcze8Ik',
+  'cable lateral raise':        'https://www.youtube.com/watch?v=Y29xKcze8Ik',
+  'barbell curl':               'https://www.youtube.com/watch?v=QZEqB6wUPxQ',
+  'barbell bicep curl':         'https://www.youtube.com/watch?v=QZEqB6wUPxQ',
+  'bicep curl':                 'https://www.youtube.com/watch?v=QZEqB6wUPxQ',
+  'plank':                      'https://www.youtube.com/watch?v=mwlp75MS6Rg',
+  'push-up':                    'https://www.youtube.com/watch?v=WDIpL0pjun0',
+  'push up':                    'https://www.youtube.com/watch?v=WDIpL0pjun0',
+  'dumbbell goblet squat':      'https://www.youtube.com/watch?v=k_EhLGvM8TQ',
+  'goblet squat':               'https://www.youtube.com/watch?v=k_EhLGvM8TQ',
+  'hip thrust':                 'https://www.youtube.com/watch?v=pBH7pKHn-dI',
+  'barbell hip thrust':         'https://www.youtube.com/watch?v=pBH7pKHn-dI',
+  'dumbbell hip thrust':        'https://www.youtube.com/watch?v=pBH7pKHn-dI',
+  'leg press':                  'https://www.youtube.com/watch?v=8nm863C0c60',
 }
 function resolveVideoUrl(ex) {
   if (ex.videoUrl) return ex.videoUrl
