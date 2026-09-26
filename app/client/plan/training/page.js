@@ -278,7 +278,7 @@ function CardioSection({cardio}) {
 }
 
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
-function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
+function ExerciseRow({ex, isLast, number, last, onComplete, onSetsUpdate}) {
   const name       = normalizeName(ex.name)
   const videoId    = getVideoId(ex.videoUrl)
   const ytThumb    = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null
@@ -410,6 +410,12 @@ function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
             {doneSets > 0 && !allDone && (
               <p className="text-[10px] text-[#d97706] font-bold mt-1">{doneSets}/{numSets} sets done</p>
             )}
+            {last?.weight > 0 && (
+              <p className="text-[10px] font-bold mt-1 flex items-center gap-1 text-emerald-600" dir="rtl">
+                <span>🔁 آخر مرة: {last.weight} كغ × {last.reps || '—'}</span>
+                <span className="text-emerald-500/70">— تفوّق عليه!</span>
+              </p>
+            )}
             {/* Tutorial pill */}
             {hasVideo ? (
               <button
@@ -488,7 +494,7 @@ function ExerciseRow({ex, isLast, number, onComplete, onSetsUpdate}) {
                     />
                     <input
                       type="number" inputMode="decimal"
-                      placeholder="—"
+                      placeholder={last?.weight ? String(last.weight) : "—"}
                       value={s.weight}
                       onChange={e => updateSet(i,'weight',e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-900 text-center outline-none focus:border-[#fbbf24] focus:bg-white transition-all"
@@ -711,6 +717,32 @@ function WorkoutCard({day, date, isToday, dayIndex}) {
   const [workoutSets,   setWorkoutSets]   = useState({})
   const [showSave,      setShowSave]      = useState(false)
   const [sessionStart]                    = useState(Date.now)
+  const [lastPerf,      setLastPerf]      = useState({})   // exercise name → best set last time
+
+  // Load workout history once → show each exercise's last performance to beat
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/client/workout-log')
+      .then(r => (r.ok ? r.json() : []))
+      .then(logs => {
+        if (cancelled || !Array.isArray(logs)) return
+        const perf = {}
+        // logs are appended in order; walk newest→oldest, keep the first (latest) per exercise
+        for (let k = logs.length - 1; k >= 0; k--) {
+          for (const ex of (logs[k].exercises || [])) {
+            const key = String(ex.name || '').trim().toLowerCase()
+            if (!key || perf[key]) continue
+            const best = (ex.sets || [])
+              .filter(s => Number(s.weight) > 0)
+              .sort((a, b) => Number(b.weight) - Number(a.weight))[0]
+            if (best) perf[key] = { weight: Number(best.weight), reps: Number(best.reps) }
+          }
+        }
+        setLastPerf(perf)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const handleComplete = useCallback((idx, done) => {
     setDoneExercises(prev => {
@@ -783,6 +815,7 @@ function WorkoutCard({day, date, isToday, dayIndex}) {
                 <ExerciseRow
                   key={i} ex={ex} number={i+1}
                   isLast={i===exList.length-1}
+                  last={lastPerf[String(ex.name||'').trim().toLowerCase()]}
                   onComplete={(done) => handleComplete(i, done)}
                   onSetsUpdate={(sets) => handleSetsUpdate(i, sets)}
                 />
