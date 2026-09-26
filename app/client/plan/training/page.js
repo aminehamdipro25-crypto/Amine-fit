@@ -194,6 +194,32 @@ function fmtRest(sec) {
   const m = Math.floor(sec / 60), s = sec % 60
   return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`
 }
+
+// Curated direct-tutorial videos for the core compound lifts (verified, high-view,
+// stable). Anything not here falls back to the reliable YouTube search link, so a
+// link is never broken. Keyed by lowercased exercise name (+ common aliases).
+const EXERCISE_VIDEOS = {
+  'barbell back squat':     'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
+  'back squat':             'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
+  'barbell squat':          'https://www.youtube.com/watch?v=8PMjqgR8Wa8',
+  'barbell bench press':    'https://www.youtube.com/watch?v=Pp8rHcFVIYg',
+  'bench press':            'https://www.youtube.com/watch?v=Pp8rHcFVIYg',
+  'deadlift':               'https://www.youtube.com/watch?v=GxsLrTzyGUU',
+  'conventional deadlift':  'https://www.youtube.com/watch?v=GxsLrTzyGUU',
+  'barbell row':            'https://www.youtube.com/watch?v=rqTOAM8WoeM',
+  'barbell bent-over row':  'https://www.youtube.com/watch?v=rqTOAM8WoeM',
+  'bent-over row':          'https://www.youtube.com/watch?v=rqTOAM8WoeM',
+  'overhead press':         'https://www.youtube.com/watch?v=F3QY5vMz_6I',
+  'barbell overhead press': 'https://www.youtube.com/watch?v=F3QY5vMz_6I',
+  'pull-up':                'https://www.youtube.com/watch?v=6zyx46Vpato',
+  'pull up':                'https://www.youtube.com/watch?v=6zyx46Vpato',
+  'wide-grip pull-up':      'https://www.youtube.com/watch?v=6zyx46Vpato',
+}
+function resolveVideoUrl(ex) {
+  if (ex.videoUrl) return ex.videoUrl
+  const k1 = String(ex.name || '').trim().toLowerCase()
+  return EXERCISE_VIDEOS[k1] || null
+}
 function getThumb(url) {
   const id = getVideoId(url)
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null
@@ -280,7 +306,7 @@ function CardioSection({cardio}) {
 // ─── Exercise Row (expandable set tracker) ────────────────────────────────────
 function ExerciseRow({ex, isLast, number, last, onComplete, onSetsUpdate}) {
   const name       = normalizeName(ex.name)
-  const videoId    = getVideoId(ex.videoUrl)
+  const videoId    = getVideoId(resolveVideoUrl(ex))
   const ytThumb    = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null
   const numSets    = Math.max(1, Number(ex.sets) || 3)
   const targetReps = String(ex.reps || '')
