@@ -104,10 +104,13 @@ function normalizeMeal(meal) {
 
   if (vegNames.length > 0) {
     const prev        = meal.salad || {}
-    // Respect AI-provided preparation if specific; otherwise use detected or default
-    const preparation = (prev.preparation && prev.preparation !== 'سلطة طازجة')
-      ? prev.preparation
-      : (vegPrep || 'سلطة طازجة')
+    // A state freshly detected from the vegetable names (cooked/grilled/steamed)
+    // ALWAYS wins — a stored "سلطة طازجة…" may be stale/wrong for cooked veg
+    // (e.g. سبانخ مطبوخة). Only fall back to a stored preparation when it is a
+    // genuinely different, non-"fresh-salad" description.
+    const storedSpecific = prev.preparation && !prev.preparation.includes('سلطة طازجة')
+    const preparation = vegPrep
+      || (storedSpecific ? prev.preparation : 'سلطة طازجة بزيت الزيتون والليمون')
     result.salad = {
       has_salad:   true,
       vegetables:  prev.has_salad ? (prev.vegetables || vegNames) : vegNames,
