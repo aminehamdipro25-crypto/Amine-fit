@@ -46,6 +46,37 @@ const cls = (err) =>
   ${err ? 'border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-200'
         : 'border-slate-200 bg-white focus:border-primary-400 focus:ring-2 focus:ring-primary-100'}`
 
+// Common email domains + Damerau-Levenshtein (distance ≤1 catches single-char
+// typos and letter swaps like "gmial.com") for a "did you mean …?" suggestion.
+const COMMON_EMAIL_DOMAINS = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com', 'protonmail.com']
+function damerau(a, b) {
+  const m = a.length, n = b.length
+  const d = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = 0; i <= m; i++) d[i][0] = i
+  for (let j = 0; j <= n; j++) d[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+      }
+    }
+  }
+  return d[m][n]
+}
+function suggestEmail(email) {
+  const e = (email || '').trim().toLowerCase()
+  const at = e.lastIndexOf('@')
+  if (at < 1) return null
+  const local = e.slice(0, at), domain = e.slice(at + 1)
+  if (!domain || COMMON_EMAIL_DOMAINS.includes(domain)) return null
+  for (const d of COMMON_EMAIL_DOMAINS) {
+    if (damerau(domain, d) === 1) return `${local}@${d}`
+  }
+  return null
+}
+
 function TextInput({ field, form, setForm, errors, ...props }) {
   return (
     <input
@@ -103,7 +134,7 @@ const STEPS = [
 ]
 
 const INIT = {
-  email:'', name:'', gender:'', age:'', height:'', weight:'',
+  email:'', emailConfirm:'', name:'', gender:'', age:'', height:'', weight:'',
   phone:'', country:'', workActivity:'', hasScale:'',
   goal:'', targetWeight:'', goalTimeline:'', trainingExperience:'',
   hasInBody:'', inBodyNote:'', bodyFatPct:'', hasNFS:'', nfsNote:'',
@@ -125,6 +156,9 @@ function validate(step, form) {
   const errs = {}
   if (step === 0) {
     if (!form.email)        errs.email       = 'البريد الإلكتروني مطلوب'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) errs.email = 'صيغة البريد الإلكتروني غير صحيحة'
+    if (!form.emailConfirm) errs.emailConfirm = 'تأكيد البريد مطلوب'
+    else if (form.email.trim().toLowerCase() !== form.emailConfirm.trim().toLowerCase()) errs.emailConfirm = 'البريد وتأكيده غير متطابقين'
     if (!form.name)         errs.name        = 'الاسم مطلوب'
     if (!form.gender)       errs.gender      = 'الجنس مطلوب'
     if (!form.age)          errs.age         = 'العمر مطلوب'
@@ -427,10 +461,29 @@ export default function RegisterPage() {
 
             {/* ── STEP 0: Basic Info ── */}
             {step === 0 && <>
-              <Inp label="البريد الإلكتروني" required error={errors.email}>
+              <Inp label="البريد الإلكتروني" required error={errors.email}
+                hint="سيصلك كود تفعيل حسابك على هذا البريد — تأكد من صحته">
                 <TextInput field="email" type="email" placeholder="example@gmail.com"
-                  dir="ltr" form={form} setForm={setForm} errors={errors} />
+                  dir="ltr" autoComplete="email" form={form} setForm={setForm} errors={errors} />
               </Inp>
+              {suggestEmail(form.email) && (
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, email: suggestEmail(f.email) || f.email }))}
+                  className="-mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 transition">
+                  💡 هل تقصد <span dir="ltr" className="underline">{suggestEmail(form.email)}</span>؟ — اضغط للتصحيح
+                </button>
+              )}
+              <Inp label="تأكيد البريد الإلكتروني" required error={errors.emailConfirm}>
+                <TextInput field="emailConfirm" type="email" placeholder="أعد كتابة بريدك يدوياً"
+                  dir="ltr" autoComplete="off" spellCheck={false}
+                  onPaste={e => e.preventDefault()} onDrop={e => e.preventDefault()} onCopy={e => e.preventDefault()}
+                  form={form} setForm={setForm} errors={errors} />
+              </Inp>
+              {form.emailConfirm && form.email && (
+                form.emailConfirm.trim().toLowerCase() === form.email.trim().toLowerCase()
+                  ? <p className="-mt-2 text-xs text-emerald-600 font-bold">✓ البريدان متطابقان</p>
+                  : <p className="-mt-2 text-xs text-rose-500 font-bold">✗ البريدان غير متطابقين</p>
+              )}
               <Inp label="الإسم الكامل" required error={errors.name}>
                 <TextInput field="name" placeholder="أحمد بن علي"
                   form={form} setForm={setForm} errors={errors} />
