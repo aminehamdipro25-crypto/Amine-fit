@@ -1,6 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Loader2, RefreshCw, Star, X } from 'lucide-react'
+
+// Region-aware price table — Gulf (ر.ق) vs Maghreb (د.ت). Keeps the coach's
+// subscription options in the local currency instead of always showing Tunisian.
+const PRICE_TABLE = {
+  gulf:    { basic: 199, standard: 449, premium: 999, cur: 'ر.ق' },
+  maghreb: { basic: 50,  standard: 125, premium: 300, cur: 'د.ت' },
+}
 
 // ── Subscription helpers ──────────────────────────────────────────────────────
 export const PLANS_INFO = {
@@ -70,6 +77,14 @@ export default function SubscriptionSection({ client, onUpdate }) {
   const [saved, setSaved]             = useState(false)
   const [savedMsg, setSavedMsg]       = useState('')
   const [clearing, setClearing]       = useState(false)
+  // Detect the coach's zone once so prices show in the local currency.
+  const [zone, setZone]               = useState('gulf')
+  useEffect(() => {
+    fetch('/api/geo').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.zone) setZone(d.zone)
+    }).catch(() => {})
+  }, [])
+  const pt = PRICE_TABLE[zone] || PRICE_TABLE.gulf
 
   async function saveSubscription() {
     setSaving(true)
@@ -176,9 +191,9 @@ export default function SubscriptionSection({ client, onUpdate }) {
                   setDuration(PLANS_INFO[p]?.days || 30)
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-gold-400 appearance-none">
-                <option value="basic">برنامج التدريب — 50 د.ت</option>
-                <option value="standard">الباقة الشهرية — 125 د.ت</option>
-                <option value="premium">باقة 3 أشهر — 300 د.ت</option>
+                <option value="basic">برنامج التدريب — {pt.basic} {pt.cur}</option>
+                <option value="standard">الباقة الشهرية — {pt.standard} {pt.cur}</option>
+                <option value="premium">باقة 3 أشهر — {pt.premium} {pt.cur}</option>
               </select>
             </div>
             <div>

@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/adminAuth'
 import { getSubmissionById } from '@/lib/submissions'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 // ── Heart Rate Zone calculator (Tanaka formula — more accurate than 220-age) ──
 function calcZones(age) {
@@ -225,7 +226,10 @@ export async function POST(req) {
   if (deny) return deny
 
   const { clientId } = await req.json()
-  if (!clientId || !/^AF-\d+$/.test(clientId)) {
+  // IDs look like AF-<base36 timestamp>-<hex>, e.g. "AF-MUICSNBV-23779E" — they
+  // contain LETTERS, so the old /^AF-\d+$/ rejected every real client and the
+  // protocol always failed with 400. Accept the actual alphanumeric format.
+  if (!clientId || !/^AF-[A-Z0-9-]+$/i.test(clientId)) {
     return NextResponse.json({ error: 'clientId غير صالح' }, { status: 400 })
   }
 
@@ -239,20 +243,30 @@ export async function POST(req) {
   }
 
   try {
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key':         process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type':      'application/json',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 2500,
-        system:     SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: buildPrompt(client, methodKey) }],
-      }),
-    })
+    // Cap the request below Vercel's function window so a slow/hung call aborts
+    // here and falls back to the built-in protocol instead of a non-JSON 504.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 45_000)
+    let aiRes
+    try {
+      aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key':         process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type':      'application/json',
+        },
+        body: JSON.stringify({
+          model:      'claude-haiku-4-5-20251001',
+          max_tokens: 2500,
+          system:     SYSTEM_PROMPT,
+          messages:   [{ role: 'user', content: buildPrompt(client, methodKey) }],
+        }),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
 
     if (!aiRes.ok) throw new Error(`AI ${aiRes.status}`)
     const aiData  = await aiRes.json()
