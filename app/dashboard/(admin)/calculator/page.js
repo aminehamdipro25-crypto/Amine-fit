@@ -1242,6 +1242,7 @@ export default function CalculatorPage() {
                               </div>
                             )}
                             <p className="text-xs text-emerald-600 mt-0.5">{nm.salad.preparation || 'سلطة طازجة بزيت الزيتون والليمون'}</p>
+                            <p className="text-[11px] text-emerald-600/80 mt-0.5">🔄 بدّلها بأي خضار متاحة (طماطم · خيار · خس · فلفل · جزر)</p>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0 mr-2">
