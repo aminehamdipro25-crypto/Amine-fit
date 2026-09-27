@@ -4,6 +4,7 @@ import { Check, Zap, MessageCircle, Copy, CheckCheck, Smartphone, MapPin, Gift, 
 import Link from 'next/link'
 import { trackEvent } from '@/lib/gtag'
 import { trackPixel } from '@/lib/pixel'
+import { zoneForCountry } from '@/lib/countries'
 
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
@@ -97,9 +98,12 @@ export default function PaymentPage() {
       fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     ]).then(([d, geo]) => {
       setPricing({ ...PRICING_DEFAULT, ...d })
-      // Trust the geo route's zone (unknown → gulf) so a Qatari visitor with a
-      // missing country header sees Gulf currency + Fawra, not Tunisian.
-      setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
+      // A country passed in the URL (?c=CODE, e.g. from registration) is
+      // authoritative; otherwise trust the geo route's zone (unknown → gulf) so a
+      // Qatari visitor with a missing country header still sees Gulf currency + Fawra.
+      const cCode = new URLSearchParams(window.location.search).get('c')
+      if (cCode) setZone(zoneForCountry(cCode))
+      else setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
     })
 
     const params = new URLSearchParams(window.location.search)

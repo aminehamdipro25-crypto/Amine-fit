@@ -160,6 +160,7 @@ function validate(step, form) {
     if (!form.emailConfirm) errs.emailConfirm = 'تأكيد البريد مطلوب'
     else if (form.email.trim().toLowerCase() !== form.emailConfirm.trim().toLowerCase()) errs.emailConfirm = 'البريد وتأكيده غير متطابقين'
     if (!form.name)         errs.name        = 'الاسم مطلوب'
+    if (!form.country)      errs.country     = 'البلد مطلوب'
     if (!form.gender)       errs.gender      = 'الجنس مطلوب'
     if (!form.age)          errs.age         = 'العمر مطلوب'
     if (!form.height)       errs.height      = 'الطول مطلوب'
@@ -341,7 +342,8 @@ export default function RegisterPage() {
       try { localStorage.removeItem(LS_FORM); localStorage.removeItem(LS_STEP) } catch {}
       const planParam  = form.interestedPlan ? `&plan=${encodeURIComponent(form.interestedPlan)}` : ''
       const emailParam = data.email ? `&email=${encodeURIComponent(data.email)}` : ''
-      router.push(data.alreadyRegistered ? `/register/success?existing=1${planParam}${emailParam}` : `/register/success?${planParam}${emailParam}`)
+      const cParam     = form.country ? `&c=${encodeURIComponent(form.country)}` : ''
+      router.push(data.alreadyRegistered ? `/register/success?existing=1${planParam}${emailParam}${cParam}` : `/register/success?${planParam}${emailParam}${cParam}`)
     } catch (e) {
       setApiErr(e.message)
     } finally {
@@ -493,8 +495,8 @@ export default function RegisterPage() {
                 <TextInput field="phone" type="tel" placeholder="+974 3065 3759"
                   dir="ltr" form={form} setForm={setForm} errors={errors} />
               </Inp>
-              <Inp label="البلد" error={errors.country}
-                hint="يساعد في تكييف البرنامج الغذائي مع الأطعمة المحلية">
+              <Inp label="البلد" required error={errors.country}
+                hint="يحدّد عملتك وطريقة الدفع، ويكيّف برنامجك الغذائي مع الأطعمة المحلية">
                 <select
                   value={form.country ?? ''}
                   onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
