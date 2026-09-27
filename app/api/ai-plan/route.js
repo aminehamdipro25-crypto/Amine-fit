@@ -490,8 +490,13 @@ ${daySchema}`
     let response
     try {
       response = await anthropic.messages.create({
-        model:       'claude-sonnet-4-6',
-        max_tokens:  6000,
+        // Haiku 4.5 — the same fast model the (working) training generator uses.
+        // Sonnet was too slow for a single request to finish inside Vercel's
+        // function window, so it was killed every time (504) and the credit was
+        // spent for nothing. Haiku finishes a one-day plan in a fraction of the
+        // time; the exact local engine remains the accuracy backstop on fallback.
+        model:       'claude-haiku-4-5-20251001',
+        max_tokens:  5000,
         temperature: 1.0,
         system:      [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         messages:    [{ role: 'user', content: dayPrompt }],
