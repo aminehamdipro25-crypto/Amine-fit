@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Flame, Zap, Droplets, ChevronDown, ChevronUp, Clock, Printer, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -468,21 +469,12 @@ export default function NutritionPlan() {
             </div>
             <div className="flex flex-col items-end gap-2">
               <div className="text-6xl opacity-70 select-none">🥗</div>
-              {/* Print buttons */}
-              <div className="flex gap-2">
-                <button onClick={printDay}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-xs font-bold rounded-xl transition border border-white/10">
-                  <Printer className="w-3.5 h-3.5" />
-                  اليوم
-                </button>
-                {isWeeklyCalc && allCalcDays.length > 0 && (
-                  <button onClick={printWeek}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-400/20 hover:bg-emerald-400/30 text-emerald-200 text-xs font-bold rounded-xl transition border border-emerald-400/30">
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    الأسبوع
-                  </button>
-                )}
-              </div>
+              {/* Professional report / PDF (same design as the coach's report) */}
+              <Link href="/client/plan/report"
+                className="flex items-center gap-1.5 px-4 py-2 bg-white text-emerald-800 text-xs font-extrabold rounded-xl transition border border-white hover:bg-emerald-50">
+                <Printer className="w-3.5 h-3.5" />
+                تقرير PDF احترافي
+              </Link>
             </div>
           </div>
         </div>
