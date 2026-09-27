@@ -140,15 +140,17 @@ function getPlanDayIndex(date,schedule) { const i=schedule.indexOf(date.getDay()
 // Format: "4 جوان 2026"
 function fmtDate(d) { return `${d.getDate()} ${MONTHS_MAGHREBI[d.getMonth()]} ${d.getFullYear()}` }
 
-// Returns 0-based plan day index using startDate anchor, or null if it's a rest day.
-// Counts training-day occurrences from startDate to queryDate and wraps by planDaysCount.
-function getPlanDayFromStart(queryDate, schedule, startDateStr, planDaysCount) {
+// Returns 0-based plan day index using startDate anchor, or null if it's a rest day
+// or the plan period has ended (endDateStr). Counts training-day occurrences from
+// startDate to queryDate and wraps by planDaysCount.
+function getPlanDayFromStart(queryDate, schedule, startDateStr, planDaysCount, endDateStr) {
   if (!startDateStr) return getPlanDayIndex(queryDate, schedule)  // legacy fallback
 
   const d     = startOfDay(queryDate)
   const start = startOfDay(new Date(startDateStr))
 
   if (+d < +start) return null  // before plan was assigned
+  if (endDateStr && +d > +startOfDay(new Date(endDateStr))) return null  // plan period ended
 
   const dow = d.getDay()
   if (!schedule.includes(dow)) return null  // not a training weekday
@@ -165,12 +167,11 @@ function getPlanDayFromStart(queryDate, schedule, startDateStr, planDaysCount) {
   return (count - 1) % planDaysCount
 }
 
-// Returns true if `date` is a training day given the plan's schedule and startDate.
-function isTrainingDay(date, schedule, startDateStr) {
-  if (startDateStr) {
-    const start = startOfDay(new Date(startDateStr))
-    if (+startOfDay(date) < +start) return false
-  }
+// Returns true if `date` is a training day given the plan's schedule, startDate and endDate.
+function isTrainingDay(date, schedule, startDateStr, endDateStr) {
+  const d = startOfDay(date)
+  if (startDateStr && +d < +startOfDay(new Date(startDateStr))) return false
+  if (endDateStr   && +d > +startOfDay(new Date(endDateStr)))   return false
   return schedule.includes(date.getDay())
 }
 
@@ -603,7 +604,7 @@ function ExerciseRow({ex, isLast, number, last, onComplete, onSetsUpdate}) {
 }
 
 // ─── Week Navigator ───────────────────────────────────────────────────────────
-function WeekNavigator({today, selectedDate, onSelect, schedule, startDate}) {
+function WeekNavigator({today, selectedDate, onSelect, schedule, startDate, endDate}) {
   const [weekOffset, setWeekOffset] = useState(0)
 
   const weekStart = useMemo(() => {
@@ -634,7 +635,7 @@ function WeekNavigator({today, selectedDate, onSelect, schedule, startDate}) {
         {days.map((day,i) => {
           const isToday    = isSameDay(day,today)
           const isSelected = isSameDay(day,selectedDate)
-          const isTraining = isTrainingDay(day, schedule, startDate)
+          const isTraining = isTrainingDay(day, schedule, startDate, endDate)
           return (
             <button key={i} onClick={()=>onSelect(startOfDay(day))}
               className={`flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 active:scale-95
@@ -1104,8 +1105,13 @@ export default function TrainingPlan() {
   const daysPerWeek = plan.days.length   // always trust actual saved days
   const schedule    = getSchedule(daysPerWeek)
   const startDate   = plan.startDate || null  // ISO string set when admin uploads the plan
+  // Plan runs until the subscription ends; if none, default to 30 days from start
+  // (so the weekly schedule doesn't repeat forever across every month).
+  const endDate     = client.subscriptionEndDate
+    || (startDate ? new Date(new Date(startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : null)
   const isToday     = isSameDay(selectedDate, today)
-  const planDayIdx  = getPlanDayFromStart(selectedDate, schedule, startDate, plan.days.length)
+  const planEnded   = endDate && +startOfDay(selectedDate) > +startOfDay(new Date(endDate))
+  const planDayIdx  = getPlanDayFromStart(selectedDate, schedule, startDate, plan.days.length, endDate)
   const currentDay  = (planDayIdx !== null) ? plan.days[planDayIdx] : null
 
   return (
@@ -1118,13 +1124,21 @@ export default function TrainingPlan() {
       </div>
 
       {/* Week Navigator */}
-      <WeekNavigator today={today} selectedDate={selectedDate} onSelect={setSelectedDate} schedule={schedule} startDate={startDate}/>
+      <WeekNavigator today={today} selectedDate={selectedDate} onSelect={setSelectedDate} schedule={schedule} startDate={startDate} endDate={endDate}/>
 
       {/* Stats */}
       <StatsBar plan={plan}/>
 
       {/* Workout or Rest */}
-      {currentDay
+      {planEnded
+        ? (
+          <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center shadow-sm">
+            <div className="text-5xl mb-3">🏁</div>
+            <h2 className="text-lg font-extrabold text-slate-800">انتهت مدة هذه الخطة</h2>
+            <p className="text-sm text-slate-400 mt-1.5">تواصل مع المدرب أمين لتجديد خطتك التدريبية</p>
+          </div>
+        )
+        : currentDay
         ? <WorkoutCard key={selectedDate.toISOString()} day={currentDay} date={selectedDate} isToday={isToday} dayIndex={planDayIdx}/>
         : <RestCard                                                        date={selectedDate} isToday={isToday}/>
       }
