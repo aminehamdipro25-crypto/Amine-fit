@@ -238,6 +238,7 @@ export default function TrainingPlannerPage() {
   const [clientsLoading, setClientsLoading] = useState(false)
   const [saving, setSaving]                 = useState(false)
   const [saved, setSaved]                   = useState(false)
+  const [saveErr, setSaveErr]               = useState('')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -321,15 +322,23 @@ export default function TrainingPlannerPage() {
     const clientId = pickedClient?.id || selectedClient
     if (!clientId || !result || saving) return
     setSaving(true)
+    setSaveErr('')
     try {
-      await fetch(`/api/register/${clientId}/plan`, {
+      const res = await fetch(`/api/register/${clientId}/plan`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: { training: { ...result, startDate: new Date().toISOString() } } }),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setSaveErr(data.error || `فشل الحفظ (${res.status}) — حاول مجدداً`)
+        return
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
-    } catch {}
+    } catch {
+      setSaveErr('تعذّر الاتصال بالخادم — تحقق من الاتصال وحاول مجدداً')
+    }
     finally { setSaving(false) }
   }
 
@@ -778,6 +787,12 @@ export default function TrainingPlannerPage() {
                         <><Save className="w-4 h-4" /> حفظ البرنامج للعميل</>
                       )}
                     </button>
+                    {saveErr && (
+                      <p className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">⚠️ {saveErr}</p>
+                    )}
+                    {saved && (
+                      <p className="text-xs font-medium text-emerald-400 text-center">ظهر البرنامج الآن في بوابة {pickedClient?.name || 'العميلة'} ✅</p>
+                    )}
                   </div>
                 </div>
               </>
