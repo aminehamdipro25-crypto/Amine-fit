@@ -8,6 +8,7 @@ import {
 import crypto from 'node:crypto'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60  // day-plan AI (Sonnet) can take a while — give it headroom on Vercel
 
 // ── Redis cache helpers ───────────────────────────────────────────────────────
 function redisCfg() {
