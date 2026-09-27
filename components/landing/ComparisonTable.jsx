@@ -1,6 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, X, ChevronDown } from 'lucide-react'
+
+// Same defaults/structure as the pricing cards so both stay in sync
+const PRICE_DEFAULT = {
+  basic:    { tnd: 50,  qar: 199 },
+  standard: { tnd: 125, qar: 449 },
+  premium:  { tnd: 300, qar: 999 },
+}
 
 const features = [
   { label: 'برنامج تدريب مخصص 100%',           basic: true,  standard: true,  premium: true  },
@@ -31,6 +38,22 @@ function Cell({ val, highlight }) {
 
 export default function ComparisonTable() {
   const [open, setOpen] = useState(false)
+  // Geo-aware pricing — mirror the pricing cards (Gulf → ر.ق, Maghreb → د.ت)
+  const [pricing, setPricing] = useState(PRICE_DEFAULT)
+  const [zone, setZone] = useState('gulf')
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/pricing').then(r => r.ok ? r.json() : PRICE_DEFAULT).catch(() => PRICE_DEFAULT),
+      fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([p, geo]) => {
+      setPricing({ ...PRICE_DEFAULT, ...p })
+      setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
+    })
+  }, [])
+  const cur = zone === 'gulf' ? 'ر.ق' : 'د.ت'
+  const priceFor = key => zone === 'gulf'
+    ? (pricing[key]?.qar ?? PRICE_DEFAULT[key].qar)
+    : (pricing[key]?.tnd ?? PRICE_DEFAULT[key].tnd)
 
   return (
     <section className="py-16 bg-[#0a0a0a]">
@@ -57,7 +80,7 @@ export default function ComparisonTable() {
                     <th key={c.key} className={`px-4 py-4 text-center w-[16%] ${c.highlight ? 'bg-gold-400/10' : ''}`}>
                       <div className="text-xl mb-1">{c.emoji}</div>
                       <div className={`font-extrabold text-sm ${c.highlight ? 'text-gold-400' : 'text-white'}`}>{c.label}</div>
-                      <div className={`text-xs font-bold mt-0.5 ${c.highlight ? 'text-gold-400/70' : 'text-white/30'}`}>{c.price} د.ت</div>
+                      <div className={`text-xs font-bold mt-0.5 ${c.highlight ? 'text-gold-400/70' : 'text-white/30'}`}>{priceFor(c.key)} {cur}</div>
                     </th>
                   ))}
                 </tr>

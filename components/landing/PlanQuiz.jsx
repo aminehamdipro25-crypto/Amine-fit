@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, RotateCcw, Zap } from 'lucide-react'
 
 const QUESTIONS = [
@@ -34,29 +34,38 @@ function getRecommendation(answers) {
   const [goal, exp, time] = answers
   if (time === 'training_only') {
     return {
-      name: 'برنامج التدريب', emoji: '🏋️', price: '50 د.ت',
+      name: 'برنامج التدريب', emoji: '🏋️', key: 'basic',
       planParam: 'برنامج التدريب',
       why: 'بناءً على إجاباتك، البداية الصحيحة هي بناء عادة تدريبية احترافية أولاً — البرنامج المخصص يعطيك هذا بالضبط.',
     }
   }
   if (time === '3months' || goal === 'performance' || exp === 'advanced') {
     return {
-      name: 'باقة 3 أشهر', emoji: '🏆', price: '300 د.ت',
+      name: 'باقة 3 أشهر', emoji: '🏆', key: 'premium',
       planParam: 'باقة 3 أشهر',
       why: 'أنت جاهز لتحول حقيقي — 90 يوماً من المتابعة الكاملة مع ضمان النتيجة هو ما يناسبك تماماً.',
     }
   }
   return {
-    name: 'الباقة الشهرية', emoji: '⚡', price: '125 د.ت',
+    name: 'الباقة الشهرية', emoji: '⚡', key: 'standard',
     planParam: 'الباقة الشهرية',
     why: 'الخيار الأذكى لك — تدريب + تغذية + متابعة أسبوعية في باقة واحدة متكاملة لنتيجة ملموسة.',
   }
 }
 
+// Geo-aware price for the quiz recommendation (matches the pricing cards)
+const QUIZ_PRICES = { basic:{tnd:50,qar:199}, standard:{tnd:125,qar:449}, premium:{tnd:300,qar:999} }
+
 export default function PlanQuiz() {
   const [step, setStep]       = useState(0)
   const [answers, setAnswers] = useState([])
   const [started, setStarted] = useState(false)
+  const [zone, setZone]       = useState('gulf')
+  useEffect(() => {
+    fetch('/api/geo').then(r => r.ok ? r.json() : {}).then(g => setZone(g.zone === 'maghreb' ? 'maghreb' : 'gulf')).catch(() => {})
+  }, [])
+  const cur = zone === 'gulf' ? 'ر.ق' : 'د.ت'
+  const priceOf = key => zone === 'gulf' ? QUIZ_PRICES[key]?.qar : QUIZ_PRICES[key]?.tnd
 
   function choose(val) {
     const next = [...answers, val]
@@ -137,7 +146,7 @@ export default function PlanQuiz() {
               <p className="text-gold-400 text-xs font-extrabold uppercase tracking-widest mb-4">✅ توصية المدرب</p>
               <div className="text-6xl mb-3">{rec.emoji}</div>
               <h3 className="text-white font-extrabold text-2xl mb-1">{rec.name}</h3>
-              <p className="text-gold-400 font-extrabold text-lg mb-4">{rec.price} / شهر</p>
+              <p className="text-gold-400 font-extrabold text-lg mb-4">{priceOf(rec.key)} {cur} / شهر</p>
               <p className="text-white/50 text-sm leading-relaxed mb-8 max-w-sm mx-auto">{rec.why}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <a href={`/register?plan=${encodeURIComponent(rec.planParam)}`}

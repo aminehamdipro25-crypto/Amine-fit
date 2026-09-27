@@ -1,15 +1,31 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, CheckCircle, Loader2 } from 'lucide-react'
+
+const PKG_PRICES = { basic:{tnd:50,qar:199}, standard:{tnd:125,qar:449}, premium:{tnd:300,qar:999} }
+function buildPackages(zone) {
+  const cur = zone === 'gulf' ? 'ر.ق' : 'د.ت'
+  const p = k => zone === 'gulf' ? PKG_PRICES[k].qar : PKG_PRICES[k].tnd
+  return [
+    `برنامج التدريب (${p('basic')} ${cur})`,
+    `الباقة الشهرية (${p('standard')} ${cur})`,
+    `باقة 3 أشهر (${p('premium')} ${cur})`,
+    'لم أقرر بعد',
+  ]
+}
 import { trackEvent } from '@/lib/gtag'
 
 const goals = ['خسارة الوزن', 'بناء العضلات', 'الحفاظ على الوزن', 'تحسين اللياقة العامة', 'أخرى']
-const packages = ['برنامج التدريب (50 د.ت)', 'الباقة الشهرية (125 د.ت)', 'باقة 3 أشهر (300 د.ت)', 'لم أقرر بعد']
 
 const init = { name: '', phone: '', email: '', goal: '', pkg: '', message: '' }
 
 export default function ContactForm() {
   const [form, setForm]     = useState(init)
+  const [zone, setZone]     = useState('gulf')
+  useEffect(() => {
+    fetch('/api/geo').then(r => r.ok ? r.json() : {}).then(g => setZone(g.zone === 'maghreb' ? 'maghreb' : 'gulf')).catch(() => {})
+  }, [])
+  const packages = buildPackages(zone)
   const [loading, setLoad]  = useState(false)
   const [success, setOk]    = useState(false)
   const [error, setError]   = useState('')
