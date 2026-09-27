@@ -770,12 +770,12 @@ export default function CalculatorPage() {
             {loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                <span>الذكاء الاصطناعي يولّد الخطة...</span>
+                <span>جارٍ بناء الخطة الغذائية...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                <span>توليد البرنامج بالذكاء الاصطناعي</span>
+                <span>توليد البرنامج الغذائي</span>
               </>
             )}
           </button>
@@ -828,23 +828,10 @@ export default function CalculatorPage() {
 
       {/* ── Results ── */}
       {result && (<>
-        {/* AI/Local badge */}
-        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${isAI ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
-          {isAI ? <><Sparkles className="w-4 h-4" /> تم التوليد بالذكاء الاصطناعي Claude</> : <><Calculator className="w-4 h-4" /> تم التوليد بالمحرك المحلي (المجاني)</>}
-          {isAI && result.cached && <span className="mr-auto text-xs font-normal text-violet-400 bg-violet-100 px-2 py-0.5 rounded-full">من الكاش (24 ساعة)</span>}
-          {!isAI && !result.aiError && !result.fallbackReason && <span className="mr-auto text-xs font-normal text-slate-400">{result.duration === 'day' ? 'أضف ANTHROPIC_API_KEY في Vercel لتفعيل AI لليوم الواحد' : 'الأسبوع والشهر بالمحرك المحلي المجاني'}</span>}
-          {!isAI && result.fallbackReason && (
-            <span className="mr-auto text-xs font-normal text-amber-600">
-              {{
-                timeout:    '⚠️ المحرك المتقدم تجاوز المهلة — هذه خطة دقيقة من المحرك المحلي. حاول التوليد مجدداً.',
-                credit:     '⚠️ رصيد Anthropic غير كافٍ — أضف رصيداً من Plans & Billing لتفعيل المحرك المتقدم.',
-                auth:       '⚠️ مفتاح ANTHROPIC_API_KEY غير صالح — تحقق منه في إعدادات Vercel.',
-                overloaded: '⚠️ خوادم Claude مشغولة الآن — هذه خطة من المحرك المحلي. أعد المحاولة بعد قليل.',
-                error:      'ℹ️ تعذّر المحرك المتقدم — هذه خطة دقيقة من المحرك المحلي.',
-              }[result.fallbackReason] || 'ℹ️ خطة من المحرك المحلي الدقيق.'}
-            </span>
-          )}
-          {result.aiError && <span className="mr-auto text-xs font-normal text-red-500">خطأ AI: {result.aiError}</span>}
+        {/* Engine badge — every plan is built by the exact exchange engine */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <Calculator className="w-4 h-4" /> تم التوليد بمحرك التبادل الدقيق
+          <span className="mr-auto text-xs font-normal text-emerald-500">حسابات ADA دقيقة + بدائل لكل مكوّن</span>
         </div>
 
         {/* Step 1 — Energy */}
