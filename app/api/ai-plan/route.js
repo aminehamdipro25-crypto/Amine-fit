@@ -384,151 +384,16 @@ export async function POST(req) {
     }
   }
 
-  const duration = form.duration || 'day'
-
-  // Week & Month plans → always use local engine (never rate-limit)
-  if (duration === 'week' || duration === 'month') {
-    try {
-      return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
-    } catch (e) {
-      return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
-    }
-  }
-
-  // Rate-limit: only for actual fresh Claude API calls (day plan)
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (await isRateLimited(`ai_plan:${ip}`, 20, 3600)) {
-    return NextResponse.json({ error: 'تجاوزت الحد المسموح (20 خطة/ساعة) — حاول لاحقاً' }, { status: 429 })
-  }
-
-  // Build regional context for the prompt
-  const region      = getRegion(form.country || '')
-  const regionLabel = REGION_LABELS[region] || ''
-  const regionHint  = REGION_FOOD_HINTS[region] || ''
-
-  const safeName      = String(form.name     || '').slice(0, 100) || 'العميل'
-  const safePreferred = String(form.preferred || '').slice(0, 500).trim() || 'لا يوجد'
-  const safeAvoided   = String(form.avoided   || '').slice(0, 200) || 'لا يوجد'
-  const hasFoodList   = safePreferred !== 'لا يوجد'
-  const foodListLine  = hasFoodList
-    ? `قائمة الأطعمة المسموحة (استخدم هذه الأطعمة فقط — لا تضف أي طعام خارجها): ${safePreferred}`
-    : `قائمة الأطعمة: غير محددة (اختر أطعمة متنوعة مناسبة)`
-  const adjNum  = form.manualAdj  ? Math.max(-1000, Math.min(1000, Math.round(+form.manualAdj)))   : null
-  const rateNum = form.weeklyRate ? Math.max(-1,    Math.min(1,    +form.weeklyRate))               : null
-  const adjLine = adjNum  != null ? `العجز/الفائض اليومي المحدد يدوياً: ${adjNum} سعرة/يوم\n` :
-                  rateNum != null ? `معدل الوزن الأسبوعي المستهدف: ${rateNum} كغ/أسبوع → عجز/فائض: ${Math.round(rateNum * 7700 / 7)} سعرة/يوم\n` : ''
-
-  const regionSection = region !== 'global' ? `المنطقة: ${regionLabel}
-الأطعمة المحلية المفضلة: ${regionHint}
-` : ''
-
-  // SCHEMA ANNOTATIONS (these explain the rules — do not include them in JSON output):
-  // items[] → نشويات + بروتين + ألبان + فاكهة + زيت زيتون فقط
-  //           🚫 ممنوع في items: الخضروات (طماطم/خيار/فلفل/خس...) → تذهب لـ salad
-  //           🚫 ممنوع في items: المكسرات (لوز/كاجو/فستق...) → تذهب لـ nuts
-  // salad   → has_salad=true إذا وُجدت خضروات، جمِّع كلها في كائن واحد
-  // nuts    → has_nuts=true إذا وُجدت مكسرات، جمِّع كلها في كائن واحد
-  const menuSchema = `[
-    {
-      "name": "الفطور", "time": "07:30", "icon": "🌅",
-      "kcal": number, "carbs": number, "protein": number, "fat": number,
-      "items": [
-        { "group": "النشويات", "icon": "🌾", "servings": number, "food": "توست كامل محمص", "amount": "90 غ (3 شرائح)", "cooking_method": "محمص" }
-      ],
-      "salad": { "has_salad": false, "vegetables": ["طماطم", "خيار"], "preparation": "سلطة طازجة بزيت الزيتون", "grams": 150 },
-      "nuts": { "has_nuts": false, "type": "None", "grams": 0 }
-    }
-  ]`
-
+  // Every duration now uses the local exchange engine — the coach's ADA food-exchange
+  // method with بدائل (per-item alternatives), exact Mifflin-St Jeor math, built-in
+  // variety and strict regional rules. The AI day-plan path was removed on purpose:
+  // Haiku produced arithmetic errors (e.g. a wrong BMR shown to the coach) and dropped
+  // the exchange alternatives the method depends on, while Sonnet was too slow and was
+  // killed by Vercel (spending credit for nothing). The local engine is exact, instant,
+  // free, and honors every rule that was agreed on.
   try {
-    const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    // maxRetries: 1 — one quick retry on a transient error, but the AbortController
-    // below caps total wall-time so we never blow past Vercel's function limit.
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 1 })
-    const floor     = form.gender === 'male' ? 1500 : 1200
-
-    // ── DAY PLAN ─────────────────────────────────────────────────────────────
-    const daySchema = `{
-  "bmr": number, "tdee": number, "target": number,
-  "ex": { "starches": number, "meats": number, "dairy": number, "fats": number, "fruits": number, "vegetables": number, "actualKcal": number, "macros": { "carbs": number, "protein": number, "fat": number }, "pct": { "carbs": number, "protein": number, "fat": number }, "skipped": { "milk": false, "vegetable": false, "fruit": false } },
-  "duration": "day",
-  "total_day_macros": { "calories": number, "protein": number, "carbs": number, "fat": number },
-  "menu": ${menuSchema}
-}`
-
-    const dayPrompt = `═══ بيانات العميل ═══
-الاسم: ${safeName}
-العمر: ${form.age} سنة | الجنس: ${form.gender === 'male' ? 'ذكر' : 'أنثى'}
-الوزن الحالي: ${form.weight} كغ | الطول: ${form.height} سم
-الوزن المستهدف: ${form.targetWeight ? form.targetWeight + ' كغ' : 'غير محدد'}
-مستوى النشاط: ${ACTIVITY_LABELS[form.activity] || 'غير محدد'}
-الهدف: ${GOAL_LABELS[form.goal] || 'غير محدد'}
-${adjLine}${regionSection}${foodListLine}
-الأطعمة الممنوعة: ${safeAvoided}
-عدد الوجبات: ${form.meals} وجبات يومياً
-
-═══ التنويع الإلزامي ═══
-⚡ هذه الخطة يجب أن تكون فريدة ومختلفة تماماً — غيِّر مصادر البروتين والنشويات والفواكه عن أي خطة نمطية.
-⚡ لا تلجأ للنمط الآمن الثابت (دجاج+أرز+تفاح) — استكشف التنوع الكامل ضمن الأطعمة المسموحة.
-⚡ اختر مصدر بروتين مختلف عن الدجاج إذا كان النمط مختلطاً (سمك/تونة/كبدة/بيض/بقوليات).
-⚡ غيِّر النشويات: كسكسي أو بطاطا أو معكرونة أو شوفان بدلاً من الأرز دائماً.
-
-تذكير هيكلي قبل التوليد:
-🚫 الخضروات (طماطم/خيار/فلفل/خس...) → حقل salad فقط — ممنوع في items
-🚫 المكسرات (لوز/كاجو/جوز/فستق...) → حقل nuts فقط — ممنوع في items
-🚫 تونس/مغرب/جزائر: سمك السلمون محظور تماماً — استخدم سردين أو مرجان أو تونة
-
-أنشئ خطة غذائية ليوم واحد وأعد JSON بالضبط:
-${daySchema}`
-
-    // Hard wall-clock cap BELOW Vercel's function limit (maxDuration=60). If Sonnet
-    // is slow, we abort here and fall into the catch → local engine returns a valid
-    // plan. Without this, a slow request is killed by Vercel with a non-JSON 504 and
-    // the client shows "تعذّر الاتصال بالخادم" while the catch/fallback never runs.
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 45_000)
-    let response
-    try {
-      response = await anthropic.messages.create({
-        // Haiku 4.5 — the same fast model the (working) training generator uses.
-        // Sonnet was too slow for a single request to finish inside Vercel's
-        // function window, so it was killed every time (504) and the credit was
-        // spent for nothing. Haiku finishes a one-day plan in a fraction of the
-        // time; the exact local engine remains the accuracy backstop on fallback.
-        model:       'claude-haiku-4-5-20251001',
-        max_tokens:  5000,
-        temperature: 1.0,
-        system:      [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages:    [{ role: 'user', content: dayPrompt }],
-      }, { signal: controller.signal })
-    } finally {
-      clearTimeout(timer)
-    }
-
-    const textBlock = response.content.find(b => b.type === 'text')
-    const raw  = (textBlock?.text || '').trim()
-      .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-    const plan = JSON.parse(raw)
-    if (plan.target) plan.target = Math.max(floor, plan.target)
-    const dayResult = { ...postProcess(plan), form, date: new Date().toISOString(), ai: true, duration: plan.duration || 'day' }
-    return NextResponse.json(dayResult)
-
-  } catch (err) {
-    const msg = err?.message || ''
-    console.error('AI plan error — falling back to local engine:', msg)
-    // Classify the failure so the UI can tell the coach why the advanced engine
-    // was skipped (aborted/slow, low credit, auth, overload) — the plan itself is
-    // still produced by the exact local engine, so the coach is never left empty.
-    let reason = 'error'
-    if (err?.name === 'APIUserAbortError' || /abort/i.test(msg))       reason = 'timeout'
-    else if (/credit|billing|insufficient|quota/i.test(msg))            reason = 'credit'
-    else if (/401|403|api[_ ]?key|authentication/i.test(msg))          reason = 'auth'
-    else if (/429|overloaded|rate|529/i.test(msg))                     reason = 'overloaded'
-    try {
-      const fb = postProcess(localPlan(form, Math.floor(Math.random() * 1e6)))
-      return NextResponse.json({ ...fb, fallbackReason: reason })
-    } catch (e2) {
-      return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
-    }
+    return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
+  } catch (e) {
+    return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
   }
 }
