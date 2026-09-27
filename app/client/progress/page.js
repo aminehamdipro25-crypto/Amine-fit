@@ -12,13 +12,19 @@ function fmtDate(iso) {
 }
 
 const FIELDS = [
-  { key: 'weight', label: 'الوزن', unit: 'كغ', emoji: '⚖️', color: '#fbbf24' },
-  { key: 'waist',  label: 'الخصر', unit: 'سم', emoji: '📏', color: '#f97316' },
-  { key: 'chest',  label: 'الصدر', unit: 'سم', emoji: '💪', color: '#3b82f6' },
-  { key: 'hips',   label: 'الأرداف', unit: 'سم', emoji: '🔵', color: '#8b5cf6' },
-  { key: 'arm',    label: 'الذراع', unit: 'سم', emoji: '💪', color: '#10b981' },
-  { key: 'thigh',  label: 'الفخذ', unit: 'سم', emoji: '🦵', color: '#ec4899' },
+  { key: 'weight',   label: 'الوزن',           unit: 'كغ',    emoji: '⚖️', color: '#fbbf24' },
+  { key: 'bodyFat',  label: 'نسبة الدهون',     unit: '%',     emoji: '📉', color: '#ef4444', inbody: true },
+  { key: 'muscle',   label: 'الكتلة العضلية',  unit: 'كغ',    emoji: '🦾', color: '#22c55e', inbody: true },
+  { key: 'visceral', label: 'الدهون الحشوية',  unit: 'مستوى', emoji: '🫀', color: '#a855f7', inbody: true },
+  { key: 'waist',    label: 'الخصر',           unit: 'سم',    emoji: '📏', color: '#f97316' },
+  { key: 'chest',    label: 'الصدر',           unit: 'سم',    emoji: '💪', color: '#3b82f6' },
+  { key: 'hips',     label: 'الأرداف',          unit: 'سم',   emoji: '🔵', color: '#8b5cf6' },
+  { key: 'arm',      label: 'الذراع',           unit: 'سم',   emoji: '💪', color: '#10b981' },
+  { key: 'thigh',    label: 'الفخذ',           unit: 'سم',    emoji: '🦵', color: '#ec4899' },
 ]
+
+// Build an empty form object from FIELDS (+ note) so new fields stay controlled
+const emptyForm = () => ({ ...Object.fromEntries(FIELDS.map(f => [f.key, ''])), note: '' })
 
 export default function ProgressPage() {
   const router = useRouter()
@@ -28,7 +34,7 @@ export default function ProgressPage() {
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
   const [activeChart, setActiveChart] = useState('weight')
-  const [form, setForm] = useState({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
+  const [form, setForm] = useState(emptyForm())
 
   useEffect(() => {
     fetch('/api/progress')
@@ -38,7 +44,7 @@ export default function ProgressPage() {
   }, [router])
 
   async function save() {
-    if (!form.weight && !form.waist && !form.chest) return
+    if (!FIELDS.some(f => form[f.key])) return
     setSaving(true)
     setSaveError('')
 
@@ -54,7 +60,7 @@ export default function ProgressPage() {
       _pending: true,
     }
     setEntries(prev => [...prev, tempEntry])
-    setForm({ weight:'', waist:'', chest:'', hips:'', arm:'', thigh:'', note:'' })
+    setForm(emptyForm())
     setShowForm(false)
 
     try {
@@ -203,20 +209,27 @@ export default function ProgressPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-1">
               <h3 className="font-extrabold text-slate-900 text-lg">تسجيل قياس جديد</h3>
               <button onClick={() => setShowForm(false)} className="text-slate-300 hover:text-slate-600 transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
+            <p className="text-xs text-slate-400 font-medium mb-4 leading-relaxed">
+              سجّل قياساتك أو نتائج جهاز <span className="font-bold text-slate-500">InBody</span> (نسبة الدهون، الكتلة العضلية، الدهون الحشوية) — املأ ما لديك واترك الباقي فارغاً.
+            </p>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {FIELDS.map(f => (
                 <div key={f.key}>
-                  <label className="text-xs font-bold text-slate-500 block mb-1">{f.emoji} {f.label} ({f.unit})</label>
+                  <label className="text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
+                    <span>{f.emoji} {f.label} ({f.unit})</span>
+                    {f.inbody && <span className="text-[9px] font-extrabold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full">InBody</span>}
+                  </label>
                   <input type="number" step="0.1" value={form[f.key]}
                     onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                     placeholder="0.0"
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold outline-none focus:border-[#fbbf24] transition" />
+                    className={`w-full px-3 py-2.5 rounded-xl border text-sm font-bold outline-none transition
+                      ${f.inbody ? 'border-red-100 bg-red-50/40 focus:border-red-300' : 'border-slate-200 focus:border-[#fbbf24]'}`} />
                 </div>
               ))}
             </div>
@@ -230,7 +243,7 @@ export default function ProgressPage() {
             {saveError && (
               <p className="text-red-500 text-xs font-bold mb-3 bg-red-50 rounded-lg px-3 py-2">⚠️ {saveError}</p>
             )}
-            <button onClick={save} disabled={saving || (!form.weight && !form.waist && !form.chest)}
+            <button onClick={save} disabled={saving || !FIELDS.some(f => form[f.key])}
               className="w-full py-3 bg-[#0a0a0a] text-[#fbbf24] rounded-xl font-extrabold text-sm disabled:opacity-40 flex items-center justify-center gap-2 hover:bg-[#1a1a1a] transition">
               {saving ? <div className="w-4 h-4 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               حفظ القياس
