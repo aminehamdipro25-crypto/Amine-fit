@@ -263,11 +263,29 @@ export default function CalculatorPage() {
     setEditVal(currentVal)
   }
   function commitEdit(key) {
-    setItemEdits(e => ({ ...e, [key]: editVal }))
+    // Preserve any swapped amount when only the name is edited
+    setItemEdits(e => {
+      const prev = e[key]
+      const amount = (prev && typeof prev === 'object') ? prev.amount : undefined
+      return { ...e, [key]: amount !== undefined ? { food: editVal, amount } : editVal }
+    })
     setEditKey(null)
   }
+  // Swap the main item for one of its exchange-equivalent alternatives (same
+  // calories, correct portion). Stores both the food name AND its amount.
+  function swapToAlternative(key, alt) {
+    setItemEdits(e => ({ ...e, [key]: { food: alt.food, amount: alt.amount } }))
+    setEditKey(null)
+  }
+  // itemEdits[key] may be a plain string (name-only edit) or { food, amount } (swap)
   function getDisplayFood(key, originalFood) {
-    return itemEdits[key] ?? originalFood
+    const v = itemEdits[key]
+    if (v == null) return originalFood
+    return typeof v === 'object' ? v.food : v
+  }
+  function getDisplayAmount(key, originalAmount) {
+    const v = itemEdits[key]
+    return (v && typeof v === 'object' && v.amount) ? v.amount : originalAmount
   }
 
   // ── Restore draft from localStorage on mount ─────────────────────────────
@@ -414,7 +432,13 @@ export default function CalculatorPage() {
         const newItems = [...items]
         displayToRaw.forEach((rawIdx, di) => {
           const k = `${i}-${di}`
-          if (itemEdits[k] !== undefined) newItems[rawIdx] = { ...newItems[rawIdx], food: itemEdits[k] }
+          const v = itemEdits[k]
+          if (v !== undefined) {
+            // v is either a string (name-only edit) or { food, amount } (swap)
+            newItems[rawIdx] = (v && typeof v === 'object')
+              ? { ...newItems[rawIdx], food: v.food, amount: v.amount }
+              : { ...newItems[rawIdx], food: v }
+          }
         })
         const nk = `n${i}`
         const sk = `s${i}`
@@ -1187,15 +1211,38 @@ export default function CalculatorPage() {
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
                             )}
                           </p>
-                          {item.alternatives?.length > 0 && (
-                            <p className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
-                              <span className="font-bold">🔄 أو:</span> {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
-                            </p>
-                          )}
+                          {item.alternatives?.length > 0 && (() => {
+                            // All exchange-equivalent options (same calories) —
+                            // original first, then its alternatives. Tap to swap.
+                            const options = [{ food: item.food, amount: item.amount }, ...item.alternatives]
+                            return (
+                              <div className="mt-1.5">
+                                <p className="text-[10px] text-emerald-600/70 font-bold mb-1">🔄 بدائل بنفس السعرات — اضغط للتبديل</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {options.map((opt, oi) => {
+                                    const active = displayFood === opt.food
+                                    return (
+                                      <button
+                                        key={oi}
+                                        type="button"
+                                        onClick={() => { if (!active) swapToAlternative(key, opt) }}
+                                        className={`text-[11px] px-2 py-0.5 rounded-full border transition
+                                          ${active
+                                            ? 'bg-emerald-500 text-white border-emerald-500 font-bold'
+                                            : 'bg-white text-emerald-700 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50'}`}
+                                      >
+                                        {opt.food} <span className="opacity-70">{opt.amount}</span>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
                       <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex-shrink-0 mr-2">
-                        {item.amount}
+                        {getDisplayAmount(key, item.amount)}
                       </span>
                     </div>
                   )})}
