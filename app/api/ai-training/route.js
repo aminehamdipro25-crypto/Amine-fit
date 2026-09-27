@@ -1710,9 +1710,9 @@ function getFallback(n, equipment, gender) {
 // Static cardio blocks appended to fallback (non-AI) programs when the coach
 // requested cardio, so the "mix cardio + strength" choice is honored even offline.
 const CARDIO_FALLBACK = {
-  finisher: { has_cardio: true, type: 'حبل القفز أو دراجة ثابتة', duration: '5-10 دقائق', intensity: 'متوسطة', note: 'خاتمة بعد التمرين لرفع الحرق وتحسين اللياقة القلبية' },
-  hiit:     { has_cardio: true, type: 'HIIT — 30ث عمل / 30ث راحة', duration: '10-15 دقيقة', intensity: 'عالية', note: 'بيربي + تسلّق الجبل + قفز القرفصاء — 8 جولات' },
-  liss:     { has_cardio: true, type: 'مشي سريع أو دراجة ثابتة', duration: '20-30 دقيقة', intensity: 'منخفضة', note: 'بوتيرة تسمح بالحديث — حرق دهون دون إجهاد العضلات' },
+  finisher: { has_cardio: true, type: 'حبل القفز أو دراجة ثابتة', duration: '5-10 دقائق', intensity: 'متوسطة — Zone 3 (70-80% من أقصى ضربات القلب)', note: 'خاتمة بعد التمرين لرفع الحرق وتحسين اللياقة القلبية' },
+  hiit:     { has_cardio: true, type: 'HIIT — 30ث عمل / 30ث راحة', duration: '10-15 دقيقة', intensity: 'عالية — Zone 4-5 (85-95%)', note: 'بيربي + تسلّق الجبل + قفز القرفصاء — 8 جولات' },
+  liss:     { has_cardio: true, type: 'مشي سريع أو دراجة ثابتة', duration: '20-30 دقيقة', intensity: 'منخفضة — Zone 2 (60-70%)', note: 'بوتيرة تسمح بالحديث — منطقة حرق الدهون المثلى' },
 }
 function withCardio(plan, cardio) {
   if (!plan?.days || cardio === 'none' || !CARDIO_FALLBACK[cardio]) return plan
@@ -1744,7 +1744,9 @@ export async function POST(req) {
   const safeEquip  = VALID_EQUIP.has(equipment)  ? equipment : 'gym'
   const safeGender = VALID_GENDER.has(gender)    ? gender    : null
   const safeSplit  = VALID_SPLITS.has(split)     ? split     : 'auto'
-  const safeMuscle = VALID_MUSCLES.has(musclePriority) ? (musclePriority || '') : ''
+  const muscleList = Array.isArray(musclePriority)
+    ? musclePriority.filter(m => m && VALID_MUSCLES.has(m))
+    : (musclePriority && VALID_MUSCLES.has(musclePriority) ? [musclePriority] : [])
   const safeCardio = VALID_CARDIO.has(cardio)    ? cardio    : 'none'
   const safeDuration = [45, 60, 75, 90].includes(parseInt(duration)) ? parseInt(duration) : 60
   const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
@@ -1826,17 +1828,17 @@ export async function POST(req) {
     : `- Level: ${levelMap[safeLevel]}`
 
   const cardioDirective = safeCardio === 'finisher'
-    ? `- Cardio: add a "cardio" object to EVERY day — a 5-10 min conditioning finisher AFTER the strength work (Jump Rope, Rowing, Stationary Bike, Incline Walk, or a short 3-move circuit). Vary it across days. Fill type/duration/intensity/note in Arabic, has_cardio:true.`
+    ? `- Cardio: add a "cardio" object to EVERY day — a 5-10 min conditioning finisher AFTER the strength work (Jump Rope, Rowing, Stationary Bike, Incline Walk, or a short 3-move circuit). Vary it across days. In the "intensity" field state the heart-rate zone in Arabic (خاتمة معتدلة = Zone 3, 70-80% من أقصى ضربات القلب). Fill type/duration/intensity/note in Arabic, has_cardio:true.`
     : safeCardio === 'hiit'
-    ? `- Cardio: add a "cardio" object to EVERY day — 10-15 min HIIT (e.g. 30s work / 30s rest × 8-10 of Burpee, Mountain Climber, Jump Squat, High Knees). Vary it across days. type/duration/intensity/note in Arabic, has_cardio:true.`
+    ? `- Cardio: add a "cardio" object to EVERY day — 10-15 min HIIT (e.g. 30s work / 30s rest × 8-10 of Burpee, Mountain Climber, Jump Squat, High Knees). In the "intensity" field state "عالية — Zone 4-5 (85-95% من أقصى ضربات القلب)". Vary it across days. type/duration/intensity/note in Arabic, has_cardio:true.`
     : safeCardio === 'liss'
-    ? `- Cardio: add a "cardio" object to EVERY day — 20-30 min steady low-intensity cardio (brisk walk, incline treadmill, or stationary bike at a conversational pace). type/duration/intensity/note in Arabic, has_cardio:true.`
+    ? `- Cardio: add a "cardio" object to EVERY day — 20-30 min steady low-intensity cardio (brisk walk, incline treadmill, or stationary bike at a conversational pace). In the "intensity" field state "منخفضة — Zone 2 (60-70% من أقصى ضربات القلب) — منطقة حرق الدهون". type/duration/intensity/note in Arabic, has_cardio:true.`
     : `- Cardio: NONE — set "cardio": { "has_cardio": false } on every day and add no conditioning work.`
 
   const userPrompt = `Create a ${n}-day/week training program:
 - Goal: ${goalMap[safeGoal]}
 - Split Type: ${splitMap[safeSplit]}
-${safeMuscle ? `- Muscle Priority: ${muscleMap[safeMuscle]} — add 1 extra exercise and +1 set on all exercises targeting this muscle group` : ''}
+${muscleList.length ? `- Muscle Priority: ${muscleList.map(m => muscleMap[m]).join(', ')} — add 1 extra exercise and +1 set on exercises targeting ${muscleList.length > 1 ? 'these muscle groups' : 'this muscle group'}` : ''}
 ${genderDirective}
 ${levelDirective}
 ${cardioDirective}
@@ -1844,6 +1846,7 @@ ${cardioDirective}
 - Session duration: ${safeDuration} minutes — size the workout (number of exercises and sets) so it realistically fits this time, including warmup and cooldown.
 - Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
+- LANGUAGE: every Arabic field (note, description, tips, focus, cardio) must be correct, natural Modern Standard Arabic with accurate grammar and spelling — no typos, no broken words${safeGender === 'female' ? '. This client is FEMALE — use feminine verb forms throughout (ابدئي، حافظي، اشعري، شدّي)' : ''}.
 
 Return exactly this JSON (${n} days):
 ${schema}`
