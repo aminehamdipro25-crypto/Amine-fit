@@ -1592,6 +1592,105 @@ const FALLBACKS_HOME_F = {
   },
 }
 
+// Female gym fallbacks — glute/lower-body priority with upper-body definition,
+// mirroring the FEMALE programming rules in the system prompt.
+const FALLBACKS_F = {
+  3: {
+    daysPerWeek: 3, duration: 60, level: 'beginner',
+    note: 'برنامج نسائي متوازن — تركيز على الأرداف والأرجل مع شدّ الجزء العلوي.',
+    tips: ['ركّزي على الإحساس بعضلة الأرداف في كل تكرار', 'زيدي الوزن تدريجياً كل أسبوع', 'النوم والبروتين أساس نمو العضلات'],
+    days: [
+      { name: 'Lower A — Glute Focus', focus: 'أرداف', description: 'أرداف وأرجل — تركيز الأرداف',
+        warmup: [{ name: 'Leg Swing + Hip Circle', duration: '3 min', note: 'تحريك مفصل الورك' }, { name: 'Glute Bridge March', duration: '2×12', note: 'تنشيط الأرداف' }],
+        exercises: [
+          { name: 'Barbell Hip Thrust', sets: 4, reps: '12-15', rest: '90s', note: 'اضغطي الأرداف بقوة في الأعلى وثبّتي ثانية' },
+          { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '12 each', rest: '75s', note: 'الجذع منتصب — الوزن على الكعب' },
+          { name: 'Romanian Deadlift', sets: 3, reps: '12', rest: '90s', note: 'ظهر مستقيم — إحساس بشدّ الفخذ الخلفي' },
+          { name: 'Cable Kickback', sets: 3, reps: '15-20 each', rest: '45s', note: 'مدى كامل وتحكّم' },
+          { name: 'Lateral Band Walk', sets: 3, reps: '20 each', rest: '45s', note: 'للأرداف الجانبية' },
+        ],
+        cooldown: [{ name: 'Pigeon Pose', duration: '45s each', note: 'إطالة الورك' }, { name: 'Standing Quad Stretch', duration: '30s each', note: '' }] },
+      { name: 'Upper — Definition', focus: 'كتف', description: 'شدّ وتعريف الجزء العلوي',
+        warmup: [{ name: 'Arm Circles + Band Pull-Apart', duration: '3 min', note: 'تدفئة الكتف' }, { name: 'Cat-Cow', duration: '1 min', note: '' }],
+        exercises: [
+          { name: 'Lat Pulldown', sets: 3, reps: '12-15', rest: '75s', note: 'للظهر والقوام' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15-20', rest: '45s', note: 'لعرض الكتف' },
+          { name: 'Seated Cable Row', sets: 3, reps: '12-15', rest: '60s', note: 'اسحبي بلوح الكتف' },
+          { name: 'Plank', sets: 3, reps: '40s hold', rest: '30s', note: '' },
+        ],
+        cooldown: [{ name: 'Cross-Body Shoulder Stretch', duration: '30s each', note: '' }, { name: "Child's Pose", duration: '45s', note: '' }] },
+      { name: 'Lower B — Hamstring & Glute', focus: 'أرجل', description: 'أرجل خلفية وأرداف',
+        warmup: [{ name: 'Leg Swing + Hip Circle', duration: '3 min', note: '' }, { name: 'Bodyweight Squat', duration: '2×15', note: '' }],
+        exercises: [
+          { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12-15', rest: '75s', note: 'انزلي حتى يوازي الفخذ الأرض' },
+          { name: 'Dumbbell Hip Thrust', sets: 3, reps: '15', rest: '60s', note: '' },
+          { name: 'Dumbbell Walking Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Leg Curl', sets: 3, reps: '15', rest: '45s', note: 'للفخذ الخلفي' },
+          { name: 'Standing Calf Raise', sets: 4, reps: '20', rest: '30s', note: '' },
+        ],
+        cooldown: [{ name: 'Seated Hamstring Stretch', duration: '45s each', note: '' }, { name: 'Pigeon Pose', duration: '45s each', note: '' }] },
+    ],
+  },
+  4: {
+    daysPerWeek: 4, duration: 60, level: 'intermediate',
+    note: 'برنامج نسائي Upper/Lower — نموّ الأرداف مع توازن الجسم.',
+    tips: ['يوما الأرجل هما الأهم — أعطيهما تركيزك الكامل', 'سجّلي أوزانك لتتابعي التقدم', 'راحة يوم بين الجلسات الشديدة'],
+    days: [
+      { name: 'Lower A — Glute', focus: 'أرداف', description: 'أرداف وكوادريسبس', exercises: [
+        { name: 'Barbell Hip Thrust', sets: 4, reps: '10-12', rest: '90s', note: 'أهم تمرين — اضغطي الأرداف' },
+        { name: 'Dumbbell Goblet Squat', sets: 4, reps: '12', rest: '75s', note: '' },
+        { name: 'Dumbbell Bulgarian Split Squat', sets: 3, reps: '10 each', rest: '60s', note: '' },
+        { name: 'Cable Kickback', sets: 3, reps: '15 each', rest: '45s', note: '' },
+        { name: 'Standing Calf Raise', sets: 4, reps: '20', rest: '30s', note: '' },
+      ]},
+      { name: 'Upper A', focus: 'ظهر', description: 'ظهر وكتف',
+        exercises: [
+          { name: 'Lat Pulldown', sets: 4, reps: '12', rest: '75s', note: '' },
+          { name: 'Seated Cable Row', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Dumbbell Shoulder Press', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'Dumbbell Lateral Raise', sets: 3, reps: '15-20', rest: '45s', note: '' },
+          { name: 'Dumbbell Rear Delt Fly', sets: 3, reps: '15', rest: '45s', note: 'للقوام' },
+        ]},
+      { name: 'Lower B — Hamstring & Glute', focus: 'أرجل', description: 'فخذ خلفي وأرداف',
+        exercises: [
+          { name: 'Romanian Deadlift', sets: 4, reps: '10-12', rest: '90s', note: 'ظهر مستقيم' },
+          { name: 'Dumbbell Hip Thrust', sets: 3, reps: '15', rest: '60s', note: '' },
+          { name: 'Dumbbell Walking Lunge', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Leg Curl', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Lateral Band Walk', sets: 3, reps: '20 each', rest: '30s', note: '' },
+        ]},
+      { name: 'Upper B + Core', focus: 'ذراع', description: 'ذراعين وبطن',
+        exercises: [
+          { name: 'Incline Dumbbell Press', sets: 3, reps: '12', rest: '60s', note: '' },
+          { name: 'One-Arm Dumbbell Row', sets: 3, reps: '12 each', rest: '60s', note: '' },
+          { name: 'Barbell Curl', sets: 3, reps: '12', rest: '45s', note: '' },
+          { name: 'Tricep Pushdown', sets: 3, reps: '15', rest: '45s', note: '' },
+          { name: 'Plank', sets: 3, reps: '45s hold', rest: '30s', note: '' },
+        ]},
+    ],
+  },
+}
+FALLBACKS_F[5] = {
+  daysPerWeek: 5, duration: 60, level: 'intermediate',
+  note: 'برنامج نسائي متقدم — 3 أيام أرجل/أرداف ويومان علوي.',
+  tips: ['حجم أكبر للأرداف = 3 أيام أرجل', 'تدرّج الأوزان أساس النتائج', 'تغذية كافية بالبروتين'],
+  days: [
+    FALLBACKS_F[3].days[0],                                  // Lower A — Glute
+    FALLBACKS_F[3].days[1],                                  // Upper — Definition
+    FALLBACKS_F[3].days[2],                                  // Lower B — Hamstring
+    { name: 'Glutes & Abductors', focus: 'أرداف', description: 'يوم أرداف مخصّص',
+      exercises: [
+        { name: 'Barbell Hip Thrust', sets: 4, reps: '12-15', rest: '90s', note: '' },
+        { name: 'Cable Kickback', sets: 3, reps: '15-20 each', rest: '45s', note: '' },
+        { name: 'Lateral Band Walk', sets: 3, reps: '20 each', rest: '45s', note: '' },
+        { name: 'Glute Bridge', sets: 3, reps: '20', rest: '45s', note: '' },
+        { name: 'Dumbbell Sumo Squat', sets: 3, reps: '15', rest: '60s', note: 'للأرداف الداخلية' },
+      ]},
+    FALLBACKS_F[4].days[3],                                  // Upper B + Core
+  ],
+}
+
 function getFallback(n, equipment, gender) {
   if (equipment === 'home') {
     if (gender === 'female') return FALLBACKS_HOME_F[n] || FALLBACKS_HOME_F[3]
@@ -1601,8 +1700,11 @@ function getFallback(n, equipment, gender) {
     if (gender === 'female') return FALLBACKS_BW_F[n] || FALLBACKS_BW_F[3]
     return FALLBACKS_BW[n] || FALLBACKS_BW[3]
   }
+  // gym
+  if (gender === 'female') return FALLBACKS_F[n] || FALLBACKS_F[3]
   return FALLBACKS[n] || FALLBACKS[3]
 }
+
 
 // Static cardio blocks appended to fallback (non-AI) programs when the coach
 // requested cardio, so the "mix cardio + strength" choice is honored even offline.
@@ -1665,7 +1767,7 @@ export async function POST(req) {
 
   if (!process.env.ANTHROPIC_API_KEY) {
     const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
-    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false })
+    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false, fallbackReason: 'no_api_key' })
   }
 
 
@@ -1759,7 +1861,7 @@ ${schema}`
     let response
     try {
       response = await anthropic.messages.create(
-        { model: 'claude-haiku-4-5-20251001', max_tokens: 8000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
+        { model: 'claude-sonnet-4-6', max_tokens: 8000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
         { signal: controller.signal },
       )
     } finally {
@@ -1778,6 +1880,6 @@ ${schema}`
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
     const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
-    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false })
+    return NextResponse.json({ ...fb, daysPerWeek: n, level: safeLevel, duration: safeDuration, ai: false, fallbackReason: String(err.message || 'error').slice(0, 200) })
   }
 }

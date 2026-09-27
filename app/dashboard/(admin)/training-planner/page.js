@@ -691,7 +691,7 @@ export default function TrainingPlannerPage() {
                     : 'bg-white/5 border-white/10 text-white/40'}`}>
                   {result.ai
                     ? <><Sparkles className="w-4 h-4" /> تم التوليد بالمحرك المتقدم</>
-                    : <><Zap className="w-4 h-4" /> تم التوليد بالمحرك الافتراضي</>
+                    : <><Zap className="w-4 h-4" /> تم التوليد بالمحرك الافتراضي{result.fallbackReason ? ` — (${result.fallbackReason === 'no_api_key' ? 'مفتاح API غير مضبوط' : result.fallbackReason})` : ''}</>
                   }
                 </div>
 
