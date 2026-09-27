@@ -102,7 +102,13 @@ export default function ClientLayout({ children }) {
   if (isLogin) return <>{children}<PwaInstallBanner /></>
 
   return (
-    <div className={`flex bg-[#f5f5f5] overflow-hidden ${isPreview ? 'h-[calc(100vh-44px)] mt-[44px]' : 'h-screen'}`}>
+    <div className={`flex bg-[#f5f5f5] overflow-hidden print:block print:h-auto print:overflow-visible ${isPreview ? 'h-[calc(100vh-44px)] mt-[44px]' : 'h-screen'}`}>
+      {/* Allow the print output to flow across multiple pages instead of being
+          clipped to one screen by the app's full-height scroll containers. */}
+      <style>{`@media print {
+        html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+        #main-content { overflow: visible !important; height: auto !important; }
+      }`}</style>
       <CoachPreviewBar />
 
       {/* Sidebar */}
@@ -162,7 +168,7 @@ export default function ClientLayout({ children }) {
       </>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden print:overflow-visible print:block">
         <header className="bg-white border-b border-slate-100 px-4 sm:px-6 py-4 flex items-center gap-4">
           {/* Mobile: open drawer | Desktop: toggle collapse */}
           <button
@@ -180,7 +186,7 @@ export default function ClientLayout({ children }) {
             {clientInitial}
           </div>
         </header>
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-6 print:overflow-visible print:p-0">{children}</main>
       </div>
       <PwaInstallBanner />
     </div>

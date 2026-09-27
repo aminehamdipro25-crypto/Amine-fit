@@ -525,11 +525,12 @@ export default function CalculatorPage() {
           }
         })
         const trimmedItems = newItems.filter((_, idx) => !removeRaw.has(idx))
-        // Append snack options added in place — light meal only (with alternatives)
+        // Append snack options added in place — light meal only. NO alternatives:
+        // snack options have DIFFERENT calories, so a "same-calorie alternatives"
+        // list would mislead the client. The coach picks the option in the calculator.
         const isSnackMeal = /خفيف/.test(meal.name || '')
         const adds = isSnackMeal ? (mealAdditions[i] || []).map(a => ({
           group: a.group, icon: a.icon, servings: a.servings, food: a.food, amount: a.amount, kcal: a.kcal,
-          alternatives: SNACK_OPTIONS.filter(f => f.food !== a.food).slice(0, 5).map(f => ({ food: f.food, amount: f.amount })),
         })) : []
         const addKcal = adds.reduce((s, a) => s + (a.kcal || 0), 0)
         const nk = `n${i}`
