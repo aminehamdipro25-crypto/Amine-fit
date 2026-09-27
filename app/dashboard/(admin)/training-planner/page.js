@@ -23,7 +23,7 @@ const sel = 'w-full px-4 py-2.5 rounded-xl border border-[#2a2a2a] bg-[#111111] 
 const INIT = {
   goal: 'bulk',
   split: 'auto',
-  musclePriority: '',
+  musclePriority: [],
   level: 'beginner',
   daysPerWeek: '3',
   equipment: 'gym',
@@ -442,19 +442,25 @@ export default function TrainingPlannerPage() {
                   </div>
                 </div>
 
-                {/* Muscle Priority */}
+                {/* Muscle Priority — multi-select */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">أولوية عضلية <span className="normal-case font-normal opacity-60">(اختياري)</span></label>
+                  <label className="text-xs font-bold text-white/40 uppercase tracking-widest">أولوية عضلية <span className="normal-case font-normal opacity-60">(اختياري — يمكن اختيار أكثر من عضلة)</span></label>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {MUSCLE_OPTIONS.map(o => (
-                      <button key={o.v} onClick={() => set('musclePriority', o.v)}
-                        className={`py-2 rounded-xl border-2 transition-all text-xs font-bold text-center
-                          ${form.musclePriority === o.v
-                            ? 'bg-[#fbbf24]/10 border-[#fbbf24] text-[#fbbf24]'
-                            : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
-                        {o.l}
-                      </button>
-                    ))}
+                    {MUSCLE_OPTIONS.filter(o => o.v).map(o => {
+                      const active = (form.musclePriority || []).includes(o.v)
+                      return (
+                        <button key={o.v}
+                          onClick={() => set('musclePriority', active
+                            ? (form.musclePriority || []).filter(m => m !== o.v)
+                            : [...(form.musclePriority || []), o.v])}
+                          className={`py-2 rounded-xl border-2 transition-all text-xs font-bold text-center
+                            ${active
+                              ? 'bg-[#fbbf24]/10 border-[#fbbf24] text-[#fbbf24]'
+                              : 'border-[#2a2a2a] text-white/40 hover:border-[#3a3a3a]'}`}>
+                          {o.l}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
