@@ -1824,7 +1824,7 @@ export async function POST(req) {
     : safeLevel === 'advanced'
     ? `- Level: ADVANCED — use complex variations (Paused/Deficit lifts, Archer Push-Up, Nordic Curl, Single-Leg), include intensity techniques (drop sets, supersets, rest-pause), 4-5 sets, higher total volume`
     : safeLevel === 'returning'
-    ? `- Level: RETURNING AFTER A LONG BREAK — MANDATORY reintroduction protocol: this client trained before but has been inactive. Start light — 2-3 sets at ~50-60% of former effort, moderate reps (10-15), leave 3-4 reps in reserve (RPE 6-7). Prefer full-body or upper/lower to rebuild the movement pattern. Keep total volume low to AVOID heavy soreness the first 2 weeks. Add a note on the note field for main lifts: "ابدأ بوزن خفيف وارفعه تدريجياً — الهدف إعادة بناء الأساس دون إجهاد". No advanced intensity techniques, no maximal loads.`
+    ? `- Level: RETURNING AFTER A LONG BREAK — THIS IS THE HIGHEST PRIORITY AND OVERRIDES THE GOAL'S DEFAULT INTENSITY. The client trained before but has been inactive, so the first weeks are a reintroduction, NOT a normal program: 2-3 sets only, ~50-60% of former effort, moderate reps (10-15), leave 3-4 reps in reserve (RPE 6-7), full-body or upper/lower to rebuild the pattern, LOW total volume to avoid heavy soreness. Put on EVERY main lift's note the Arabic cue "ابدأ/ابدئي بوزن خفيف وارفعه تدريجياً — الهدف إعادة بناء الأساس دون إجهاد". Absolutely NO advanced techniques (drop sets, supersets, rest-pause) and NO maximal loads, even if the goal is bulk/strength.`
     : `- Level: ${levelMap[safeLevel]}`
 
   const cardioDirective = safeCardio === 'finisher'
@@ -1846,6 +1846,7 @@ ${cardioDirective}
 - Session duration: ${safeDuration} minutes — size the workout (number of exercises and sets) so it realistically fits this time, including warmup and cooldown.
 - Client: ${safeAge ? safeAge + ' years old' : 'age unspecified'}
 ${safeInjuries ? `- Injuries/Limitations: ${safeInjuries}` : ''}
+- TIPS: the tips[] must be practical and CONSISTENT with THIS program — it already has ${n} training days/week, so NEVER suggest changing the day count, "adding a rest day", or a different split. Give real training-technique, recovery, or nutrition tips only.
 - LANGUAGE: every Arabic field (note, description, tips, focus, cardio) must be correct, natural Modern Standard Arabic with accurate grammar and spelling — no typos, no broken words${safeGender === 'female' ? '. This client is FEMALE — use feminine verb forms throughout (ابدئي، حافظي، اشعري، شدّي)' : ''}.
 
 Return exactly this JSON (${n} days):
