@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Smartphone, MapPin, Copy, CheckCheck, MessageCircle, Clock, Calendar, Wallet } from 'lucide-react'
 import { trackEvent } from '@/lib/gtag'
+import { zoneForCountry } from '@/lib/countries'
 
 const WA         = '97430653759'
 const D17_NUMBER = 'XX XXX XXX' // ← يُحدَّث بعد التفعيل
@@ -49,20 +50,24 @@ function SuccessContent() {
   const email    = params.get('email') || ''
   const plan     = PLANS[planName]
 
-  // 'maghreb' | 'gulf' — decides D17/post vs Fawra + currency
-  const [zone, setZone] = useState('gulf')
+  // 'maghreb' | 'gulf' — decides D17/post vs Fawra + currency.
+  // The country the client just chose at registration (?c=CODE) is authoritative;
+  // only if it's absent do we fall back to IP geo.
+  const countryCode = params.get('c') || ''
+  const [zone, setZone] = useState(countryCode ? zoneForCountry(countryCode) : 'gulf')
   const isGulf = zone === 'gulf'
   const price  = plan ? (isGulf ? plan.priceQar : plan.price) : ''
   const cur    = isGulf ? 'ر.ق' : 'د.ت'
 
   useEffect(() => {
+    if (countryCode) return   // client's chosen country wins over IP
     fetch('/api/geo')
       .then(r => (r.ok ? r.json() : {}))
       // Trust the geo route's zone (unknown → gulf) so a missing country header
       // never leaves a Qatari client on Tunisian currency + payment methods.
       .then(geo => { setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf') })
       .catch(() => {})
-  }, [])
+  }, [countryCode])
 
   useEffect(() => {
     trackEvent('registration_success_page', { plan_name: planName || 'none' })

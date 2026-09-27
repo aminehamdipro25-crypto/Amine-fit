@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Loader2, RefreshCw, Star, X } from 'lucide-react'
+import { zoneForCountry } from '@/lib/countries'
 
 // Region-aware price table — Gulf (ر.ق) vs Maghreb (د.ت). Keeps the coach's
 // subscription options in the local currency instead of always showing Tunisian.
@@ -77,13 +78,17 @@ export default function SubscriptionSection({ client, onUpdate }) {
   const [saved, setSaved]             = useState(false)
   const [savedMsg, setSavedMsg]       = useState('')
   const [clearing, setClearing]       = useState(false)
-  // Detect the coach's zone once so prices show in the local currency.
-  const [zone, setZone]               = useState('gulf')
+  // Currency zone from the CLIENT's registered country (most correct — bills them
+  // in their own currency). Legacy clients without a country fall back to the
+  // coach's geo. This is why the country field is now mandatory at registration.
+  const clientZone = client.country ? zoneForCountry(client.country) : null
+  const [zone, setZone]               = useState(clientZone || 'gulf')
   useEffect(() => {
+    if (clientZone) return   // client's own country is authoritative
     fetch('/api/geo').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.zone) setZone(d.zone)
     }).catch(() => {})
-  }, [])
+  }, [clientZone])
   const pt = PRICE_TABLE[zone] || PRICE_TABLE.gulf
 
   async function saveSubscription() {

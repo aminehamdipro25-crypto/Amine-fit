@@ -111,6 +111,7 @@ export async function POST(req) {
       activityLevel:       ['sedentary','light','moderate','active','veryActive'].includes(body.activityLevel) ? body.activityLevel : '',
       sleepHours:          sanitizeStr(body.sleepHours, 10),
       phone:               sanitizeStr(body.phone, 30),
+      country:             sanitizeStr(body.country, 8),  // ISO code (QA, TN...) — drives currency, payment zone & regional foods
       sportType:           sanitizeStr(body.sportType),
       hasScale:            ['yes','no'].includes(body.hasScale) ? body.hasScale : '',
       hasInBody:           ['yes','no'].includes(body.hasInBody) ? body.hasInBody : '',
