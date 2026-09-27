@@ -50,7 +50,7 @@ function SuccessContent() {
   const plan     = PLANS[planName]
 
   // 'maghreb' | 'gulf' — decides D17/post vs Fawra + currency
-  const [zone, setZone] = useState('maghreb')
+  const [zone, setZone] = useState('gulf')
   const isGulf = zone === 'gulf'
   const price  = plan ? (isGulf ? plan.priceQar : plan.price) : ''
   const cur    = isGulf ? 'ر.ق' : 'د.ت'
@@ -58,7 +58,9 @@ function SuccessContent() {
   useEffect(() => {
     fetch('/api/geo')
       .then(r => (r.ok ? r.json() : {}))
-      .then(geo => { if (geo.country && GULF_COUNTRIES.has(geo.country)) setZone('gulf') })
+      // Trust the geo route's zone (unknown → gulf) so a missing country header
+      // never leaves a Qatari client on Tunisian currency + payment methods.
+      .then(geo => { setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf') })
       .catch(() => {})
   }, [])
 
