@@ -19,7 +19,12 @@ export async function PUT(req, { params }) {
   if (deny) return deny
   try {
     const { plan } = await req.json()
-    const updated = await updateSubmission(params.id, { plan })
+    // Merge into the existing plan so saving one part (e.g. training from the
+    // planner) never wipes another part (e.g. an already-saved nutrition plan).
+    const existing = await getSubmissionById(params.id)
+    if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    const mergedPlan = { ...(existing.plan || {}), ...(plan || {}) }
+    const updated = await updateSubmission(params.id, { plan: mergedPlan })
     if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ success: true })
   } catch {

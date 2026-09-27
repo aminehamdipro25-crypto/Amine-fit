@@ -1777,7 +1777,7 @@ export async function POST(req) {
   const schema = `{
   "daysPerWeek": ${n},
   "duration": ${safeDuration},
-  "level": "<beginner|intermediate|advanced>",
+  "level": "${safeLevel}",
   "note": "<Arabic motivational note>",
   "tips": ["<Arabic tip>", "<Arabic tip>", "<Arabic tip>"],
   "days": [
@@ -1881,7 +1881,11 @@ ${schema}`
     const { plan: validatedPlan, log } = validateAndFix(parsed, safeEquip)
     if (log.length) console.warn(`[ai-training] equipment violations fixed (${safeEquip}):`, log.join(' | '))
 
-    return NextResponse.json({ ...validatedPlan, ai: true })
+    // Force the REQUESTED level/days/duration onto the result. The JSON schema only
+    // lets the model echo beginner|intermediate|advanced, so a "returning" client
+    // comes back labelled "beginner" even though the program IS a return program —
+    // which made the coach think the level was ignored. The request is authoritative.
+    return NextResponse.json({ ...validatedPlan, level: safeLevel, daysPerWeek: n, duration: safeDuration, ai: true })
   } catch (err) {
     console.error('[ai-training] fallback:', err.message)
     const fb = withCardio(getFallback(n, safeEquip, safeGender), safeCardio)
