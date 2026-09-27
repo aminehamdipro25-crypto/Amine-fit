@@ -25,7 +25,7 @@ export async function POST(req) {
     const payload = await getPayload()
     if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
-    const { weight, waist, chest, hips, arm, thigh, note } = await req.json()
+    const { weight, waist, chest, hips, arm, thigh, bodyFat, muscle, visceral, note } = await req.json()
 
     const toNum = v => (v !== undefined && v !== '' && !isNaN(+v)) ? +v : null
 
@@ -33,15 +33,18 @@ export async function POST(req) {
     if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
     const entry = {
-      id:     Date.now().toString(),
-      date:   new Date().toISOString(),
-      weight: toNum(weight),
-      waist:  toNum(waist),
-      chest:  toNum(chest),
-      hips:   toNum(hips),
-      arm:    toNum(arm),
-      thigh:  toNum(thigh),
-      note:   note?.toString().slice(0, 500) || '',
+      id:       Date.now().toString(),
+      date:     new Date().toISOString(),
+      weight:   toNum(weight),
+      waist:    toNum(waist),
+      chest:    toNum(chest),
+      hips:     toNum(hips),
+      arm:      toNum(arm),
+      thigh:    toNum(thigh),
+      bodyFat:  toNum(bodyFat),   // InBody — نسبة الدهون %
+      muscle:   toNum(muscle),    // InBody — الكتلة العضلية كغ
+      visceral: toNum(visceral),  // InBody — مستوى الدهون الحشوية
+      note:     note?.toString().slice(0, 500) || '',
     }
 
     // Cap at 500 entries to prevent storage exhaustion

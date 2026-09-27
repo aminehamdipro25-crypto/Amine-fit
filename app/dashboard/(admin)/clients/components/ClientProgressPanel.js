@@ -2,6 +2,18 @@
 import { useState, useEffect } from 'react'
 import { Scale, Loader2, ClipboardList } from 'lucide-react'
 
+const MEASURE_FIELDS = [
+  { key: 'weight',   label: 'الوزن',           unit: 'كغ',    inbody: false },
+  { key: 'bodyFat',  label: 'نسبة الدهون',     unit: '%',     inbody: true },
+  { key: 'muscle',   label: 'الكتلة العضلية',  unit: 'كغ',    inbody: true, higherBetter: true },
+  { key: 'visceral', label: 'الدهون الحشوية',  unit: '',      inbody: true },
+  { key: 'waist',    label: 'الخصر',           unit: 'سم',    inbody: false },
+  { key: 'chest',    label: 'الصدر',           unit: 'سم',    inbody: false },
+  { key: 'hips',     label: 'الأرداف',          unit: 'سم',   inbody: false },
+  { key: 'arm',      label: 'الذراع',           unit: 'سم',   inbody: false },
+  { key: 'thigh',    label: 'الفخذ',           unit: 'سم',    inbody: false },
+]
+
 export default function ClientProgressPanel({ clientId }) {
   const [progress, setProgress]   = useState(null)
   const [checkins, setCheckins]   = useState(null)
@@ -16,10 +28,18 @@ export default function ClientProgressPanel({ clientId }) {
     ]).then(([p, c]) => { setProgress(p); setCheckins(c) }).catch(() => {})
   }, [clientId])
 
-  const latestWeight = progress?.filter(e => e.weight)?.at(-1)
-  const prevWeight   = progress?.filter(e => e.weight)?.at(-2)
-  const weightDiff   = latestWeight?.weight && prevWeight?.weight
-    ? (latestWeight.weight - prevWeight.weight).toFixed(1) : null
+  // Latest entry overall + per-field latest value with diff vs the previous entry that had it
+  const latestEntry = progress?.at(-1)
+  const measures = (progress && progress.length)
+    ? MEASURE_FIELDS.map(f => {
+        const vals = progress.filter(e => e[f.key] != null && e[f.key] !== '')
+        if (!vals.length) return null
+        const last = vals.at(-1)[f.key]
+        const prev = vals.length > 1 ? vals.at(-2)[f.key] : null
+        const diff = prev != null ? +(last - prev).toFixed(1) : null
+        return { ...f, val: last, diff }
+      }).filter(Boolean)
+    : []
   const lastCheckin  = checkins?.at(-1)
 
   async function sendReply() {
@@ -53,32 +73,42 @@ export default function ClientProgressPanel({ clientId }) {
   return (
     <div className="space-y-3">
       {/* Latest measurements */}
-      {latestWeight ? (
+      {measures.length ? (
         <div className="bg-slate-50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Scale className="w-4 h-4 text-amber-500" />
             <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">آخر قياس</p>
-            <span className="text-[10px] text-slate-300 mr-auto">
-              {new Date(latestWeight.date).toLocaleDateString('ar', { month:'short', day:'numeric' })}
-            </span>
+            {latestEntry && (
+              <span className="text-[10px] text-slate-300 mr-auto">
+                {new Date(latestEntry.date).toLocaleDateString('ar', { month:'short', day:'numeric' })}
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label:'الوزن', val: latestWeight.weight, unit:'كغ', diff: weightDiff },
-              { label:'الخصر', val: latestWeight.waist,  unit:'سم', diff: null },
-              { label:'الصدر', val: latestWeight.chest,  unit:'سم', diff: null },
-            ].filter(f => f.val).map(f => (
-              <div key={f.label} className="bg-white rounded-xl p-2.5 text-center border border-slate-100">
-                <p className="text-sm font-extrabold text-slate-900">{f.val} <span className="text-[10px] font-semibold text-slate-400">{f.unit}</span></p>
-                <p className="text-[10px] text-slate-400 font-semibold">{f.label}</p>
-                {f.diff !== null && (
-                  <p className={`text-[10px] font-extrabold mt-0.5 ${+f.diff < 0 ? 'text-emerald-500' : +f.diff > 0 ? 'text-red-400' : 'text-slate-400'}`}>
-                    {+f.diff > 0 ? '+' : ''}{f.diff} {f.unit}
+            {measures.map(f => {
+              // good = green: for muscle higher is better, for everything else lower is better
+              const good = f.diff == null ? null : (f.higherBetter ? f.diff > 0 : f.diff < 0)
+              return (
+                <div key={f.key} className={`rounded-xl p-2.5 text-center border ${f.inbody ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'}`}>
+                  <p className="text-sm font-extrabold text-slate-900">{f.val} <span className="text-[10px] font-semibold text-slate-400">{f.unit}</span></p>
+                  <p className="text-[10px] text-slate-400 font-semibold flex items-center justify-center gap-1">
+                    {f.label}
+                    {f.inbody && <span className="text-[8px] font-extrabold text-red-400">InBody</span>}
                   </p>
-                )}
-              </div>
-            ))}
+                  {f.diff != null && f.diff !== 0 && (
+                    <p className={`text-[10px] font-extrabold mt-0.5 ${good ? 'text-emerald-500' : 'text-red-400'}`}>
+                      {f.diff > 0 ? '+' : ''}{f.diff} {f.unit}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
+          {latestEntry?.note && (
+            <p className="text-[11px] text-slate-500 bg-white rounded-xl px-3 py-2 border border-slate-100 mt-2 italic">
+              "{latestEntry.note}"
+            </p>
+          )}
           <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
             {progress.length} إدخال مسجل
           </p>

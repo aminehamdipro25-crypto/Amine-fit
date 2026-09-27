@@ -251,10 +251,40 @@ const EXERCISE_VIDEOS = {
   'dumbbell hip thrust':        'https://www.youtube.com/watch?v=pBH7pKHn-dI',
   'leg press':                  'https://www.youtube.com/watch?v=8nm863C0c60',
 }
+// Ordered keyword matchers (most-specific FIRST). When an exercise name isn't an
+// exact key above — e.g. "Incline Dumbbell Bench Press", "Sumo Deadlift",
+// "Front Squat", "Seated Cable Row" — we still resolve it to a verified curated
+// video by movement pattern, so far more exercises open directly instead of
+// falling back to the YouTube search link. Every URL below is one of the same
+// verified videos used in EXERCISE_VIDEOS (no unverified IDs).
+const VIDEO_MATCHERS = [
+  [/romanian deadlift|\brdl\b|stiff[- ]?leg/,              'https://www.youtube.com/watch?v=uhghy9pFIPY'],
+  [/goblet squat/,                                          'https://www.youtube.com/watch?v=k_EhLGvM8TQ'],
+  [/hip thrust|glute bridge/,                               'https://www.youtube.com/watch?v=pBH7pKHn-dI'],
+  [/lat ?pulldown|pull[- ]?down/,                           'https://www.youtube.com/watch?v=SALxEARiMkw'],
+  [/pull[- ]?up|chin[- ]?up/,                               'https://www.youtube.com/watch?v=6zyx46Vpato'],
+  [/lateral raise|side raise|side lateral/,                 'https://www.youtube.com/watch?v=Y29xKcze8Ik'],
+  [/overhead press|military press|\bohp\b/,                 'https://www.youtube.com/watch?v=F3QY5vMz_6I'],
+  [/shoulder press/,                                        'https://www.youtube.com/watch?v=guW_ENwLOMI'],
+  [/bench press|chest press/,                               'https://www.youtube.com/watch?v=Pp8rHcFVIYg'],
+  [/bent[- ]?over row|barbell row|\bbent row\b|seated row|cable row/, 'https://www.youtube.com/watch?v=rqTOAM8WoeM'],
+  [/deadlift/,                                              'https://www.youtube.com/watch?v=GxsLrTzyGUU'],
+  [/leg press/,                                             'https://www.youtube.com/watch?v=8nm863C0c60'],
+  [/\bcurl\b/,                                              'https://www.youtube.com/watch?v=QZEqB6wUPxQ'],
+  [/squat/,                                                 'https://www.youtube.com/watch?v=8PMjqgR8Wa8'],
+  [/push[- ]?up|press[- ]?up/,                              'https://www.youtube.com/watch?v=WDIpL0pjun0'],
+  [/plank/,                                                 'https://www.youtube.com/watch?v=mwlp75MS6Rg'],
+]
 function resolveVideoUrl(ex) {
   if (ex.videoUrl) return ex.videoUrl
-  const k1 = String(ex.name || '').trim().toLowerCase()
-  return EXERCISE_VIDEOS[k1] || null
+  const raw = String(ex.name || '').trim().toLowerCase()
+  if (!raw) return null
+  // Try exact key, then a punctuation-normalized key, then movement-pattern match
+  if (EXERCISE_VIDEOS[raw]) return EXERCISE_VIDEOS[raw]
+  const norm = raw.replace(/[_/]+/g, ' ').replace(/\s+/g, ' ').trim()
+  if (EXERCISE_VIDEOS[norm]) return EXERCISE_VIDEOS[norm]
+  for (const [re, url] of VIDEO_MATCHERS) if (re.test(norm)) return url
+  return null
 }
 function getThumb(url) {
   const id = getVideoId(url)
