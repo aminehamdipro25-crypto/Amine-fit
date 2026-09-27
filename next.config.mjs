@@ -20,6 +20,8 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://img.youtube.com https://raw.githubusercontent.com https://wger.de https://www.google-analytics.com https://www.googletagmanager.com",
       // GA reporting + Upstash Redis calls happen server-side but GA beacon is client-side; Sentry error reporting
       "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.sentry.io",
+      // Exercise tutorial videos embedded in the client training page
+      "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

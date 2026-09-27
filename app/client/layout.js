@@ -134,7 +134,7 @@ export default function ClientLayout({ children }) {
               </button>
             </div>
 
-            <nav className="flex-1 px-3 py-5 space-y-0.5">
+            <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-0.5">
               <p className="text-white/20 text-[10px] uppercase tracking-widest px-3 mb-4 font-bold">بوابتك الشخصية</p>
               {navItems.map(({ href, icon: Icon, label }) => {
                 const active = pathname === href

@@ -194,6 +194,18 @@ function fmtRest(sec) {
   const m = Math.floor(sec / 60), s = sec % 60
   return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`
 }
+// Map a rep range to a training intensity zone (professional touch)
+function repZone(reps) {
+  const s = String(reps || '')
+  if (/amrap/i.test(s)) return { label: 'حتى الفشل', cls: 'text-red-600 bg-red-50' }
+  if (/s|hold|ثانية|ث\b/i.test(s) && !/\d+\s*-\s*\d+/.test(s)) return null // time-based (plank etc.)
+  const n = parseInt(s.match(/\d+/)?.[0] || '', 10)
+  if (!n) return null
+  if (n <= 5)  return { label: 'Zone قوة قصوى', cls: 'text-red-600 bg-red-50' }
+  if (n <= 8)  return { label: 'Zone قوة',       cls: 'text-orange-600 bg-orange-50' }
+  if (n <= 12) return { label: 'Zone تضخيم',      cls: 'text-violet-600 bg-violet-50' }
+  return { label: 'Zone تحمّل', cls: 'text-emerald-600 bg-emerald-50' }
+}
 
 // Curated direct-tutorial videos for the core compound lifts (verified, high-view,
 // stable). Anything not here falls back to the reliable YouTube search link, so a
@@ -460,6 +472,11 @@ function ExerciseRow({ex, isLast, number, last, onComplete, onSetsUpdate}) {
               {ex.sets && ex.reps && <span className="text-slate-200">·</span>}
               {ex.reps && <><span className="text-slate-400">Reps:</span><span className="text-slate-700 font-extrabold">{ex.reps}</span></>}
               {showRest && <><span className="text-slate-200">·</span><span className="text-slate-400 text-[10px]">{ex.rest}</span></>}
+              {repZone(ex.reps) && (
+                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${repZone(ex.reps).cls}`} dir="rtl">
+                  {repZone(ex.reps).label}
+                </span>
+              )}
             </p>
             {doneSets > 0 && !allDone && (
               <p className="text-[10px] text-[#d97706] font-bold mt-1">{doneSets}/{numSets} sets done</p>
