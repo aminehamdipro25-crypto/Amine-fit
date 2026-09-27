@@ -125,18 +125,34 @@ function MealCard({ meal, idx, open, onToggle }) {
             <p className="text-sm text-slate-600 font-medium mt-4 mb-3 leading-relaxed">{meal.description}</p>
           )}
           {meal.items?.length > 0 ? (
-            <div className="space-y-1.5 mt-3">
+            <div className="space-y-2 mt-3">
               {meal.items.map((item, j) => (
-                <div key={j} className="py-2 border-b border-slate-50 last:border-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-700 font-semibold">{item.food}</span>
-                    <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2.5 py-1 rounded-full flex-shrink-0">{item.amount}</span>
+                <div key={j} className="flex items-start gap-3 py-2 border-b border-slate-50 last:border-0">
+                  <span className="mt-0.5 w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-[11px] font-extrabold flex-shrink-0 print:hidden">{j + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-slate-800 font-bold">{item.food}</span>
+                      <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full flex-shrink-0">{item.amount}</span>
+                    </div>
+                    {item.cooking_method && item.cooking_method !== 'None' && (
+                      <p className="text-[11px] text-violet-500 font-medium mt-0.5">🍳 {item.cooking_method}</p>
+                    )}
+                    {item.note && (
+                      <p className="text-[11px] text-emerald-600/80 mt-0.5">{item.note}</p>
+                    )}
+                    {item.alternatives?.length > 0 && (
+                      <div className="mt-1.5">
+                        <p className="text-[10px] text-emerald-600/70 font-bold mb-1">🔄 بدائل بنفس السعرات</p>
+                        <div className="flex flex-wrap gap-1">
+                          {item.alternatives.map((a, k) => (
+                            <span key={k} className="text-[11px] bg-white text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                              {a.food} <span className="opacity-70">{a.amount}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {item.alternatives?.length > 0 && (
-                    <p className="text-[11px] text-emerald-600/90 mt-1 leading-relaxed">
-                      🔄 أو: {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
-                    </p>
-                  )}
                 </div>
               ))}
             </div>
@@ -160,13 +176,17 @@ function MealCard({ meal, idx, open, onToggle }) {
 // server-side fixMeal() extracts vegetables → meal.salad and nuts → meal.nuts
 // so we must re-include them here, otherwise meals with only veg/nuts show empty
 function normCalcMeal(m) {
-  const baseItems = (m.items || []).map(i => ({ food: i.food, amount: i.amount }))
+  // Preserve alternatives + cooking method so the client sees the swap options too
+  const baseItems = (m.items || []).map(i => ({
+    food: i.food, amount: i.amount, alternatives: i.alternatives, cooking_method: i.cooking_method,
+  }))
 
   const saladItems = []
   if (m.salad?.vegetables?.length > 0) {
     saladItems.push({
       food:   '🥗 ' + m.salad.vegetables.join(' + '),
       amount: m.salad.grams ? `${m.salad.grams} غ` : '',
+      note:   m.salad.preparation || 'سلطة طازجة — بدّلها بأي خضار متاحة',
     })
   }
 
@@ -291,7 +311,7 @@ export default function NutritionPlan() {
   const router = useRouter()
   const [client, setClient]         = useState(null)
   const [loading, setLoading]       = useState(true)
-  const [openMeal, setOpenMeal]     = useState(0)
+  const [closedMeals, setClosedMeals] = useState(() => new Set())  // all meals open by default
   const [selectedWeek, setSelectedWeek] = useState(0)
   const [printAllDays, setPrintAllDays] = useState(false)
 
@@ -317,7 +337,7 @@ export default function NutritionPlan() {
 
   const handleSelectDate = useCallback((d) => {
     setSelectedDate(d)
-    setOpenMeal(0)
+    setClosedMeals(new Set())
   }, [])
 
   function printDay() {
@@ -465,16 +485,26 @@ export default function NutritionPlan() {
         </div>
       </div>
 
-      {/* ── Print header (only in print mode) ── */}
-      <div className="hidden print:block mb-4">
-        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">برنامج التغذية المخصص</p>
-        <h1 className="text-2xl font-extrabold text-slate-900">الخطة الغذائية</h1>
-        {isWeeklyCalc && !printAllDays && dayLabel && (
-          <p className="text-sm text-slate-600 mt-1">{dayLabel} — {fmtDate(selectedDate)}</p>
-        )}
-        {isWeeklyCalc && printAllDays && (
-          <p className="text-sm text-slate-600 mt-1">الأسبوع الكامل — {fmtDate(today)}</p>
-        )}
+      {/* ── Print header (only in print mode) — branded ── */}
+      <div className="hidden print:block mb-5">
+        <div className="flex items-center justify-between border-b-2 pb-3" style={{ borderColor: '#059669' }}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#059669' }}>برنامج التغذية المخصص</p>
+            <h1 className="text-2xl font-extrabold text-slate-900">الخطة الغذائية</h1>
+            {client?.name && <p className="text-sm text-slate-600 mt-0.5 font-bold">للعميل: {client.name}</p>}
+            {isWeeklyCalc && !printAllDays && dayLabel && (
+              <p className="text-xs text-slate-500 mt-0.5">{dayLabel} — {fmtDate(selectedDate)}</p>
+            )}
+            {isWeeklyCalc && printAllDays && (
+              <p className="text-xs text-slate-500 mt-0.5">الأسبوع الكامل — {fmtDate(today)}</p>
+            )}
+          </div>
+          <div className="text-left">
+            <p className="text-lg font-extrabold text-slate-900">AMINE<span style={{ color: '#059669' }}>FIT</span></p>
+            <p className="text-[10px] text-slate-500 font-bold">المدرب أمين حمدي</p>
+            <p className="text-[10px] text-slate-400" dir="ltr">amine-fit.com · +974 3065 3759</p>
+          </div>
+        </div>
       </div>
 
       {/* ── Week calendar (hidden in print) ── */}
@@ -486,7 +516,7 @@ export default function NutritionPlan() {
       {isMonthlyCalc && (calcPlan.weeks || []).length > 1 && (
         <div className="no-print flex flex-wrap gap-2">
           {(calcPlan.weeks || []).map((w, i) => (
-            <button key={i} onClick={() => { setSelectedWeek(i); setOpenMeal(0) }}
+            <button key={i} onClick={() => { setSelectedWeek(i); setClosedMeals(new Set()) }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                 selectedWeek === i ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
               }`}>
@@ -543,8 +573,8 @@ export default function NutritionPlan() {
               <MealCard
                 key={`${selectedDate.toISOString()}-${i}`}
                 meal={meal} idx={i}
-                open={openMeal === i}
-                onToggle={() => setOpenMeal(openMeal === i ? -1 : i)}
+                open={!closedMeals.has(i)}
+                onToggle={() => setClosedMeals(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n })}
               />
             ))}
           </div>
