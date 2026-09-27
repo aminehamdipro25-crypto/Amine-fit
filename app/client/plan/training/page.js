@@ -982,11 +982,12 @@ function RestCard({date, isToday}) {
 }
 
 // ─── Stats Bar ────────────────────────────────────────────────────────────────
+const LEVEL_AR_CLIENT = { beginner:'مبتدئ', intermediate:'متوسط', advanced:'متقدم', returning:'عودة بعد انقطاع' }
 function StatsBar({plan}) {
   const totalEx = plan.days.reduce((acc,d)=>acc+(d.exercises?.length||0),0)
   const items = [
     {icon:'💪',label:'Exercises', val:totalEx||null},
-    {icon:'🎯',label:'Level',     val:plan.level||null},
+    {icon:'🎯',label:'المستوى',   val:plan.level ? (LEVEL_AR_CLIENT[plan.level] || plan.level) : null},
     {icon:'⏱️',label:'Duration',  val:plan.duration?`${plan.duration}m`:null},
     {icon:'📅',label:'Days/wk',   val:plan.days.length||null},
   ].filter(i=>i.val)
