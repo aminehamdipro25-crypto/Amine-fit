@@ -442,7 +442,9 @@ export async function POST(req) {
 
   try {
     const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    // maxRetries: 1 — one quick retry on a transient error, but the AbortController
+    // below caps total wall-time so we never blow past Vercel's function limit.
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 1 })
     const floor     = form.gender === 'male' ? 1500 : 1200
 
     // ── DAY PLAN ─────────────────────────────────────────────────────────────
@@ -479,13 +481,24 @@ ${adjLine}${regionSection}${foodListLine}
 أنشئ خطة غذائية ليوم واحد وأعد JSON بالضبط:
 ${daySchema}`
 
-    const response = await anthropic.messages.create({
-      model:       'claude-sonnet-4-6',
-      max_tokens:  7000,
-      temperature: 1.0,
-      system:      [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      messages:    [{ role: 'user', content: dayPrompt }],
-    })
+    // Hard wall-clock cap BELOW Vercel's function limit (maxDuration=60). If Sonnet
+    // is slow, we abort here and fall into the catch → local engine returns a valid
+    // plan. Without this, a slow request is killed by Vercel with a non-JSON 504 and
+    // the client shows "تعذّر الاتصال بالخادم" while the catch/fallback never runs.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 45_000)
+    let response
+    try {
+      response = await anthropic.messages.create({
+        model:       'claude-sonnet-4-6',
+        max_tokens:  6000,
+        temperature: 1.0,
+        system:      [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        messages:    [{ role: 'user', content: dayPrompt }],
+      }, { signal: controller.signal })
+    } finally {
+      clearTimeout(timer)
+    }
 
     const textBlock = response.content.find(b => b.type === 'text')
     const raw  = (textBlock?.text || '').trim()
@@ -496,9 +509,19 @@ ${daySchema}`
     return NextResponse.json(dayResult)
 
   } catch (err) {
-    console.error('AI plan error — falling back to local engine:', err.message)
+    const msg = err?.message || ''
+    console.error('AI plan error — falling back to local engine:', msg)
+    // Classify the failure so the UI can tell the coach why the advanced engine
+    // was skipped (aborted/slow, low credit, auth, overload) — the plan itself is
+    // still produced by the exact local engine, so the coach is never left empty.
+    let reason = 'error'
+    if (err?.name === 'APIUserAbortError' || /abort/i.test(msg))       reason = 'timeout'
+    else if (/credit|billing|insufficient|quota/i.test(msg))            reason = 'credit'
+    else if (/401|403|api[_ ]?key|authentication/i.test(msg))          reason = 'auth'
+    else if (/429|overloaded|rate|529/i.test(msg))                     reason = 'overloaded'
     try {
-      return NextResponse.json(postProcess(localPlan(form, Math.floor(Math.random() * 1e6))))
+      const fb = postProcess(localPlan(form, Math.floor(Math.random() * 1e6)))
+      return NextResponse.json({ ...fb, fallbackReason: reason })
     } catch (e2) {
       return NextResponse.json({ error: 'خطأ في توليد الخطة — تحقق من البيانات وحاول مجدداً' }, { status: 500 })
     }
