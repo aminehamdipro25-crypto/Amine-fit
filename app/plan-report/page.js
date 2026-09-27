@@ -320,15 +320,25 @@ export default function PlanReport() {
                         <span>د: {meal.fat}غ</span>
                       </div>
                       {meal.items.map((item, j) => (
-                        <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: '1px dashed #f0f0f0', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{item.icon} {item.food}</span>
-                          <span style={{ color: '#888', fontSize: 11 }}>{item.amount}</span>
+                        <div key={j} style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: '1px dashed #f0f0f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{item.icon} {item.food}</span>
+                            <span style={{ color: '#888', fontSize: 11 }}>{item.amount}</span>
+                          </div>
+                          {item.alternatives?.length > 0 && (
+                            <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>
+                              🔄 أو: {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
+                            </div>
+                          )}
                         </div>
                       ))}
                       {meal.salad?.vegetables?.length > 0 && (
-                        <div style={{ fontSize: 12, color: '#444', padding: '3px 0', borderBottom: '1px dashed #f0f0f0', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>🥗 {meal.salad.vegetables.join(' + ')}</span>
-                          <span style={{ color: '#888', fontSize: 11 }}>{meal.salad.grams ? `${meal.salad.grams} غ` : ''}</span>
+                        <div style={{ padding: '3px 0', borderBottom: '1px dashed #f0f0f0' }}>
+                          <div style={{ fontSize: 12, color: '#444', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>🥗 {meal.salad.vegetables.join(' + ')}</span>
+                            <span style={{ color: '#888', fontSize: 11 }}>{meal.salad.grams ? `${meal.salad.grams} غ` : ''}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>🔄 بدّلها بأي خضار متاحة</div>
                         </div>
                       )}
                       {meal.nuts?.type && (
@@ -370,7 +380,13 @@ export default function PlanReport() {
                       {meal.items.map((item, j) => (
                         <tr key={j} style={{ borderBottom: '1px solid #f0f0f0', background: j % 2 === 0 ? 'white' : '#fafafa' }}>
                           <Td>{item.icon} {item.group}</Td>
-                          <Td bold>{item.food}</Td>
+                          <Td bold>{item.food}
+                            {item.alternatives?.length > 0 && (
+                              <div style={{ fontSize: 9, color: '#059669', fontWeight: 400, marginTop: 2 }}>
+                                🔄 أو: {item.alternatives.map(a => `${a.food} ${a.amount}`).join(' · ')}
+                              </div>
+                            )}
+                          </Td>
                           <Td center>{item.servings}</Td>
                           <Td center>
                             <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
@@ -382,7 +398,9 @@ export default function PlanReport() {
                       {meal.salad?.vegetables?.length > 0 && (
                         <tr style={{ borderBottom: '1px solid #f0f0f0', background: '#f0fdf4' }}>
                           <Td>🥗 خضروات</Td>
-                          <Td bold>{meal.salad.vegetables.join(' + ')}</Td>
+                          <Td bold>{meal.salad.vegetables.join(' + ')}
+                            <div style={{ fontSize: 9, color: '#059669', fontWeight: 400, marginTop: 2 }}>🔄 بدّلها بأي خضار متاحة</div>
+                          </Td>
                           <Td center>—</Td>
                           <Td center>
                             <span style={{ background: '#dcfce7', color: '#15803d', borderRadius: 6, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>
