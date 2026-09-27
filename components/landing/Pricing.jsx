@@ -55,7 +55,7 @@ const GULF = new Set(['QA', 'AE', 'SA', 'KW', 'BH', 'OM'])
 
 function usePricingAndGeo() {
   const [pricing, setPricing] = useState(PRICING_DEFAULT)
-  const [zone,    setZone]    = useState('maghreb') // 'gulf' | 'maghreb'
+  const [zone,    setZone]    = useState('gulf') // 'gulf' | 'maghreb'
 
   useEffect(() => {
     Promise.all([
@@ -63,8 +63,11 @@ function usePricingAndGeo() {
       fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     ]).then(([p, geo]) => {
       setPricing({ ...PRICING_DEFAULT, ...p })
-      if (geo.country && GULF.has(geo.country)) setZone('gulf')
-      else setZone('maghreb')
+      // Trust the geo route's computed zone (QA/Gulf → gulf, TN/Maghreb → maghreb,
+      // unknown → gulf). It used to recompute from geo.country and default to
+      // maghreb, so a Qatari visitor whose country header was missing wrongly saw
+      // Tunisian prices. Only an explicit Maghreb country shows د.ت now.
+      setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
     })
   }, [])
 

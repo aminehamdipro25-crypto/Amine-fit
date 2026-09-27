@@ -81,7 +81,7 @@ export default function PaymentPage() {
   const [giftData, setGiftData]     = useState(null)
   const [showGift, setShowGift]     = useState(false)
   const [pricing, setPricing]       = useState(PRICING_DEFAULT)
-  const [zone, setZone]             = useState('maghreb') // 'gulf' | 'maghreb'
+  const [zone, setZone]             = useState('gulf') // 'gulf' | 'maghreb'
 
   const PLANS = buildPlans(pricing)
   const isGulf = zone === 'gulf'
@@ -97,7 +97,9 @@ export default function PaymentPage() {
       fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
     ]).then(([d, geo]) => {
       setPricing({ ...PRICING_DEFAULT, ...d })
-      if (geo.country && GULF_COUNTRIES.has(geo.country)) setZone('gulf')
+      // Trust the geo route's zone (unknown → gulf) so a Qatari visitor with a
+      // missing country header sees Gulf currency + Fawra, not Tunisian.
+      setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
     })
 
     const params = new URLSearchParams(window.location.search)
