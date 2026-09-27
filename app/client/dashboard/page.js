@@ -62,7 +62,7 @@ function SubscriptionCard({ client }) {
           {expired ? (
             <div className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="w-4 h-4" />
-              <span className="font-extrabold text-sm">انتهى اشتراكك — تواصل مع المدرب للتجديد</span>
+              <span className="font-extrabold text-sm">انتهى اشتراكك — جدّد للاستمرار</span>
             </div>
           ) : (
             <>
@@ -83,6 +83,17 @@ function SubscriptionCard({ client }) {
             </>
           )}
         </div>
+        {/* One-tap renewal when the subscription is expired or ending soon */}
+        {(expired || urgent) && (
+          <a
+            href={`https://wa.me/97430653759?text=${encodeURIComponent(`مرحباً كوتش أمين، أريد تجديد اشتراكي (${sub.info?.label || client.subscriptionPlan}).`)}`}
+            target="_blank" rel="noreferrer"
+            className={`flex items-center justify-center gap-2 py-3 font-extrabold text-sm transition
+              ${expired ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gold-400 hover:bg-gold-300 text-black'}`}
+          >
+            🔄 جدّد اشتراكك الآن
+          </a>
+        )}
       </div>
     )
   }
@@ -1259,11 +1270,12 @@ const goalLabels = {
   maintain: 'الحفاظ على الوزن', performance: 'أداء رياضي',
 }
 
-/* ── Referral card ───────────────────────────────────────────────────────── */
-function ReferralCard({ clientId }) {
+/* ── Referral card — backend rewards 7 free days to referrer AND referred ──── */
+function ReferralCard({ clientId, count = 0 }) {
   const [copied, setCopied] = useState(false)
   const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://amine-fit.com'
   const link = `${BASE}/register?ref=${clientId}`
+  const shareText = `انضم معي إلى Amine-Fit مع الكوتش أمين حمدي — تدريب وتغذية احترافية 💪\nسجّل عبر رابطي: ${link}`
 
   function copy() {
     navigator.clipboard.writeText(link).then(() => {
@@ -1274,17 +1286,20 @@ function ReferralCard({ clientId }) {
 
   return (
     <div className="bg-gradient-to-l from-violet-50 to-purple-50 border border-violet-100 rounded-2xl p-5">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-2">
         <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0">
           <Share2 className="w-4 h-4 text-violet-600" />
         </div>
         <div>
-          <p className="font-extrabold text-slate-800 text-sm">شارك وساعد صديقك</p>
-          <p className="text-[11px] text-slate-500 font-medium mt-0.5">أرسل الرابط لمن يريد الانضمام مع المدرب أمين</p>
+          <p className="font-extrabold text-slate-800 text-sm">ادعُ صديقاً — واربحا معاً 🎁</p>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+            عند اشتراك صديقك عبر رابطك، تحصل <b className="text-violet-700">أنت</b> على <b className="text-emerald-600">7 أيام مجانية</b> — وهو أيضاً!
+            {count > 0 && <span className="text-emerald-600 font-bold"> · دعوتَ {count} 🎉</span>}
+          </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-white border border-violet-100 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 truncate dir-ltr text-left">
+        <div className="flex-1 min-w-0 bg-white border border-violet-100 rounded-xl px-3 py-2 text-xs font-medium text-slate-400 truncate text-left" dir="ltr">
           {link}
         </div>
         <button onClick={copy}
@@ -1293,6 +1308,10 @@ function ReferralCard({ clientId }) {
           {copied ? '✓ نُسخ' : 'نسخ'}
         </button>
       </div>
+      <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer"
+        className="mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-extrabold transition">
+        📲 شارك عبر واتساب
+      </a>
     </div>
   )
 }
@@ -1377,6 +1396,41 @@ function OnboardingModal({ client, onDone }) {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Smart in-app reminders — gentle nudges based on the client's own activity ──
+function SmartReminders({ client }) {
+  const now = Date.now(), DAY = 86400000
+  const hasPlan = !!(client.plan?.nutrition || client.nutritionCalcPlan || client.plan?.training)
+  if (!hasPlan) return null
+  const lastProgress = (client.progress || []).at(-1)?.date
+  const lastCheckin  = (client.checkins || []).at(-1)?.date
+  const reminders = []
+  if (!lastProgress || now - new Date(lastProgress).getTime() > 7 * DAY)
+    reminders.push({ icon: '⚖️', text: 'لم تُسجّل وزنك هذا الأسبوع — سجّله لمتابعة تقدمك', href: '/client/progress', cta: 'سجّل الآن' })
+  if (!lastCheckin || now - new Date(lastCheckin).getTime() > 7 * DAY)
+    reminders.push({ icon: '📋', text: 'حان وقت تقريرك الأسبوعي — شارك مدربك تقدمك', href: '#weekly-report', cta: 'أرسله' })
+  if (!(client.photos || []).length)
+    reminders.push({ icon: '📸', text: 'ارفع صورة "قبل" لتتابع تحوّلك بالصور', href: '/client/photos', cta: 'ارفع صورة' })
+  if (!reminders.length) return null
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-3 bg-gradient-to-l from-gold-400/10 to-transparent border-b border-slate-100 flex items-center gap-2">
+        <span className="text-lg">🔔</span>
+        <p className="font-extrabold text-slate-800 text-sm">تذكيرات لك</p>
+      </div>
+      <div className="divide-y divide-slate-50">
+        {reminders.slice(0, 2).map((r, i) => (
+          <a key={i} href={r.href}
+            className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition">
+            <span className="text-xl flex-shrink-0">{r.icon}</span>
+            <p className="flex-1 text-sm text-slate-600 font-medium min-w-0">{r.text}</p>
+            <span className="text-xs font-extrabold text-black bg-gold-400 px-3 py-1.5 rounded-lg flex-shrink-0">{r.cta}</span>
+          </a>
+        ))}
       </div>
     </div>
   )
@@ -1537,6 +1591,9 @@ export default function ClientDashboard() {
       {/* Subscription card */}
       <SubscriptionCard client={client} />
 
+      {/* Smart reminders — gentle nudges based on activity */}
+      <SmartReminders client={client} />
+
       {/* Receipt upload — only when waiting for payment confirmation */}
       {client.interestedPlan && !client.subscriptionPlan && <ReceiptUpload />}
 
@@ -1664,7 +1721,9 @@ export default function ClientDashboard() {
       <FoodLogWidget />
 
       {/* Weekly check-in */}
-      <WeeklyCheckin />
+      <div id="weekly-report" className="scroll-mt-20">
+        <WeeklyCheckin />
+      </div>
 
       {/* Weight progress mini chart */}
       <WeightProgressWidget />
@@ -1703,7 +1762,7 @@ export default function ClientDashboard() {
       </div>
 
       {/* Referral card */}
-      {client.status === 'active' && <ReferralCard clientId={client.id} />}
+      {client.status === 'active' && <ReferralCard clientId={client.id} count={client.referralCount || 0} />}
 
       {/* Data export */}
       <div className="flex justify-center pb-1">
