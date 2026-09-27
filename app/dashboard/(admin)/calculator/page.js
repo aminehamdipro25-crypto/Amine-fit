@@ -140,6 +140,41 @@ function normalizeMeal(meal) {
   return result
 }
 
+// Auto-balance snack additions: spread the added calories as reductions across the
+// OTHER meals' carb → fruit → fat items (never protein), so the day stays on target.
+// Returns { map: { "<mealIdx>-<displayItemIdx>": { newAmount, newKcal, cut } }, total, absorbed }.
+function computeSnackOffsets(menu, mealAdditions) {
+  const total = Object.values(mealAdditions || {}).flat().reduce((s, a) => s + (a.kcal || 0), 0)
+  const map = {}
+  if (!total || !Array.isArray(menu)) return { map, total, absorbed: 0 }
+  const cands = []
+  menu.forEach((meal, mi) => {
+    const nm = normalizeMeal(meal)
+    if (/خفيف/.test(nm.name || '')) return           // don't trim the light meal itself
+    ;(nm.items || []).forEach((it, j) => {
+      const g = it.group || ''
+      let pri = 0
+      if (g.includes('نشوي'))                       pri = 1   // starch first
+      else if (g.includes('فواكه') || g.includes('فاكهة')) pri = 2   // then fruit
+      else if (g.includes('دهون'))                  pri = 3   // then fat — never protein/dairy
+      if (pri && (it.kcal || 0) > 0) cands.push({ key: `${mi}-${j}`, it, pri })
+    })
+  })
+  cands.sort((a, b) => a.pri - b.pri || (b.it.kcal || 0) - (a.it.kcal || 0))
+  let remaining = total
+  for (const c of cands) {
+    if (remaining <= 0) break
+    const cut     = Math.min(c.it.kcal, remaining)
+    const newKcal = c.it.kcal - cut
+    const gNum    = parseFloat(String(c.it.amount).match(/[\d.]+/)?.[0] || '0')
+    const suffix  = String(c.it.amount).replace(/^[\d.]+\s*/, '').trim()
+    const newG    = c.it.kcal > 0 ? Math.round(gNum * newKcal / c.it.kcal) : 0
+    map[c.key] = { newKcal, newAmount: newG > 0 ? `${newG} ${suffix}`.trim() : null, cut, removed: newG <= 0 }
+    remaining -= cut
+  }
+  return { map, total, absorbed: total - remaining }
+}
+
 // Map registration goal values → calculator goal keys
 const GOAL_MAP = { loss:'loss', gain:'gain', maintain:'maintain', performance:'maintain' }
 
@@ -422,6 +457,11 @@ export default function CalculatorPage() {
           : result.weeks?.[selectedWeek]?.menu)
     : null
 
+  // Auto-balance: any calories added to the light meal are deducted from other
+  // meals (starch first, then fruit, then fat — never protein) so the DAY total
+  // stays exactly on target. Returns per-display-item reductions.
+  const snackOffset = computeSnackOffsets(currentMenu, mealAdditions)
+
   async function calculate() {
     if (!valid || loading) return
     setLoading(true)
@@ -465,6 +505,8 @@ export default function CalculatorPage() {
           }
         })
         const newItems = [...items]
+        const removeRaw = new Set()
+        let mealCutExp = 0
         displayToRaw.forEach((rawIdx, di) => {
           const k = `${i}-${di}`
           const v = itemEdits[k]
@@ -474,7 +516,15 @@ export default function CalculatorPage() {
               ? { ...newItems[rawIdx], food: v.food, amount: v.amount }
               : { ...newItems[rawIdx], food: v }
           }
+          // Auto-deduction that balances a snack addition
+          const off = snackOffset.map[k]
+          if (off) {
+            mealCutExp += off.cut || 0
+            if (off.removed) removeRaw.add(rawIdx)
+            else newItems[rawIdx] = { ...newItems[rawIdx], amount: off.newAmount, kcal: off.newKcal }
+          }
         })
+        const trimmedItems = newItems.filter((_, idx) => !removeRaw.has(idx))
         // Append snack options added in place — light meal only (with alternatives)
         const isSnackMeal = /خفيف/.test(meal.name || '')
         const adds = isSnackMeal ? (mealAdditions[i] || []).map(a => ({
@@ -486,8 +536,8 @@ export default function CalculatorPage() {
         const sk = `s${i}`
         return {
           ...meal,
-          kcal: (meal.kcal || 0) + addKcal,
-          items: [...newItems, ...adds],
+          kcal: (meal.kcal || 0) + addKcal - mealCutExp,
+          items: [...trimmedItems, ...adds],
           nuts: meal.nuts && itemEdits[nk] !== undefined ? { ...meal.nuts, type: itemEdits[nk] } : meal.nuts,
           salad: meal.salad && itemEdits[sk] !== undefined
             ? { ...meal.salad, vegetables: itemEdits[sk].split(/\s*\+\s*/).map(v => v.trim()).filter(Boolean) }
@@ -1148,19 +1198,21 @@ export default function CalculatorPage() {
               ? result.total_day_macros
               : result.days?.[selectedDay]?.total_day_macros
             if (!tdm) return null
-            // Include any snack options the coach added in place (extra calories)
-            const addTotal = Object.values(mealAdditions).flat().reduce((s, a) => s + (a.kcal || 0), 0)
-            const totalCal = (tdm.calories || 0) + addTotal
+            // Snack additions are auto-balanced by deductions elsewhere, so the day
+            // total stays on target. (total added − absorbed by deductions ≈ 0)
+            const addTotal = snackOffset.total
+            const totalCal = (tdm.calories || 0) + addTotal - snackOffset.absorbed
             const diff = Math.abs(totalCal - (result.target || 0))
             const ok   = diff <= 5
             return (
               <div className={`mt-4 p-3 rounded-xl border text-xs font-bold flex flex-wrap gap-3 items-center ${ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'}`}>
                 <span>{ok ? '✅' : '⚠️'} التحقق الذاتي من الإجماليات:</span>
-                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🔥 {totalCal} سعرة{addTotal > 0 && <span className="text-rose-500"> (+{addTotal} إضافات)</span>}</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🔥 {totalCal} سعرة</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">💪 {tdm.protein} غ بروتين</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">🌾 {tdm.carbs} غ كارب</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">🥑 {tdm.fat} غ دهون</span>
-                {!ok && <span className="text-amber-700 mr-auto">فارق {diff} سعرة عن الهدف{addTotal > 0 ? ' (بسبب الإضافات)' : ''}</span>}
+                {addTotal > 0 && <span className="text-emerald-600">⚖️ الإضافة ({addTotal} سعرة) عُوِّضت تلقائياً من وجبات أخرى</span>}
+                {!ok && <span className="text-amber-700 mr-auto">فارق {diff} سعرة عن الهدف</span>}
               </div>
             )
           })()}
@@ -1198,7 +1250,8 @@ export default function CalculatorPage() {
               const nm = normalizeMeal(meal)
               const isSnack = /خفيف/.test(nm.name || '')  // add-options only for the light meal
               const addKcal = isSnack ? (mealAdditions[i] || []).reduce((s, a) => s + (a.kcal || 0), 0) : 0
-              const mealKcal = (nm.kcal || 0) + addKcal
+              const mealCut = Object.entries(snackOffset.map).filter(([k]) => k.startsWith(`${i}-`)).reduce((s, [, v]) => s + (v.cut || 0), 0)
+              const mealKcal = (nm.kcal || 0) + addKcal - mealCut
               return (
               <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
@@ -1212,6 +1265,7 @@ export default function CalculatorPage() {
                   <span className="font-extrabold text-primary-700 text-sm">
                     {mealKcal} Kcal
                     {addKcal > 0 && <span className="text-rose-500 font-bold"> (+{addKcal})</span>}
+                    {mealCut > 0 && <span className="text-emerald-600 font-bold"> (−{mealCut} تعويض)</span>}
                   </span>
                 </div>
                 <div className="divide-y divide-slate-100">
@@ -1221,6 +1275,7 @@ export default function CalculatorPage() {
                     const isEditing   = editKey === key
                     const displayFood = getDisplayFood(key, item.food)
                     const wasEdited   = itemEdits[key] !== undefined
+                    const off         = snackOffset.map[key]   // auto-deduction to offset a snack addition
                     return (
                     <div key={j} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50/50 group">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -1257,13 +1312,15 @@ export default function CalculatorPage() {
                           <p className="text-xs text-slate-400 mt-0.5">
                             {item.group} — {item.servings} حصة
                             {item.kcal > 0 && (
-                              <span className="mr-1 text-primary-500 font-semibold">· {item.kcal} Kcal</span>
+                              off
+                                ? <span className="mr-1 font-semibold"><span className="text-slate-300 line-through">{item.kcal}</span> <span className="text-emerald-600">{off.newKcal} Kcal</span> <span className="text-emerald-500 text-[10px]">↓ تعويض</span></span>
+                                : <span className="mr-1 text-primary-500 font-semibold">· {item.kcal} Kcal</span>
                             )}
                             {item.cooking_method && item.cooking_method !== 'None' && (
                               <span className="mr-1.5 text-violet-500 font-medium">· {item.cooking_method}</span>
                             )}
                           </p>
-                          {item.alternatives?.length > 0 && (() => {
+                          {!off && item.alternatives?.length > 0 && (() => {
                             // All exchange-equivalent options (same calories) —
                             // original first, then its alternatives. Tap to swap.
                             const options = [{ food: item.food, amount: item.amount }, ...item.alternatives]
@@ -1293,8 +1350,8 @@ export default function CalculatorPage() {
                           })()}
                         </div>
                       </div>
-                      <span className="font-bold text-emerald-700 text-sm bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex-shrink-0 mr-2">
-                        {getDisplayAmount(key, item.amount)}
+                      <span className={`font-bold text-sm px-3 py-1 rounded-full flex-shrink-0 mr-2 border ${off ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : 'text-emerald-700 bg-emerald-50 border-emerald-100'}`}>
+                        {off ? (off.newAmount || 'يُحذف') : getDisplayAmount(key, item.amount)}
                       </span>
                     </div>
                   )})}
