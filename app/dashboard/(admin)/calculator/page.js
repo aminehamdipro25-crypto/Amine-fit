@@ -1148,16 +1148,19 @@ export default function CalculatorPage() {
               ? result.total_day_macros
               : result.days?.[selectedDay]?.total_day_macros
             if (!tdm) return null
-            const diff = Math.abs((tdm.calories || 0) - (result.target || 0))
+            // Include any snack options the coach added in place (extra calories)
+            const addTotal = Object.values(mealAdditions).flat().reduce((s, a) => s + (a.kcal || 0), 0)
+            const totalCal = (tdm.calories || 0) + addTotal
+            const diff = Math.abs(totalCal - (result.target || 0))
             const ok   = diff <= 5
             return (
               <div className={`mt-4 p-3 rounded-xl border text-xs font-bold flex flex-wrap gap-3 items-center ${ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'}`}>
                 <span>{ok ? '✅' : '⚠️'} التحقق الذاتي من الإجماليات:</span>
-                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🔥 {tdm.calories} سعرة</span>
+                <span className="bg-white/70 px-2 py-0.5 rounded-lg">🔥 {totalCal} سعرة{addTotal > 0 && <span className="text-rose-500"> (+{addTotal} إضافات)</span>}</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">💪 {tdm.protein} غ بروتين</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">🌾 {tdm.carbs} غ كارب</span>
                 <span className="bg-white/70 px-2 py-0.5 rounded-lg">🥑 {tdm.fat} غ دهون</span>
-                {!ok && <span className="text-amber-700 mr-auto">فارق {diff} سعرة عن الهدف</span>}
+                {!ok && <span className="text-amber-700 mr-auto">فارق {diff} سعرة عن الهدف{addTotal > 0 ? ' (بسبب الإضافات)' : ''}</span>}
               </div>
             )
           })()}
@@ -1194,6 +1197,8 @@ export default function CalculatorPage() {
             {(currentMenu || []).map((meal, i) => {
               const nm = normalizeMeal(meal)
               const isSnack = /خفيف/.test(nm.name || '')  // add-options only for the light meal
+              const addKcal = isSnack ? (mealAdditions[i] || []).reduce((s, a) => s + (a.kcal || 0), 0) : 0
+              const mealKcal = (nm.kcal || 0) + addKcal
               return (
               <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
@@ -1204,7 +1209,10 @@ export default function CalculatorPage() {
                       <span className="text-xs text-slate-400 mr-2">{nm.time}</span>
                     </div>
                   </div>
-                  <span className="font-extrabold text-primary-700 text-sm">{nm.kcal} Kcal</span>
+                  <span className="font-extrabold text-primary-700 text-sm">
+                    {mealKcal} Kcal
+                    {addKcal > 0 && <span className="text-rose-500 font-bold"> (+{addKcal})</span>}
+                  </span>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {/* Regular food items — click food name to edit */}
