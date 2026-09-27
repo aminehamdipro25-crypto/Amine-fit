@@ -176,9 +176,12 @@ function MealCard({ meal, idx, open, onToggle }) {
 // server-side fixMeal() extracts vegetables → meal.salad and nuts → meal.nuts
 // so we must re-include them here, otherwise meals with only veg/nuts show empty
 function normCalcMeal(m) {
-  // Preserve alternatives + cooking method so the client sees the swap options too
+  // Preserve alternatives + cooking method so the client sees the swap options too.
+  // Added snack options ("خيار للوجبة الخفيفة") are NOT exchange-equivalent, so we
+  // strip their alternatives — a "same-calorie" list there would mislead the client.
   const baseItems = (m.items || []).map(i => ({
-    food: i.food, amount: i.amount, alternatives: i.alternatives, cooking_method: i.cooking_method,
+    food: i.food, amount: i.amount, cooking_method: i.cooking_method,
+    alternatives: (i.group || '').includes('خيار') ? undefined : i.alternatives,
   }))
 
   const saladItems = []
@@ -499,10 +502,15 @@ export default function NutritionPlan() {
               <p className="text-xs text-slate-500 mt-0.5">الأسبوع الكامل — {fmtDate(today)}</p>
             )}
           </div>
-          <div className="text-left">
-            <p className="text-lg font-extrabold text-slate-900">AMINE<span style={{ color: '#059669' }}>FIT</span></p>
-            <p className="text-[10px] text-slate-500 font-bold">المدرب أمين حمدي</p>
-            <p className="text-[10px] text-slate-400" dir="ltr">amine-fit.com · +974 3065 3759</p>
+          <div className="flex items-center gap-2">
+            <div className="text-left">
+              <p className="text-lg font-extrabold text-slate-900">AMINE<span style={{ color: '#d97706' }}>FIT</span></p>
+              <p className="text-[10px] text-slate-500 font-bold">المدرب أمين حمدي</p>
+              <p className="text-[10px] text-slate-400" dir="ltr">amine-fit.com · +974 3065 3759</p>
+            </div>
+            <div style={{ width: 38, height: 38, background: '#fbbf24', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Zap style={{ width: 19, height: 19, color: '#000' }} fill="#000" />
+            </div>
           </div>
         </div>
       </div>
