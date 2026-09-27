@@ -4,6 +4,7 @@ import { isRateLimited } from '@/lib/rateLimit'
 import { getExerciseListForPrompt, validateAndFix } from '@/lib/exerciseDb'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60  // allow the AI call up to 60s on Vercel (Haiku finishes in seconds; headroom for latency)
 
 const SYSTEM_PROMPT_BASE = `You are an elite personal trainer and strength & conditioning specialist. Generate scientifically-sound, personalized training programs.
 
@@ -1856,12 +1857,12 @@ ${schema}`
     const timeoutId  = setTimeout(() => {
       controller.abort()
       console.warn('[ai-training] request timed out after 30s — using fallback')
-    }, 30_000)
+    }, 50_000)
 
     let response
     try {
       response = await anthropic.messages.create(
-        { model: 'claude-sonnet-4-6', max_tokens: 8000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
+        { model: 'claude-haiku-4-5-20251001', max_tokens: 8000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userPrompt }] },
         { signal: controller.signal },
       )
     } finally {
