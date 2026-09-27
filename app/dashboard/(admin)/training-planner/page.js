@@ -691,7 +691,14 @@ export default function TrainingPlannerPage() {
                     : 'bg-white/5 border-white/10 text-white/40'}`}>
                   {result.ai
                     ? <><Sparkles className="w-4 h-4" /> تم التوليد بالمحرك المتقدم</>
-                    : <><Zap className="w-4 h-4" /> تم التوليد بالمحرك الافتراضي{result.fallbackReason ? ` — (${result.fallbackReason === 'no_api_key' ? 'مفتاح API غير مضبوط' : result.fallbackReason})` : ''}</>
+                    : <><Zap className="w-4 h-4" /> تم التوليد بالمحرك الافتراضي{result.fallbackReason ? ` — ${
+                        result.fallbackReason === 'no_api_key' ? 'مفتاح API غير مضبوط'
+                        : /credit balance|too low|billing|purchase credits/i.test(result.fallbackReason) ? '⚠️ رصيد Anthropic غير كافٍ — أضف رصيداً من Plans & Billing'
+                        : /authentication|invalid.*api|x-api-key|401|403/i.test(result.fallbackReason) ? 'مفتاح API غير صحيح'
+                        : /abort|timeout|ETIMEDOUT/i.test(result.fallbackReason) ? 'انتهت المهلة — حاول مجدداً'
+                        : /not_found|model/i.test(result.fallbackReason) ? 'النموذج غير متاح لحسابك'
+                        : result.fallbackReason.slice(0, 70)
+                      }` : ''}</>
                   }
                 </div>
 
