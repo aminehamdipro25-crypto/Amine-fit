@@ -249,23 +249,25 @@ export default function CalculatorPage() {
   const restoredEditsRef = useRef(null) // holds edits read from localStorage during restore
   const restoredAddsRef  = useRef(null)
 
-  // Fruit desserts (each = 1 exchange = 60 kcal) — added to a meal without regenerating
-  const FRUIT_DESSERTS = [
-    { food:'موز',       amount:'60 غ (نصف موزة متوسطة)' },
-    { food:'فراولة',    amount:'150 غ (~8 حبات)' },
-    { food:'تفاحة',     amount:'115 غ (صغيرة)' },
-    { food:'برتقالة',   amount:'130 غ (متوسطة)' },
-    { food:'مانجو',     amount:'80 غ (½ كوب مكعبات)' },
-    { food:'عنب',       amount:'80 غ (~15 حبة)' },
-    { food:'تمر جاف',   amount:'15 غ (2–3 حبات)' },
+  // Snack-appropriate options for the LIGHT MEAL only — each carries its own kcal
+  // (they are additions, not exchange-equivalent swaps of one another).
+  const SNACK_OPTIONS = [
+    { food:'زبادي يوناني',            amount:'170 غ (علبة)',            kcal:100, icon:'🥛' },
+    { food:'توست + زبدة فول سوداني',  amount:'شريحة + ملعقة صغيرة',     kcal:125, icon:'🍞' },
+    { food:'موز',                     amount:'60 غ (نصف موزة متوسطة)',  kcal:60,  icon:'🍌' },
+    { food:'فراولة',                  amount:'150 غ (~8 حبات)',         kcal:60,  icon:'🍓' },
+    { food:'تفاحة',                   amount:'115 غ (صغيرة)',           kcal:60,  icon:'🍎' },
+    { food:'حفنة لوز',                amount:'8 غ (~6 حبات)',           kcal:45,  icon:'🥜' },
+    { food:'تمر جاف',                 amount:'15 غ (2–3 حبات)',         kcal:60,  icon:'🌴' },
+    { food:'مانجو',                   amount:'80 غ (½ كوب مكعبات)',     kcal:60,  icon:'🥭' },
   ]
   function addDessert(i) {
-    const first = FRUIT_DESSERTS[0]
-    const item  = { group:'الفواكه (تحلية)', icon:'🍓', servings:1, food:first.food, amount:first.amount, kcal:60 }
+    const first = SNACK_OPTIONS[0]
+    const item  = { group:'خيار للوجبة الخفيفة', icon:first.icon, servings:1, food:first.food, amount:first.amount, kcal:first.kcal }
     setMealAdditions(m => ({ ...m, [i]: [...(m[i] || []), item] }))
   }
   function swapAddition(i, idx, opt) {
-    setMealAdditions(m => ({ ...m, [i]: (m[i] || []).map((it, x) => x === idx ? { ...it, food: opt.food, amount: opt.amount } : it) }))
+    setMealAdditions(m => ({ ...m, [i]: (m[i] || []).map((it, x) => x === idx ? { ...it, food: opt.food, amount: opt.amount, kcal: opt.kcal, icon: opt.icon } : it) }))
   }
   function removeAddition(i, idx) {
     setMealAdditions(m => ({ ...m, [i]: (m[i] || []).filter((_, x) => x !== idx) }))
@@ -473,11 +475,12 @@ export default function CalculatorPage() {
               : { ...newItems[rawIdx], food: v }
           }
         })
-        // Append any desserts added in place (with equivalent-fruit alternatives)
-        const adds = (mealAdditions[i] || []).map(a => ({
+        // Append snack options added in place — light meal only (with alternatives)
+        const isSnackMeal = /خفيف/.test(meal.name || '')
+        const adds = isSnackMeal ? (mealAdditions[i] || []).map(a => ({
           group: a.group, icon: a.icon, servings: a.servings, food: a.food, amount: a.amount, kcal: a.kcal,
-          alternatives: FRUIT_DESSERTS.filter(f => f.food !== a.food).slice(0, 5),
-        }))
+          alternatives: SNACK_OPTIONS.filter(f => f.food !== a.food).slice(0, 5).map(f => ({ food: f.food, amount: f.amount })),
+        })) : []
         const addKcal = adds.reduce((s, a) => s + (a.kcal || 0), 0)
         const nk = `n${i}`
         const sk = `s${i}`
@@ -1190,6 +1193,7 @@ export default function CalculatorPage() {
           <div className="space-y-4">
             {(currentMenu || []).map((meal, i) => {
               const nm = normalizeMeal(meal)
+              const isSnack = /خفيف/.test(nm.name || '')  // add-options only for the light meal
               return (
               <div key={i} className="border border-slate-100 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
@@ -1403,32 +1407,32 @@ export default function CalculatorPage() {
                       </div>
                     )
                   })()}
-                  {/* ── Added desserts (in-place, no regeneration) ── */}
-                  {(mealAdditions[i] || []).map((add, ai) => (
+                  {/* ── Snack extra options (LIGHT MEAL ONLY, in-place, no regeneration) ── */}
+                  {isSnack && (mealAdditions[i] || []).map((add, ai) => (
                     <div key={`add-${ai}`} className="flex items-center justify-between px-4 py-3 bg-rose-50/60 group/add">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="text-lg flex-shrink-0">{add.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="font-semibold text-sm text-rose-700 truncate">{add.food}</p>
-                            <span className="text-[9px] font-extrabold bg-rose-100 text-rose-500 px-1.5 py-0.5 rounded-full">تحلية</span>
+                            <span className="text-[9px] font-extrabold bg-rose-100 text-rose-500 px-1.5 py-0.5 rounded-full">خيار إضافي</span>
                             <button onClick={() => removeAddition(i, ai)}
-                              className="opacity-0 group-hover/add:opacity-100 transition text-rose-300 hover:text-red-500 flex-shrink-0" title="حذف التحلية">
+                              className="opacity-0 group-hover/add:opacity-100 transition text-rose-300 hover:text-red-500 flex-shrink-0" title="حذف الخيار">
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5">الفواكه — 1 حصة <span className="mr-1 text-primary-500 font-semibold">· {add.kcal} Kcal</span></p>
+                          <p className="text-xs text-slate-400 mt-0.5"><span className="text-primary-500 font-semibold">{add.kcal} Kcal</span></p>
                           <div className="mt-1.5">
-                            <p className="text-[10px] text-rose-500/70 font-bold mb-1">🔄 اختر التحلية — بنفس السعرات</p>
+                            <p className="text-[10px] text-rose-500/70 font-bold mb-1">🔄 اختر خيار الوجبة الخفيفة</p>
                             <div className="flex flex-wrap gap-1">
-                              {FRUIT_DESSERTS.map((opt, oi) => {
+                              {SNACK_OPTIONS.map((opt, oi) => {
                                 const active = add.food === opt.food
                                 return (
                                   <button key={oi} type="button"
                                     onClick={() => { if (!active) swapAddition(i, ai, opt) }}
                                     className={`text-[11px] px-2 py-0.5 rounded-full border transition
                                       ${active ? 'bg-rose-500 text-white border-rose-500 font-bold' : 'bg-white text-rose-600 border-rose-200 hover:border-rose-400 hover:bg-rose-50'}`}>
-                                    {opt.food} <span className="opacity-70">{opt.amount}</span>
+                                    {opt.icon} {opt.food} <span className="opacity-70">{opt.kcal}ك</span>
                                   </button>
                                 )
                               })}
@@ -1441,13 +1445,15 @@ export default function CalculatorPage() {
                       </span>
                     </div>
                   ))}
-                  {/* ── Add-dessert button ── */}
-                  <div className="px-4 py-2.5 bg-slate-50/60">
-                    <button onClick={() => addDessert(i)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-rose-200 text-rose-500 text-xs font-bold hover:border-rose-400 hover:bg-rose-50 transition">
-                      <span className="text-sm">🍓</span> أضف تحلية (فاكهة) لهذه الوجبة
-                    </button>
-                  </div>
+                  {/* ── Add-option button — snack only ── */}
+                  {isSnack && (
+                    <div className="px-4 py-2.5 bg-slate-50/60">
+                      <button onClick={() => addDessert(i)}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-rose-200 text-rose-500 text-xs font-bold hover:border-rose-400 hover:bg-rose-50 transition">
+                        <span className="text-sm">🍓</span> أضف خياراً للوجبة الخفيفة (زبادي يوناني · فاكهة · مكسرات...)
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )})}
