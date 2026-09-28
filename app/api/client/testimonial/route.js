@@ -65,13 +65,29 @@ export async function POST(req) {
   const payload = await getPayload()
   if (!payload) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
-  const { text, rating, result, shareName } = await req.json()
+  const { text, rating, result, shareName, beforeAfter, photoBefore, photoAfter, photoConsent } = await req.json()
   if (!text?.trim() || text.trim().length < 20) {
     return NextResponse.json({ error: 'النص قصير جداً (20 حرف على الأقل)' }, { status: 400 })
   }
   if (!rating || rating < 1 || rating > 5) {
     return NextResponse.json({ error: 'تقييم غير صالح' }, { status: 400 })
   }
+
+  // Optional before/after numbers (weight kg, body-fat %)
+  const num = (v, min, max) => { const n = parseFloat(v); return (isFinite(n) && n >= min && n <= max) ? +n.toFixed(1) : null }
+  const ba = beforeAfter && typeof beforeAfter === 'object' ? {
+    wBefore: num(beforeAfter.wBefore, 20, 400),
+    wAfter:  num(beforeAfter.wAfter,  20, 400),
+    fBefore: num(beforeAfter.fBefore, 3, 70),
+    fAfter:  num(beforeAfter.fAfter,  3, 70),
+  } : null
+  const hasBA = ba && (ba.wBefore != null || ba.wAfter != null || ba.fBefore != null || ba.fAfter != null)
+
+  // Optional before/after photos — only kept when the client explicitly consents.
+  // Must be small compressed data URLs (jpeg/png/webp, < 300KB each).
+  const validPhoto = p => (typeof p === 'string' && /^data:image\/(jpeg|jpg|png|webp);base64,/.test(p) && p.length < 300 * 1024) ? p : null
+  const pB = photoConsent ? validPhoto(photoBefore) : null
+  const pA = photoConsent ? validPhoto(photoAfter)  : null
 
   const client = await getSubmissionById(payload.id)
 
@@ -89,6 +105,10 @@ export async function POST(req) {
     text:        text.trim().slice(0, 500),
     rating:      Math.min(5, Math.max(1, rating)),
     shareName:   !!shareName,
+    beforeAfter: hasBA ? ba : null,
+    photoBefore: pB,
+    photoAfter:  pA,
+    photoConsent: !!(photoConsent && (pB || pA)),
     submittedAt: new Date().toISOString(),
     approved:    false,
     approvedAt:  null,

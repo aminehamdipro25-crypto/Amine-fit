@@ -796,6 +796,26 @@ function TrainingAttendanceWidget({ trainingDaysPerWeek }) {
 }
 
 /* ── Testimonial prompt widget ───────────────────────────────────────────── */
+// Compress an image File → small JPEG data URL (max 700px, < ~180KB)
+function compressTestimonialImg(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX = 700; let w = img.naturalWidth, h = img.naturalHeight
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
+      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h
+      const ctx = canvas.getContext('2d'); if (!ctx) return reject(new Error('canvas'))
+      ctx.drawImage(img, 0, 0, w, h)
+      let q = 0.6, out = canvas.toDataURL('image/jpeg', q)
+      while (out.length > 180 * 1024 && q > 0.3) { q -= 0.1; out = canvas.toDataURL('image/jpeg', q) }
+      resolve(out)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')) }
+    img.src = url
+  })
+}
+
 function TestimonialWidget() {
   const [existing, setExisting]   = useState(undefined)
   const [open, setOpen]           = useState(false)
@@ -805,6 +825,12 @@ function TestimonialWidget() {
   const [shareName, setShareName] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
+  // before/after numbers + photos
+  const [ba, setBa]               = useState({ wBefore: '', wAfter: '', fBefore: '', fAfter: '' })
+  const [photoBefore, setPhotoBefore] = useState('')
+  const [photoAfter, setPhotoAfter]   = useState('')
+  const [photoConsent, setPhotoConsent] = useState(false)
+  const [imgErr, setImgErr]       = useState('')
 
   useEffect(() => {
     fetch('/api/client/testimonial')
@@ -813,14 +839,28 @@ function TestimonialWidget() {
       .catch(() => setExisting(null))
   }, [])
 
+  async function pickPhoto(e, which) {
+    const file = e.target.files?.[0]; e.target.value = ''
+    if (!file || !file.type.startsWith('image/')) return
+    setImgErr('')
+    try {
+      const data = await compressTestimonialImg(file)
+      ;(which === 'before' ? setPhotoBefore : setPhotoAfter)(data)
+    } catch { setImgErr('تعذّرت معالجة الصورة') }
+  }
+
   async function submit() {
     if (text.trim().length < 20) return
     setSaving(true)
     try {
+      const body = { text, rating, result, shareName, beforeAfter: ba }
+      if (photoConsent && (photoBefore || photoAfter)) {
+        body.photoConsent = true; body.photoBefore = photoBefore || null; body.photoAfter = photoAfter || null
+      }
       const res = await fetch('/api/client/testimonial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, rating, result, shareName }),
+        body: JSON.stringify(body),
       })
       if (res.ok) { setSaved(true); setOpen(false); setExisting({ text, rating, result, shareName, approved: false }) }
     } catch {}
@@ -894,6 +934,47 @@ function TestimonialWidget() {
           placeholder="اكتب تجربتك مع المدرب أمين..."
           className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 transition resize-none" />
         <p className="text-[10px] text-slate-300 text-left mt-0.5">{text.length}/500</p>
+      </div>
+
+      {/* Before / After numbers */}
+      <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 space-y-2">
+        <p className="text-xs font-bold text-slate-500">📊 أرقام قبل/بعد (اختياري) — تُبرز نتيجتك في الموقع</p>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="number" step="0.1" value={ba.wBefore} onChange={e => setBa(p => ({ ...p, wBefore: e.target.value }))}
+            placeholder="الوزن قبل (كغ)" className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400" />
+          <input type="number" step="0.1" value={ba.wAfter} onChange={e => setBa(p => ({ ...p, wAfter: e.target.value }))}
+            placeholder="الوزن بعد (كغ)" className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400" />
+          <input type="number" step="0.1" value={ba.fBefore} onChange={e => setBa(p => ({ ...p, fBefore: e.target.value }))}
+            placeholder="نسبة الدهون قبل %" className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400" />
+          <input type="number" step="0.1" value={ba.fAfter} onChange={e => setBa(p => ({ ...p, fAfter: e.target.value }))}
+            placeholder="نسبة الدهون بعد %" className="px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400" />
+        </div>
+      </div>
+
+      {/* Before / After photos (consent required) */}
+      <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 space-y-2">
+        <p className="text-xs font-bold text-slate-500">📸 صور قبل/بعد (اختياري)</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[{ k: 'before', val: photoBefore, label: 'صورة قبل' }, { k: 'after', val: photoAfter, label: 'صورة بعد' }].map(ph => (
+            <label key={ph.k} className="relative flex flex-col items-center justify-center gap-1 h-24 rounded-lg border-2 border-dashed border-slate-200 bg-white cursor-pointer hover:border-amber-400 transition overflow-hidden">
+              {ph.val ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ph.val} alt={ph.label} className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <><span className="text-xl">🖼️</span><span className="text-[10px] font-bold text-slate-400">{ph.label}</span></>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={e => pickPhoto(e, ph.k)} />
+            </label>
+          ))}
+        </div>
+        {imgErr && <p className="text-[10px] text-red-500 font-bold">{imgErr}</p>}
+        {(photoBefore || photoAfter) && (
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={photoConsent} onChange={e => setPhotoConsent(e.target.checked)}
+              className="w-4 h-4 rounded accent-amber-500 mt-0.5" />
+            <span className="text-[11px] font-medium text-slate-600 leading-relaxed">أوافق صراحةً على نشر صوري (قبل/بعد) في موقع Amine-Fit — لن تُنشر بدون موافقتي.</span>
+          </label>
+        )}
       </div>
 
       {/* Share name */}
@@ -1741,7 +1822,9 @@ export default function ClientDashboard() {
       <LeaderboardWidget />
 
       {/* Share experience — visible for all logged-in clients */}
-      <TestimonialWidget />
+      <div id="share-experience" className="scroll-mt-20">
+        <TestimonialWidget />
+      </div>
 
       {/* Goal + status */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
