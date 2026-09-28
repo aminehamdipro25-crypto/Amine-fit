@@ -107,6 +107,30 @@ function TestimonialCard({ t, isApproved, onApprove, onReject, onDelete }) {
             <p className="text-xs font-bold text-amber-600 mt-0.5">🏆 {t.result}</p>
           )}
           <p className="text-sm text-slate-600 mt-2 leading-relaxed">"{t.text}"</p>
+          {/* Before/after numbers */}
+          {t.beforeAfter && (t.beforeAfter.wBefore != null || t.beforeAfter.fBefore != null) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {t.beforeAfter.wBefore != null && t.beforeAfter.wAfter != null && (
+                <span className="text-[11px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">الوزن: <span className="text-red-500">{t.beforeAfter.wBefore}</span> ← <span className="text-emerald-600">{t.beforeAfter.wAfter} كغ</span></span>
+              )}
+              {t.beforeAfter.fBefore != null && t.beforeAfter.fAfter != null && (
+                <span className="text-[11px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">الدهون: <span className="text-red-500">{t.beforeAfter.fBefore}%</span> ← <span className="text-emerald-600">{t.beforeAfter.fAfter}%</span></span>
+              )}
+            </div>
+          )}
+          {/* Before/after photos (with consent) */}
+          {t.photoConsent && (t.photoBefore || t.photoAfter) && (
+            <div className="flex gap-2 mt-2">
+              {[{ img: t.photoBefore, l: 'قبل' }, { img: t.photoAfter, l: 'بعد' }].map((p, i) => p.img ? (
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.img} alt={p.l} className="w-full h-full object-cover" />
+                  <span className="absolute top-1 right-1 text-[8px] font-extrabold bg-black/60 text-white px-1.5 rounded-full">{p.l}</span>
+                </div>
+              ) : null)}
+              <span className="text-[10px] text-emerald-600 font-bold self-end">✔ وافق العميل على النشر</span>
+            </div>
+          )}
           <p className="text-xs text-slate-400 mt-2">
             {new Date(t.submittedAt).toLocaleString('ar', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
           </p>

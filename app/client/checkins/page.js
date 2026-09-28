@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ClipboardList, ChevronDown, ChevronUp } from 'lucide-react'
 import { SkeletonList } from '@/components/SkeletonLoader'
 
@@ -180,6 +181,19 @@ export default function CheckinsPage() {
         <h1 className="text-2xl font-extrabold text-slate-900">تقاريري الأسبوعية 📋</h1>
         <p className="text-sm text-slate-400 mt-1">سجل تقدمك وردود مدربك على مر الأسابيع</p>
       </div>
+
+      {/* Review prompt — after a couple of reports, invite them to share their experience */}
+      {checkins.length >= 2 && (
+        <Link href="/client/dashboard#share-experience"
+          className="flex items-center gap-3 bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-4 hover:border-amber-300 transition">
+          <span className="text-2xl flex-shrink-0">⭐</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-extrabold text-amber-800">أكملتَ عدة أسابيع — شارك تجربتك!</p>
+            <p className="text-xs text-amber-600 font-medium mt-0.5">قيّم تجربتك مع الكوتش أمين وأضف أرقام قبل/بعد لتُلهم غيرك</p>
+          </div>
+          <span className="text-amber-500 text-lg flex-shrink-0">←</span>
+        </Link>
+      )}
 
       {/* Summary stats */}
       {checkins.length > 0 && (

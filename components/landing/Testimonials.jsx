@@ -63,6 +63,41 @@ function TestimonialCard({ t, isDynamic }) {
         </div>
       )}
 
+      {/* Before / after photos */}
+      {(t.photoBefore || t.photoAfter) && (
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[{ img: t.photoBefore, label: 'قبل', c: 'text-red-400' }, { img: t.photoAfter, label: 'بعد', c: 'text-emerald-400' }].map((p, i) => p.img ? (
+            <div key={i} className="relative rounded-xl overflow-hidden aspect-square border border-white/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.img} alt={p.label} className="w-full h-full object-cover" />
+              <span className={`absolute top-1.5 right-1.5 text-[9px] font-extrabold bg-black/60 px-2 py-0.5 rounded-full ${p.c}`}>{p.label}</span>
+            </div>
+          ) : <div key={i} />)}
+        </div>
+      )}
+
+      {/* Before / after numbers */}
+      {t.beforeAfter && (t.beforeAfter.wBefore != null || t.beforeAfter.fBefore != null) && (
+        <div className="flex items-center gap-2 mb-4 text-[11px] font-bold">
+          {t.beforeAfter.wBefore != null && t.beforeAfter.wAfter != null && (
+            <span className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1">
+              <span className="text-white/40">الوزن</span>
+              <span className="text-red-400">{t.beforeAfter.wBefore}</span>
+              <span className="text-white/30">←</span>
+              <span className="text-emerald-400">{t.beforeAfter.wAfter} كغ</span>
+            </span>
+          )}
+          {t.beforeAfter.fBefore != null && t.beforeAfter.fAfter != null && (
+            <span className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1">
+              <span className="text-white/40">دهون</span>
+              <span className="text-red-400">{t.beforeAfter.fBefore}%</span>
+              <span className="text-white/30">←</span>
+              <span className="text-emerald-400">{t.beforeAfter.fAfter}%</span>
+            </span>
+          )}
+        </div>
+      )}
+
       <p className="text-white/50 text-sm leading-relaxed mb-6 font-medium flex-1">
         &ldquo;{t.text}&rdquo;
       </p>
@@ -100,6 +135,9 @@ export default function Testimonials() {
     sourceColor:'bg-blue-500/20 text-blue-400 border-blue-500/30',
     stars:      t.rating || 5,
     text:       t.text,
+    beforeAfter: t.beforeAfter || null,
+    photoBefore: t.photoConsent ? t.photoBefore : null,
+    photoAfter:  t.photoConsent ? t.photoAfter  : null,
     isDynamic:  true,
   }))
 
