@@ -1517,6 +1517,49 @@ function SmartReminders({ client }) {
   )
 }
 
+// ─── Achievements — motivating milestone badges from the client's own data ──────
+function AchievementsWidget({ client }) {
+  const prog = (client.progress || []).filter(e => e.weight != null)
+  const firstW = prog[0]?.weight, lastW = prog.at(-1)?.weight
+  const lost = (firstW != null && lastW != null) ? +(firstW - lastW).toFixed(1) : 0
+  const checkins = (client.checkins || []).length
+  const photos   = (client.photos || []).length
+  const startStr = client.subscriptionStartDate || client.createdAt || client.submittedAt || client.date
+  const days = startStr ? Math.max(0, Math.floor((Date.now() - new Date(startStr).getTime()) / 86400000)) : 0
+
+  const badges = []
+  if (lost >= 1)      badges.push({ e: '🔥', t: `خسرت ${lost} كغ`, sub: 'استمر!' })
+  if (lost >= 5)      badges.push({ e: '🏆', t: '5 كغ+', sub: 'إنجاز كبير' })
+  if (lost >= 10)     badges.push({ e: '👑', t: '10 كغ+', sub: 'بطل حقيقي' })
+  if (checkins >= 1)  badges.push({ e: '📋', t: 'أول تقرير', sub: 'بداية موفقة' })
+  if (checkins >= 4)  badges.push({ e: '📈', t: '4 تقارير', sub: 'التزام شهر' })
+  if (checkins >= 12) badges.push({ e: '💪', t: '12 تقرير', sub: 'انضباط عسكري' })
+  if (photos >= 1)    badges.push({ e: '📸', t: 'أول صورة', sub: 'وثّقت البداية' })
+  if (photos >= 2)    badges.push({ e: '🪞', t: 'قبل/بعد', sub: 'تحوّل موثّق' })
+  if (days >= 30)     badges.push({ e: '⭐', t: '30 يوم', sub: 'مع أمين' })
+  if (days >= 90)     badges.push({ e: '💎', t: '90 يوم', sub: 'ملتزم حقيقي' })
+
+  if (!badges.length) return null
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-3 bg-gradient-to-l from-gold-400/10 to-transparent border-b border-slate-100 flex items-center gap-2">
+        <span className="text-lg">🏅</span>
+        <p className="font-extrabold text-slate-800 text-sm">إنجازاتك</p>
+        <span className="text-[10px] text-slate-400 font-bold mr-auto">{badges.length} وسام</span>
+      </div>
+      <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
+        {badges.map((b, i) => (
+          <div key={i} className="flex flex-col items-center text-center gap-1 bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+            <span className="text-2xl">{b.e}</span>
+            <p className="text-[11px] font-extrabold text-slate-800 leading-tight">{b.t}</p>
+            <p className="text-[9px] text-slate-400 font-bold">{b.sub}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ClientDashboard() {
   const router = useRouter()
   const [client, setClient] = useState(null)
@@ -1674,6 +1717,9 @@ export default function ClientDashboard() {
 
       {/* Smart reminders — gentle nudges based on activity */}
       <SmartReminders client={client} />
+
+      {/* Achievements — milestone badges */}
+      <AchievementsWidget client={client} />
 
       {/* Receipt upload — only when waiting for payment confirmation */}
       {client.interestedPlan && !client.subscriptionPlan && <ReceiptUpload />}

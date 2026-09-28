@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -16,8 +16,11 @@ const GOAL_COLORS  = { loss: '#f59e0b', gain: '#10b981', maintain: '#6366f1', pe
 const ACT_LABELS   = { sedentary: 'خامل', light: 'خفيف', moderate: 'معتدل', active: 'نشيط', veryActive: 'نشيط جداً' }
 const MONTHS       = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
 
-// Plan prices in TND
-const PLAN_PRICE   = { basic: 50, standard: 125, premium: 300 }
+// Plan prices per zone — the coach's region decides currency + amounts
+const PLAN_PRICE        = { basic: 50, standard: 125, premium: 300 }   // Maghreb (د.ت)
+const PLAN_PRICE_GULF   = { basic: 199, standard: 449, premium: 999 }  // Gulf (ر.ق)
+const zonePrices = zone => (zone === 'gulf' ? PLAN_PRICE_GULF : PLAN_PRICE)
+const zoneCur    = zone => (zone === 'gulf' ? 'ر.ق' : 'د.ت')
 const PLAN_LABELS  = { basic: 'برنامج التدريب', standard: 'الباقة الشهرية', premium: 'باقة 3 أشهر' }
 
 // Guess plan from free-text interestedPlan field
@@ -95,14 +98,14 @@ function FunnelBar({ label, count, pct, color }) {
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────
-function buildCSV(submissions, stats) {
+function buildCSV(submissions, stats, cur = 'د.ت', prices = PLAN_PRICE) {
   const now    = new Date()
   const dateStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
   const STATUS_AR = {
     active: 'نشيط', suspended: 'موقوف', pending: 'بانتظار الدفع',
     payment_expired: 'انتهت المهلة', new: 'جديد', cancelled: 'ملغي',
   }
-  const PLAN_AR = { basic: 'برنامج التدريب (50 د.ت)', standard: 'الباقة الشهرية (125 د.ت)', premium: 'باقة 3 أشهر (300 د.ت)' }
+  const PLAN_AR = { basic: `برنامج التدريب (${prices.basic} ${cur})`, standard: `الباقة الشهرية (${prices.standard} ${cur})`, premium: `باقة 3 أشهر (${prices.premium} ${cur})` }
 
   const rows = []
   // Header info
@@ -110,10 +113,10 @@ function buildCSV(submissions, stats) {
   rows.push([])
   // KPIs
   rows.push(['📊 الملخص المالي'])
-  rows.push(['إجمالي الإيرادات', `${stats.totalRevenue} د.ت`])
-  rows.push(['إيرادات هذا الشهر', `${stats.thisMonthRevenue} د.ت`])
-  rows.push(['MRR (إيراد شهري متكرر)', `${stats.mrr} د.ت`])
-  rows.push(['الإيراد الضائع (متخلون)', `${stats.lostRevenue} د.ت`])
+  rows.push(['إجمالي الإيرادات', `${stats.totalRevenue} ${cur}`])
+  rows.push(['إيرادات هذا الشهر', `${stats.thisMonthRevenue} ${cur}`])
+  rows.push(['MRR (إيراد شهري متكرر)', `${stats.mrr} ${cur}`])
+  rows.push(['الإيراد الضائع (متخلون)', `${stats.lostRevenue} ${cur}`])
   rows.push([])
   rows.push(['👥 الملخص التشغيلي'])
   rows.push(['إجمالي المسجلين', stats.total])
@@ -124,10 +127,10 @@ function buildCSV(submissions, stats) {
   rows.push([])
   // Client roster — paid only (no gifts)
   rows.push(['📋 قائمة العملاء المدفوعين'])
-  rows.push(['الاسم', 'الإيميل', 'الهاتف', 'الباقة', 'السعر المدفوع (د.ت)', 'تاريخ التسجيل', 'تاريخ تأكيد الدفع', 'الحالة'])
+  rows.push(['الاسم', 'الإيميل', 'الهاتف', 'الباقة', `السعر المدفوع (${cur})`, 'تاريخ التسجيل', 'تاريخ تأكيد الدفع', 'الحالة'])
   const paidCsv = submissions.filter(s => !s.giftCode && ['active','suspended','cancelled'].includes(s.status))
   for (const s of paidCsv) {
-    const price = (PLAN_PRICE[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
+    const price = (prices[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1)
     rows.push([
       s.name || '—',
       s.email || '—',
@@ -158,7 +161,7 @@ function buildCSV(submissions, stats) {
   rows.push([])
   // Abandoned
   rows.push(['⚠️ قائمة المتخلين عن الدفع'])
-  rows.push(['الاسم', 'الإيميل', 'الباقة المهتمة', 'تاريخ التسجيل', 'الإيراد الضائع (د.ت)', 'عدد رسائل التذكير'])
+  rows.push(['الاسم', 'الإيميل', 'الباقة المهتمة', 'تاريخ التسجيل', `الإيراد الضائع (${cur})`, 'عدد رسائل التذكير'])
   const expired = submissions.filter(s => s.status === 'payment_expired')
   for (const s of expired) {
     rows.push([
@@ -189,12 +192,12 @@ function N({ v }) {
   return <span style={{ direction: 'ltr', unicodeBidi: 'embed', display: 'inline-block' }}>{v}</span>
 }
 
-function PrintReport({ submissions, stats, onClose }) {
+function PrintReport({ submissions, stats, onClose, cur = 'د.ت', prices = PLAN_PRICE }) {
   const now      = new Date()
   const dateStr  = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
   const monthStr = now.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long' })
   const PLAN_AR  = { basic: 'التدريب', standard: 'الشهرية', premium: '3 أشهر' }
-  const PLAN_PRICE_DISPLAY = { basic: 50, standard: 125, premium: 300 }
+  const PLAN_PRICE_DISPLAY = prices
   const STATUS_AR    = { active: 'نشيط', suspended: 'موقوف', cancelled: 'ملغي' }
   const STATUS_COLOR = { active: '#10b981', suspended: '#f59e0b', cancelled: '#ef4444' }
   const paid = submissions.filter(s => !s.giftCode && ['active','suspended','cancelled'].includes(s.status))
@@ -283,7 +286,7 @@ function PrintReport({ submissions, stats, onClose }) {
               }}>
                 <div style={{ fontSize: '7.5pt', color: '#64748b', marginBottom: '3pt' }}>{k.label}</div>
                 <div style={{ fontSize: '13pt', fontWeight: 900, color: '#0f172a' }}>
-                  <N v={k.value.toLocaleString()} /> <span style={{ fontSize: '8pt', color: '#64748b' }}>د.ت</span>
+                  <N v={k.value.toLocaleString()} /> <span style={{ fontSize: '8pt', color: '#64748b' }}>{cur}</span>
                 </div>
               </div>
             ))}
@@ -328,7 +331,7 @@ function PrintReport({ submissions, stats, onClose }) {
                   <div style={{ fontWeight: 700, fontSize: '8.5pt', marginBottom: '3pt' }}>{PLAN_LABELS[key]}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', color: '#64748b' }}>
                     <span><N v={clients.length} /> مدفوع{giftCount > 0 ? ` + ${giftCount}🎁` : ''}</span>
-                    <span style={{ color: '#10b981', fontWeight: 700 }}><N v={rev} /> د.ت</span>
+                    <span style={{ color: '#10b981', fontWeight: 700 }}><N v={rev} /> {cur}</span>
                   </div>
                 </div>
               )
@@ -359,7 +362,7 @@ function PrintReport({ submissions, stats, onClose }) {
                     <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}><N v={i + 1} /></td>
                     <td style={{ padding: '4pt 6pt', fontWeight: 700 }}>{s.name || '—'}</td>
                     <td style={{ padding: '4pt 6pt', color: '#64748b' }}>{PLAN_AR[s.subscriptionPlan] || '—'}</td>
-                    <td style={{ padding: '4pt 6pt', fontWeight: 700, color: '#10b981' }}><N v={finalPrice} /> د.ت</td>
+                    <td style={{ padding: '4pt 6pt', fontWeight: 700, color: '#10b981' }}><N v={finalPrice} /> {cur}</td>
                     <td style={{ padding: '4pt 6pt', color: '#94a3b8' }}>
                       {s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                     </td>
@@ -404,7 +407,7 @@ function PrintReport({ submissions, stats, onClose }) {
               <tr style={{ background: '#0f172a', color: '#fff' }}>
                 <td colSpan={3} style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt' }}>الإجمالي المحصّل (مدفوعون فقط)</td>
                 <td style={{ padding: '5pt 6pt', fontWeight: 900, fontSize: '9pt', color: '#fbbf24' }}>
-                  <N v={paid.reduce((sum, s) => sum + (PLAN_PRICE_DISPLAY[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} /> د.ت
+                  <N v={paid.reduce((sum, s) => sum + (PLAN_PRICE_DISPLAY[s.subscriptionPlan] ?? 0) * (s.subscriptionPlan === 'premium' ? 3 : 1), 0).toLocaleString()} /> {cur}
                 </td>
                 <td colSpan={2} />
               </tr>
@@ -430,6 +433,13 @@ function PrintReport({ submissions, stats, onClose }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function AnalyticsClient({ submissions }) {
   const [showReport, setShowReport] = useState(false)
+  // Region-aware currency + prices (coach's own zone)
+  const [zone, setZone] = useState('gulf')
+  useEffect(() => {
+    fetch('/api/geo').then(r => r.ok ? r.json() : {}).then(g => setZone(g.zone === 'maghreb' ? 'maghreb' : 'gulf')).catch(() => {})
+  }, [])
+  const cur    = zoneCur(zone)
+  const prices = zonePrices(zone)
   const total = submissions.length
   const now   = new Date()
 
@@ -458,7 +468,7 @@ export default function AnalyticsClient({ submissions }) {
 
   // ── Revenue calculations ────────────────────────────────────────────────────
   const totalRevenue = paidClients.reduce((sum, s) => {
-    const price = PLAN_PRICE[s.subscriptionPlan] ?? 0
+    const price = prices[s.subscriptionPlan] ?? 0
     // premium is 3 months; we track total paid not MRR here
     const months = s.subscriptionPlan === 'premium' ? 3 : 1
     return sum + price * months
@@ -469,13 +479,13 @@ export default function AnalyticsClient({ submissions }) {
     const d = new Date(s.subscriptionStartDate)
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
   }).reduce((sum, s) => {
-    const price = PLAN_PRICE[s.subscriptionPlan] ?? 0
+    const price = prices[s.subscriptionPlan] ?? 0
     const months = s.subscriptionPlan === 'premium' ? 3 : 1
     return sum + price * months
   }, 0)
 
   // MRR: active PAID clients only (gifts excluded)
-  const mrr = activeClients.filter(s => !s.giftCode).reduce((sum, s) => sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0), 0)
+  const mrr = activeClients.filter(s => !s.giftCode).reduce((sum, s) => sum + (prices[s.subscriptionPlan] ?? 0), 0)
 
   // Lost revenue: expired + awaiting payment who have an interested plan
   const lostRevenue = [...expiredClients, ...pendingClients, ...activeClients.filter(s => !s.subscriptionPlan)]
@@ -496,7 +506,7 @@ export default function AnalyticsClient({ submissions }) {
     return {
       name:    PLAN_LABELS[key],
       عملاء:  clients.length,
-      إيراد:  clients.length * PLAN_PRICE[key] * months,
+      إيراد:  clients.length * prices[key] * months,
     }
   })
 
@@ -510,7 +520,7 @@ export default function AnalyticsClient({ submissions }) {
     })
     const revenue = slice.reduce((sum, s) => {
       const months = s.subscriptionPlan === 'premium' ? 3 : 1
-      return sum + (PLAN_PRICE[s.subscriptionPlan] ?? 0) * months
+      return sum + (prices[s.subscriptionPlan] ?? 0) * months
     }, 0)
     return { month: MONTHS[d.getMonth()].slice(0, 3), إيراد: revenue }
   })
@@ -571,6 +581,8 @@ export default function AnalyticsClient({ submissions }) {
           submissions={submissions}
           stats={reportStats}
           onClose={() => setShowReport(false)}
+          cur={cur}
+          prices={prices}
         />
       )}
       <div className="flex items-start justify-between gap-4">
@@ -580,7 +592,7 @@ export default function AnalyticsClient({ submissions }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => buildCSV(submissions, reportStats)}
+            onClick={() => buildCSV(submissions, reportStats, cur, prices)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-bold transition">
             <FileSpreadsheet className="w-4 h-4" />
             Excel
@@ -601,26 +613,26 @@ export default function AnalyticsClient({ submissions }) {
           <Stat
             icon={DollarSign}
             label="إجمالي الإيرادات"
-            value={`${totalRevenue.toLocaleString()} د.ت`}
+            value={`${totalRevenue.toLocaleString()} ${cur}`}
             color={{ bg: 'bg-amber-50', text: 'text-amber-600' }}
           />
           <Stat
             icon={TrendingUp}
             label="إيرادات هذا الشهر"
-            value={`${thisMonthRevenue.toLocaleString()} د.ت`}
+            value={`${thisMonthRevenue.toLocaleString()} ${cur}`}
             color={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }}
           />
           <Stat
             icon={RefreshCw}
             label="MRR (إيراد شهري متكرر)"
-            value={`${mrr.toLocaleString()} د.ت`}
+            value={`${mrr.toLocaleString()} ${cur}`}
             badge={paidClients.length ? `${paidClients.length} مدفوع` : undefined}
             color={{ bg: 'bg-blue-50', text: 'text-blue-600' }}
           />
           <Stat
             icon={TrendingDown}
             label="إيراد ضائع (لم يدفعوا)"
-            value={`${lostRevenue.toLocaleString()} د.ت`}
+            value={`${lostRevenue.toLocaleString()} ${cur}`}
             color={{ bg: 'bg-red-50', text: 'text-red-500' }}
           />
         </div>
@@ -702,7 +714,7 @@ export default function AnalyticsClient({ submissions }) {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
               <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
               <Tooltip content={<Tip />} />
-              <Bar dataKey="إيراد" name="إيراد (د.ت)" fill="#fbbf24" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="إيراد" name={`إيراد (${cur})`} fill="#fbbf24" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -831,7 +843,7 @@ export default function AnalyticsClient({ submissions }) {
             <h2 className="font-extrabold text-slate-900 text-sm">العملاء المتخلّون (لم يكملوا الدفع)</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {abandonedClients.length} عميل — إيراد ضائع محتمل:{' '}
-              <span className="text-red-500 font-bold">{lostRevenue.toLocaleString()} د.ت</span>
+              <span className="text-red-500 font-bold">{lostRevenue.toLocaleString()} {cur}</span>
             </p>
           </div>
           <AlertTriangle className="w-5 h-5 text-red-400" />
