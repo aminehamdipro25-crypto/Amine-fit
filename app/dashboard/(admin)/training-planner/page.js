@@ -307,7 +307,7 @@ export default function TrainingPlannerPage() {
       })
       const plan = await res.json()
       if (!res.ok || plan.error) {
-        setGenError(plan.error || 'خطأ في توليد البرنامج — حاول مجدداً')
+        setGenError(plan.message || plan.error || 'خطأ في توليد البرنامج — حاول مجدداً')
         return
       }
       setResult(plan)
