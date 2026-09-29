@@ -2,7 +2,11 @@ import Navbar from '@/components/landing/Navbar'
 import Footer from '@/components/landing/Footer'
 import WhatsAppButton from '@/components/landing/WhatsAppButton'
 import KidsTrialGift from '@/components/landing/KidsTrialGift'
-import { Brain, Activity, HeartHandshake, Target, Clock, User, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Brain, Activity, HeartHandshake, Target, Clock, User, Sparkles, CheckCircle2, LogIn, GraduationCap, Video, ClipboardList, Gamepad2, FileText } from 'lucide-react'
+
+// The live Amine Academy platform. Set NEXT_PUBLIC_ACADEMY_URL to academy.amine-fit.com
+// once the subdomain is connected — until then it points to the current deployment.
+const ACADEMY_URL = process.env.NEXT_PUBLIC_ACADEMY_URL || 'https://amine-academy.vercel.app'
 
 export const metadata = {
   title: 'Amine Academy | برنامج تدريب الأطفال — طيف التوحّد و ADHD',
@@ -48,12 +52,14 @@ export default function AcademyPage() {
               فرط النشاط ونقص الانتباه، وصعوبات السلوك.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-              <a href="#trial" className="px-6 py-3.5 rounded-2xl bg-gradient-to-l from-teal-400 to-emerald-400 text-[#062925] font-extrabold text-sm shadow-lg shadow-teal-400/25 hover:scale-[1.03] transition">
-                🎁 احجز شهراً مجانياً لطفلك
+              <a href={`${ACADEMY_URL}/register`} className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-l from-teal-400 to-emerald-400 text-[#062925] font-extrabold text-sm shadow-lg shadow-teal-400/25 hover:scale-[1.03] transition">
+                <GraduationCap className="w-4 h-4" /> سجّل طفلك في الأكاديمية
               </a>
-              <a href="https://wa.me/97430653759" target="_blank" rel="noreferrer"
-                className="px-6 py-3.5 rounded-2xl bg-white/5 border border-white/15 text-white font-bold text-sm hover:bg-white/10 transition">
-                تواصل مع المدرب
+              <a href="#trial" className="px-6 py-3.5 rounded-2xl bg-white/10 border border-teal-400/30 text-teal-200 font-bold text-sm hover:bg-white/15 transition">
+                🎁 شهر مجاني تجريبي
+              </a>
+              <a href={`${ACADEMY_URL}/parent/login`} className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/5 border border-white/15 text-white font-bold text-sm hover:bg-white/10 transition">
+                <LogIn className="w-4 h-4" /> دخول الأولياء
               </a>
             </div>
           </div>
@@ -104,6 +110,47 @@ export default function AcademyPage() {
                   <p className="text-white/35 text-[11px] font-bold mt-1 uppercase tracking-wide">{s.label}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* The interactive Amine Academy platform */}
+        <section className="py-16 bg-[#0a0a0a]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-teal-300 bg-teal-400/10 border border-teal-400/25 px-3 py-1 rounded-full uppercase tracking-widest mb-4">
+                منصّة تفاعليّة
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">منصّة الأكاديمية الرقميّة</h2>
+              <p className="text-white/40 text-sm mt-2 max-w-xl mx-auto font-medium">كل ما يحتاجه طفلك وأنت في مكان واحد — بوّابة للأولياء وأخرى للطالب</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              {[
+                { icon: Video,        t: 'جلسات مباشرة', s: 'تفاعليّة عبر الإنترنت' },
+                { icon: ClipboardList,t: 'تقييمات معتمدة', s: 'APA / ABA / CBT' },
+                { icon: Gamepad2,     t: 'ألعاب معرفيّة', s: 'حسب تشخيص الطفل' },
+                { icon: FileText,     t: 'تقارير أسبوعيّة', s: 'متابعة التقدّم' },
+              ].map((f, i) => (
+                <div key={i} className="bg-white/[0.03] border border-white/8 rounded-2xl p-5 text-center">
+                  <f.icon className="w-6 h-6 text-teal-400 mx-auto mb-2" />
+                  <p className="text-white font-extrabold text-sm">{f.t}</p>
+                  <p className="text-white/35 text-[11px] font-medium mt-1">{f.s}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <a href={`${ACADEMY_URL}/register`} className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-l from-teal-400 to-emerald-400 text-[#062925] font-extrabold text-sm hover:scale-[1.03] transition">
+                <GraduationCap className="w-4 h-4" /> سجّل طفلك الآن
+              </a>
+              <a href={`${ACADEMY_URL}/parent/login`} className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/5 border border-white/15 text-white font-bold text-sm hover:bg-white/10 transition">
+                <LogIn className="w-4 h-4" /> بوّابة الأولياء
+              </a>
+              <a href={`${ACADEMY_URL}/student/login`} className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/5 border border-white/15 text-white font-bold text-sm hover:bg-white/10 transition">
+                <User className="w-4 h-4" /> بوّابة الطالب
+              </a>
+              <a href={`${ACADEMY_URL}/demo`} className="px-5 py-3.5 rounded-2xl bg-white/5 border border-white/15 text-white/70 font-bold text-sm hover:bg-white/10 transition">
+                جرّب العرض التوضيحي
+              </a>
             </div>
           </div>
         </section>
