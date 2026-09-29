@@ -20,11 +20,32 @@ const INJURY_CHIPS = [
   { id: 'hernia',     ar: 'فتق',       icon: '⚠️' },
 ]
 
-// Map Arabic plan names from pricing page to subscription plan keys
+// Map Arabic plan names from pricing page to subscription plan keys.
+// Prices are resolved dynamically (geo + admin pricing) — see planPriceLabel().
 const PLAN_NAME_MAP = {
-  'برنامج التدريب': { key: 'basic',    label: 'برنامج التدريب',  price: '50 د.ت',  days: 30 },
-  'الباقة الشهرية': { key: 'standard', label: 'الباقة الشهرية',  price: '125 د.ت', days: 30 },
-  'باقة 3 أشهر':   { key: 'premium',  label: 'باقة 3 أشهر',    price: '300 د.ت', days: 90 },
+  'برنامج التدريب': { key: 'basic',    label: 'برنامج التدريب',  days: 30 },
+  'الباقة الشهرية': { key: 'standard', label: 'الباقة الشهرية',  days: 30 },
+  'باقة 3 أشهر':   { key: 'premium',  label: 'باقة 3 أشهر',    days: 90 },
+}
+
+// Same defaults as components/landing/Pricing.jsx — kept in sync so the price
+// shown on the pricing cards matches the price shown here after the user clicks.
+const PRICING_DEFAULT = {
+  basic:    { tnd: 50,  qar: 199  },
+  standard: { tnd: 125, qar: 449  },
+  premium:  { tnd: 300, qar: 999  },
+}
+
+// Build the "125 د.ت" / "449 ر.ق" label for a plan, honouring the visitor's zone
+// and any admin-overridden pricing. Falls back gracefully to Maghreb defaults.
+function planPriceLabel(planName, pricing, zone) {
+  const meta = PLAN_NAME_MAP[planName]
+  if (!meta) return ''
+  const p = { ...PRICING_DEFAULT[meta.key], ...(pricing?.[meta.key] || {}) }
+  const isGulf = zone === 'gulf'
+  const amount = isGulf ? p.qar : p.tnd
+  const currency = isGulf ? 'ر.ق' : 'د.ت'
+  return `${amount} ${currency}`
 }
 
 /* ─── helpers ─── */
@@ -203,6 +224,20 @@ export default function RegisterPage() {
   const [giftInfo,   setGiftInfo]   = useState(null)
   const [hasSaved,   setHasSaved]   = useState(false)
   const [referredBy, setReferredBy] = useState('')
+  const [pricing,    setPricing]    = useState(PRICING_DEFAULT)
+  const [zone,       setZone]       = useState('gulf') // 'gulf' | 'maghreb'
+
+  // Fetch geo + admin pricing so the selected-plan banner shows the SAME
+  // currency and amount the visitor saw on the pricing cards.
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/pricing').then(r => r.ok ? r.json() : PRICING_DEFAULT).catch(() => PRICING_DEFAULT),
+      fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([p, geo]) => {
+      setPricing({ ...PRICING_DEFAULT, ...p })
+      setZone(geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
+    }).catch(() => {})
+  }, [])
 
   // On mount: restore localStorage + read URL params
   useEffect(() => {
@@ -444,7 +479,7 @@ export default function RegisterPage() {
                 <p className="text-xs font-extrabold text-amber-700 uppercase tracking-wide">الباقة المختارة</p>
                 <p className="font-extrabold text-slate-900 text-sm">
                   {PLAN_NAME_MAP[form.interestedPlan].label}
-                  <span className="text-amber-600 font-bold mr-2">— {PLAN_NAME_MAP[form.interestedPlan].price}</span>
+                  <span className="text-amber-600 font-bold mr-2">— {planPriceLabel(form.interestedPlan, pricing, zone)}</span>
                 </p>
               </div>
               <button onClick={() => setForm(f => ({ ...f, interestedPlan: '' }))}
