@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Zap, Menu, X, LogOut, Flame } from 'lucide-react'
-import AmineFitLogo from '@/components/AmineFitLogo'
 
 const links = [
   { href: '#about',      label: 'من هو أمين' },
@@ -77,7 +76,9 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <AmineFitLogo size={36} />
+            <div className="w-9 h-9 bg-gold-400 rounded-xl flex items-center justify-center">
+              <Zap className="w-5 h-5 text-black" fill="black" />
+            </div>
             <span className="font-extrabold text-lg text-white tracking-wider uppercase">
               Amine<span className="text-gold-400">Fit</span>
             </span>

@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Zap } from 'lucide-react'
-import AmineFitLogo from '@/components/AmineFitLogo'
 
 const legalLinks = [
   { href: '/legal/privacy',      label: 'سياسة الخصوصية' },
@@ -17,7 +16,9 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
-              <AmineFitLogo size={36} />
+              <div className="w-9 h-9 bg-gold-400 rounded-xl flex items-center justify-center">
+                <Zap className="w-5 h-5 text-black" fill="black" />
+              </div>
               <span className="text-white font-extrabold text-lg tracking-wider uppercase">
                 Amine<span className="text-gold-400">Fit</span>
               </span>
