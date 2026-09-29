@@ -4,6 +4,7 @@ import VideoSection    from '@/components/landing/VideoSection'
 import Stats           from '@/components/landing/Stats'
 import About           from '@/components/landing/About'
 import Services        from '@/components/landing/Services'
+import KidsTrialGift    from '@/components/landing/KidsTrialGift'
 import HowItWorks      from '@/components/landing/HowItWorks'
 import PlatformTour    from '@/components/landing/PlatformTour'
 import PlanQuiz        from '@/components/landing/PlanQuiz'
@@ -36,6 +37,7 @@ export default function Home() {
         <Stats />
         <About />
         <Services />
+        <KidsTrialGift />
         <HowItWorks />
         <PlatformTour />
         <PlanQuiz />
