@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import { Send, CheckCircle, Loader2 } from 'lucide-react'
 
 const PKG_PRICES = { basic:{tnd:50,qar:199}, standard:{tnd:125,qar:449}, premium:{tnd:300,qar:999} }
-function buildPackages(zone) {
+function buildPackages(zone, prices = PKG_PRICES) {
   const cur = zone === 'gulf' ? 'ر.ق' : 'د.ت'
-  const p = k => zone === 'gulf' ? PKG_PRICES[k].qar : PKG_PRICES[k].tnd
+  const p = k => zone === 'gulf' ? (prices[k]?.qar ?? PKG_PRICES[k].qar) : (prices[k]?.tnd ?? PKG_PRICES[k].tnd)
   return [
     `برنامج التدريب (${p('basic')} ${cur})`,
     `الباقة الشهرية (${p('standard')} ${cur})`,
@@ -22,10 +22,12 @@ const init = { name: '', phone: '', email: '', goal: '', pkg: '', message: '' }
 export default function ContactForm() {
   const [form, setForm]     = useState(init)
   const [zone, setZone]     = useState('gulf')
+  const [prices, setPrices] = useState(PKG_PRICES) // admin-overridable /api/pricing
   useEffect(() => {
     fetch('/api/geo').then(r => r.ok ? r.json() : {}).then(g => setZone(g.zone === 'maghreb' ? 'maghreb' : 'gulf')).catch(() => {})
+    fetch('/api/pricing').then(r => r.ok ? r.json() : null).then(p => { if (p) setPrices({ ...PKG_PRICES, ...p }) }).catch(() => {})
   }, [])
-  const packages = buildPackages(zone)
+  const packages = buildPackages(zone, prices)
   const [loading, setLoad]  = useState(false)
   const [success, setOk]    = useState(false)
   const [error, setError]   = useState('')

@@ -9,6 +9,10 @@ import { zoneForCountry } from '@/lib/countries'
 const WA          = '97430653759'
 const D17_NUMBER  = 'XX XXX XXX'   // ← ضع رقم D17 هنا بعد التفعيل
 const D17_READY   = D17_NUMBER !== 'XX XXX XXX'
+// Online card payment (Stripe) is not active yet — payment is confirmed manually
+// (Fawra / D17 / بريد). Flip to true only once a live Stripe gateway is wired,
+// otherwise the card button leads to a dead/incorrectly-priced checkout.
+const CARD_READY  = false
 const FAWRA_NUMBER = '30653759'
 const CCP_IBAN    = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME    = 'HAMDI AMINE B JALOUL'
@@ -350,8 +354,8 @@ export default function PaymentPage() {
             <>
               <p className="text-white/50 text-sm font-bold text-center mb-4">اختر طريقة الدفع</p>
               {isGulf ? (
-                /* Gulf: Fawra + Card */
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                /* Gulf: Fawra (+ Card only when a live gateway is wired) */
+                <div className={`grid ${CARD_READY ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-6`}>
                   <button onClick={() => { setMethod('fawra'); trackEvent('payment_method_selected', { method: 'fawra', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.priceQar), currency: 'QAR' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
                     <Wallet className="w-7 h-7 text-[#fbbf24]" />
@@ -360,6 +364,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تحويل فوري — قطر</p>
                     </div>
                   </button>
+                  {CARD_READY && (
                   <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.priceQar), currency: 'QAR' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
                     <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
@@ -369,10 +374,11 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">Visa / Mastercard</p>
                     </div>
                   </button>
+                  )}
                 </div>
               ) : (
-                /* Maghreb: D17 + Post + Card */
-                <div className="grid grid-cols-3 gap-3 mb-6">
+                /* Maghreb: D17 + Post (+ Card only when a live gateway is wired) */
+                <div className={`grid ${CARD_READY ? 'grid-cols-3' : 'grid-cols-2'} gap-3 mb-6`}>
                   <button
                     onClick={() => { if (D17_READY) { setMethod('d17'); trackEvent('payment_method_selected', { method: 'd17', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.price), currency: 'TND' }) } }}
                     disabled={!D17_READY}
@@ -394,6 +400,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">تونس</p>
                     </div>
                   </button>
+                  {CARD_READY && (
                   <button onClick={() => { setMethod('card'); trackEvent('payment_method_selected', { method: 'card', plan_name: plan?.name }); trackPixel('InitiateCheckout', { content_name: plan?.name, value: Number(plan?.price), currency: 'TND' }) }}
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition relative">
                     <span className="absolute top-2 right-2 text-[9px] font-extrabold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">جديد</span>
@@ -403,6 +410,7 @@ export default function PaymentPage() {
                       <p className="text-white/30 text-[10px] mt-0.5">دولية</p>
                     </div>
                   </button>
+                  )}
                 </div>
               )}
             </>

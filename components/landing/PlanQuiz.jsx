@@ -61,11 +61,13 @@ export default function PlanQuiz() {
   const [answers, setAnswers] = useState([])
   const [started, setStarted] = useState(false)
   const [zone, setZone]       = useState('gulf')
+  const [prices, setPrices]   = useState(QUIZ_PRICES) // admin-overridable /api/pricing
   useEffect(() => {
     fetch('/api/geo').then(r => r.ok ? r.json() : {}).then(g => setZone(g.zone === 'maghreb' ? 'maghreb' : 'gulf')).catch(() => {})
+    fetch('/api/pricing').then(r => r.ok ? r.json() : null).then(p => { if (p) setPrices({ ...QUIZ_PRICES, ...p }) }).catch(() => {})
   }, [])
   const cur = zone === 'gulf' ? 'ر.ق' : 'د.ت'
-  const priceOf = key => zone === 'gulf' ? QUIZ_PRICES[key]?.qar : QUIZ_PRICES[key]?.tnd
+  const priceOf = key => zone === 'gulf' ? prices[key]?.qar : prices[key]?.tnd
 
   function choose(val) {
     const next = [...answers, val]
