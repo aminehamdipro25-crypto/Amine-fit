@@ -13,10 +13,12 @@ const CCP_IBAN   = 'TN59 1780 1000 0002 1931 0870'
 const CCP_NAME   = 'HAMDI AMINE B JALOUL'
 const GULF_COUNTRIES = new Set(['QA', 'AE', 'SA', 'KW', 'BH', 'OM'])
 
+// Fallback prices — kept in sync with components/landing/Pricing.jsx. Live prices
+// come from /api/pricing (admin overrides) so every step of the flow agrees.
 const PLANS = {
-  'برنامج التدريب': { price: '50',  priceQar: '199', label: 'برنامج التدريب',  emoji: '🏋️' },
-  'الباقة الشهرية': { price: '125', priceQar: '449', label: 'الباقة الشهرية',  emoji: '⚡' },
-  'باقة 3 أشهر':   { price: '300', priceQar: '999', label: 'باقة 3 أشهر',    emoji: '🏆' },
+  'برنامج التدريب': { key: 'basic',    price: '50',  priceQar: '199', label: 'برنامج التدريب',  emoji: '🏋️' },
+  'الباقة الشهرية': { key: 'standard', price: '125', priceQar: '449', label: 'الباقة الشهرية',  emoji: '⚡' },
+  'باقة 3 أشهر':   { key: 'premium',  price: '300', priceQar: '999', label: 'باقة 3 أشهر',    emoji: '🏆' },
 }
 
 // Get tomorrow's date as min for date picker
@@ -55,9 +57,18 @@ function SuccessContent() {
   // only if it's absent do we fall back to IP geo.
   const countryCode = params.get('c') || ''
   const [zone, setZone] = useState(countryCode ? zoneForCountry(countryCode) : 'gulf')
+  const [pricing, setPricing] = useState(null) // admin-overridable /api/pricing
   const isGulf = zone === 'gulf'
-  const price  = plan ? (isGulf ? plan.priceQar : plan.price) : ''
+  // Prefer live admin pricing; fall back to the static PLANS defaults.
+  const livePrice = plan && pricing?.[plan.key]
+    ? String(isGulf ? pricing[plan.key].qar : pricing[plan.key].tnd)
+    : ''
+  const price  = plan ? (livePrice || (isGulf ? plan.priceQar : plan.price)) : ''
   const cur    = isGulf ? 'ر.ق' : 'د.ت'
+
+  useEffect(() => {
+    fetch('/api/pricing').then(r => (r.ok ? r.json() : null)).then(setPricing).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (countryCode) return   // client's chosen country wins over IP
