@@ -1,6 +1,17 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2, ChevronLeft, ChevronRight } from 'lucide-react'
+
+/* ══════════════════════════════════════════════════════════════
+   GEO-AWARE PRICING CONTEXT
+   Gulf → ر.ق (.qar) · Maghreb → د.ت (.tnd)
+══════════════════════════════════════════════════════════════ */
+const PRICING_DEFAULT = { basic:{tnd:50,qar:199}, standard:{tnd:125,qar:449}, premium:{tnd:300,qar:999} }
+const PriceCtx = createContext(null)
+function usePrices() {
+  const c = useContext(PriceCtx)
+  return c || { cur:'د.ت', monthly:'125', quarter:'300', basic:'50' }
+}
 
 /* ══════════════════════════════════════════════════════════════
    WEB AUDIO MUSIC ENGINE
@@ -246,6 +257,7 @@ function Browser({ url, children }) {
    SCENE 1 — Landing Page (matches real amine-fit.com)
 ══════════════════════════════════════ */
 function S1_Landing({ p }) {
+  const price = usePrices()
   // Start scrolling at p=0.15, reach full scroll at p=0.90
   // Max 72% of content height → ensures app + pricing sections are visible
   const scrollY = p > 0.15 ? Math.min((p - 0.15) / 0.75, 1) * 72 : 0
@@ -405,13 +417,13 @@ function S1_Landing({ p }) {
           <p className="text-white/15 text-[6px] font-black uppercase tracking-widest text-center mb-1.5">الأسعار</p>
           <div className="grid grid-cols-3 gap-1.5">
             {[
-              { n:'التدريب فقط', pr:'50',  h:false },
-              { n:'الشهرية ⭐',  pr:'125', h:true  },
-              { n:'3 أشهر 🏆',   pr:'300', h:false },
+              { n:'التدريب فقط', pr:price.basic,   h:false },
+              { n:'الشهرية ⭐',  pr:price.monthly, h:true  },
+              { n:'3 أشهر 🏆',   pr:price.quarter, h:false },
             ].map(c => (
               <div key={c.n} className={`rounded-xl p-2 text-center border ${c.h ? 'bg-[#fbbf24]/10 border-[#fbbf24]/35' : 'bg-white/[0.03] border-white/7'}`}>
                 <p className={`font-black text-[7.5px] ${c.h ? 'text-[#fbbf24]' : 'text-white/45'}`}>{c.n}</p>
-                <p className={`font-black text-[11px] ${c.h ? 'text-[#fbbf24]' : 'text-white/35'}`}>{c.pr}<span className="text-[6px] font-normal"> د.ت</span></p>
+                <p className={`font-black text-[11px] ${c.h ? 'text-[#fbbf24]' : 'text-white/35'}`}>{c.pr}<span className="text-[6px] font-normal"> {price.cur}</span></p>
                 {c.h && <p className="text-emerald-400 text-[5.5px] font-bold mt-0.5">الأكثر طلباً</p>}
               </div>
             ))}
@@ -444,6 +456,7 @@ function S1_Landing({ p }) {
    SCENE 2 — Plan Quiz (3 questions)
 ══════════════════════════════════════ */
 function S2_Quiz({ p }) {
+  const price = usePrices()
   const q1show = p > 0.04
   const q2show = p > 0.38
   const q3show = p > 0.62
@@ -498,9 +511,9 @@ function S2_Quiz({ p }) {
           <p className="text-white/60 text-[8px] font-bold mb-1.5">٣ — ما ميزانيتك الشهرية؟</p>
           <div className="flex gap-1 mb-3">
             {[
-              { label: '50 د.ت',  sel: false },
-              { label: '125 د.ت', sel: true  },
-              { label: '300 د.ت', sel: false },
+              { label: `${price.basic} ${price.cur}`,   sel: false },
+              { label: `${price.monthly} ${price.cur}`, sel: true  },
+              { label: `${price.quarter} ${price.cur}`, sel: false },
             ].map(({ label, sel }) => (
               <div key={label} className={`flex-1 rounded-xl border py-1.5 text-center ${
                 sel ? 'bg-[#fbbf24]/15 border-[#fbbf24]/50' : 'bg-white/[0.03] border-white/8'}`}>
@@ -521,7 +534,7 @@ function S2_Quiz({ p }) {
             <p className="text-white font-black text-[13px] mb-1">الباقة الشهرية</p>
             <p className="text-white/35 text-[7px] mb-3">تدريب + تغذية + متابعة أسبوعية</p>
             <div className="bg-[#fbbf24] rounded-xl py-2 text-center">
-              <span className="text-black font-black text-[9px]">ابدأ بـ 125 د.ت ⚡</span>
+              <span className="text-black font-black text-[9px]">ابدأ بـ {price.monthly} {price.cur} ⚡</span>
             </div>
           </div>
         </div>
@@ -534,6 +547,7 @@ function S2_Quiz({ p }) {
    SCENE 3 — Pricing + Click a plan
 ══════════════════════════════════════ */
 function S2_Pricing({ p }) {
+  const price = usePrices()
   const showModal = p > 0.65
   return (
     <div className="h-full overflow-hidden relative" style={{ background: '#0a0a0a' }}>
@@ -542,9 +556,9 @@ function S2_Pricing({ p }) {
         <p className="text-white font-black text-center mb-3" style={{ fontSize: 'clamp(10px,2vw,14px)' }}>اختر الباقة الأنسب لك</p>
         <div className="grid grid-cols-3 gap-1.5">
           {[
-            { n:'التدريب فقط', p:'50',  feats:['برنامج تدريبي','دعم واتساب','بوابة العميل'],         h:false },
-            { n:'الشهرية',     p:'125', feats:['تدريب + تغذية','متابعة أسبوعية','7 أيام ضمان كامل'], h:true  },
-            { n:'3 أشهر',      p:'300', feats:['كل الباقة الشهرية','مكالمة شهرية','ضمان النتيجة'],   h:false },
+            { n:'التدريب فقط', p:price.basic,   feats:['برنامج تدريبي','دعم واتساب','بوابة العميل'],         h:false },
+            { n:'الشهرية',     p:price.monthly, feats:['تدريب + تغذية','متابعة أسبوعية','7 أيام ضمان كامل'], h:true  },
+            { n:'3 أشهر',      p:price.quarter, feats:['كل الباقة الشهرية','مكالمة شهرية','ضمان النتيجة'],   h:false },
           ].map((c, i) => (
             <div key={c.n}
               className={`rounded-2xl border p-2.5 flex flex-col transition-all duration-300 ${c.h
@@ -553,7 +567,7 @@ function S2_Pricing({ p }) {
               style={{ opacity: p > i * 0.08 ? 1 : 0, transition: 'opacity 0.4s' }}>
               {c.h && <span className="text-[6px] font-black text-[#fbbf24] bg-[#fbbf24]/15 rounded-full px-1.5 py-0.5 self-start mb-1">⭐ الأكثر طلباً</span>}
               <p className={`font-black text-[9px] ${c.h ? 'text-[#fbbf24]' : 'text-white/60'}`}>{c.n}</p>
-              <p className={`font-black text-sm mb-1.5 ${c.h ? 'text-[#fbbf24]' : 'text-white'}`}>{c.p}<span className="text-[7px] opacity-60"> د.ت</span></p>
+              <p className={`font-black text-sm mb-1.5 ${c.h ? 'text-[#fbbf24]' : 'text-white'}`}>{c.p}<span className="text-[7px] opacity-60"> {price.cur}</span></p>
               {c.feats.map(f => (
                 <div key={f} className="flex items-center gap-1 mb-0.5">
                   <span className={`text-[7px] ${c.h ? 'text-emerald-400' : 'text-white/20'}`}>✓</span>
@@ -575,7 +589,7 @@ function S2_Pricing({ p }) {
             <div className="text-center mb-3">
               <span className="text-2xl">⚡</span>
               <p className="text-[#fbbf24] font-black text-[10px] mt-1">الباقة الشهرية</p>
-              <p className="text-white font-black text-lg">125 <span className="text-white/30 text-[8px] font-medium">د.ت / شهر</span></p>
+              <p className="text-white font-black text-lg">{price.monthly} <span className="text-white/30 text-[8px] font-medium">{price.cur} / شهر</span></p>
             </div>
             {['تدريب مخصص 100%','خطة غذائية ADA','متابعة أسبوعية','تقارير تقدم أسبوعية','7 أيام استرداد كامل'].map(f => (
               <div key={f} className="flex items-center gap-1.5 mb-1.5">
@@ -597,6 +611,7 @@ function S2_Pricing({ p }) {
    SCENE 3 — Registration Form (5 steps)
 ══════════════════════════════════════ */
 function S3_Register({ p }) {
+  const price = usePrices()
   const name  = typed('أمين حمدي', p, 0.14, 0.40)
   const email = typed('amine.hamdi.pro25@gmail.com', p, 0.46, 0.72)
   const phone = typed('50123456', p, 0.72, 0.88)
@@ -617,7 +632,7 @@ function S3_Register({ p }) {
           style={{ opacity: p > 0.04 ? 1 : 0, transition: 'opacity 0.5s' }}>
           <span className="text-base">⚡</span>
           <div>
-            <p className="text-blue-700 font-black text-[8px]">الباقة الشهرية — 125 د.ت</p>
+            <p className="text-blue-700 font-black text-[8px]">الباقة الشهرية — {price.monthly} {price.cur}</p>
             <p className="text-blue-400 text-[7px]">تدريب + تغذية + متابعة 30 يوم</p>
           </div>
           <span className="mr-auto text-emerald-500 text-[9px] font-black">✓</span>
@@ -671,6 +686,7 @@ function S3_Register({ p }) {
    Phase B (0.52–1.0): WhatsApp confirmation → pending
 ══════════════════════════════════════ */
 function S4_Pending({ p }) {
+  const price = usePrices()
   const phaseB = p >= 0.52
   const pb     = phaseB ? (p - 0.52) / 0.48 : 0
 
@@ -760,8 +776,8 @@ function S4_Pending({ p }) {
             <p className="text-white font-extrabold text-[9px]">الباقة الشهرية</p>
           </div>
           <div className="text-right">
-            <p className="text-[#fbbf24] font-extrabold text-[14px]">125</p>
-            <p className="text-white/25 text-[6.5px]">د.ت</p>
+            <p className="text-[#fbbf24] font-extrabold text-[14px]">{price.monthly}</p>
+            <p className="text-white/25 text-[6.5px]">{price.cur}</p>
           </div>
         </div>
 
@@ -775,7 +791,7 @@ function S4_Pending({ p }) {
           <div className="space-y-1.5">
             {[
               { n:'1', text:'افتح تطبيق D17 أو *194#', sub:'' },
-              { n:'2', text:'أرسل 125 د.ت إلى:', isNumber:true },
+              { n:'2', text:`أرسل ${price.monthly} ${price.cur} إلى:`, isNumber:true },
               { n:'3', text:'أرسل إثبات الدفع على واتساب', sub:'' },
             ].map((s,i)=>(
               <div key={i} className="flex gap-1.5 items-start">
@@ -1259,9 +1275,35 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
   const [pct,     setPct]     = useState(0)
   const [playing, setPlaying] = useState(autoPlay)
   const [fullscreen, setFullscreen] = useState(false)
+  const [zone,    setZone]    = useState('gulf')
+  const [pricing, setPricing] = useState(PRICING_DEFAULT)
   const containerRef = useRef(null)
   const siRef = useRef(si)
   siRef.current = si
+
+  // Geo-aware pricing — fetch live prices + visitor zone (falls back to defaults)
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/pricing').then(r => r.ok ? r.json() : PRICING_DEFAULT).catch(() => PRICING_DEFAULT),
+      fetch('/api/geo').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([pr, geo]) => {
+      setPricing(pr || PRICING_DEFAULT)
+      setZone(geo && geo.zone === 'maghreb' ? 'maghreb' : 'gulf')
+    }).catch(() => {})
+  }, [])
+
+  const isGulf = zone === 'gulf'
+  const P = {
+    basic:    { ...PRICING_DEFAULT.basic,    ...(pricing?.basic    || {}) },
+    standard: { ...PRICING_DEFAULT.standard, ...(pricing?.standard || {}) },
+    premium:  { ...PRICING_DEFAULT.premium,  ...(pricing?.premium  || {}) },
+  }
+  const priceVal = {
+    cur:     isGulf ? 'ر.ق' : 'د.ت',
+    monthly: String(isGulf ? P.standard.qar : P.standard.tnd),
+    quarter: String(isGulf ? P.premium.qar  : P.premium.tnd),
+    basic:   String(isGulf ? P.basic.qar    : P.basic.tnd),
+  }
 
   const { muted, toggle: toggleMute, start: startMusic, stop: stopMusic } = useMusicEngine()
 
@@ -1324,6 +1366,7 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
   const totalPct = (si + pct) / SCENES.length
 
   return (
+    <PriceCtx.Provider value={priceVal}>
     <div ref={containerRef}
       className="relative w-full rounded-3xl overflow-hidden border border-white/10"
       style={{ aspectRatio: fullscreen ? undefined : '16/9', background: '#111',
@@ -1413,5 +1456,6 @@ export default function AnimatedPlatformDemo({ autoPlay = true }) {
         </div>
       </div>
     </div>
+    </PriceCtx.Provider>
   )
 }
