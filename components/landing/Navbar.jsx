@@ -6,6 +6,7 @@ import { Zap, Menu, X, LogOut, Flame } from 'lucide-react'
 const links = [
   { href: '#about',      label: 'من هو أمين' },
   { href: '#services',   label: 'الخدمات' },
+  { href: '/academy',    label: '🧩 الأطفال', external: true, highlight: true },
   { href: '#how',        label: 'كيف يعمل' },
   { href: '#pricing',    label: 'الأسعار' },
   { href: '#calculator', label: 'الحاسبة' },
@@ -87,7 +88,10 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-1">
             {links.map(l => (
               <a key={l.href} href={l.href}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors">
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  l.highlight
+                    ? 'text-teal-300 font-extrabold hover:bg-teal-400/10'
+                    : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
                 {l.label}
               </a>
             ))}

@@ -478,7 +478,7 @@ export default function CalculatorPage() {
       })
       const plan = await res.json()
       if (!res.ok || plan.error) {
-        setCalcError(plan.error || 'خطأ في توليد الخطة — حاول مجدداً')
+        setCalcError(plan.message || plan.error || 'خطأ في توليد الخطة — حاول مجدداً')
         return
       }
       setIsAI(!!plan.ai)

@@ -1752,6 +1752,13 @@ export async function POST(req) {
   const n = Math.min(Math.max(parseInt(daysPerWeek) || 3, 2), 6)
   const safeAge = age && /^\d{1,3}$/.test(String(age)) ? parseInt(age) : null
 
+  // SAFETY: adult strength/hypertrophy programming is not appropriate for children.
+  // Kids need play-based motor-skill development (and, for ASD/ADHD, sensory-motor
+  // work) under specialist supervision — never adult loading/rep schemes.
+  if (safeAge != null && safeAge < 15) {
+    return NextResponse.json({ error: 'kids_blocked', message: 'مولّد البرامج مخصّص لعمر 15 سنة فأكثر. الأطفال يحتاجون تدريباً حركياً تطوّرياً خاصاً — لبرنامج الأطفال تواصل مع المدرب أمين.' }, { status: 422 })
+  }
+
   const goalMap = {
     bulk:        'muscle mass and hypertrophy — bulking phase',
     cut:         'fat loss while preserving muscle mass — cutting/shredding phase',

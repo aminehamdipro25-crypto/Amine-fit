@@ -373,6 +373,11 @@ export async function POST(req) {
   if (!weight || !height || !age || weight < 20 || weight > 400 || height < 50 || height > 280 || age < 5 || age > 120) {
     return NextResponse.json({ error: 'بيانات القياسات غير صالحة' }, { status: 400 })
   }
+  // SAFETY: adult-only engine (Mifflin-St Jeor + calorie deficit/surplus). Children
+  // must never get a restrictive/adult diet — they need pediatric, growth-based plans.
+  if (age < 15) {
+    return NextResponse.json({ error: 'kids_blocked', message: 'هذه الحاسبة مخصّصة لعمر 15 سنة فأكثر. الأطفال يحتاجون خططاً تغذوية خاصة بالنمو تحت إشراف مختص — لبرنامج الأطفال تواصل مع المدرب أمين.' }, { status: 422 })
+  }
   form.weight = weight; form.height = height; form.age = age
 
   // If no API key → use local engine immediately (never rate-limit)
