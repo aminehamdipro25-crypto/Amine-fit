@@ -6,10 +6,10 @@ export default function KidsTrialGift() {
   const [open, setOpen]       = useState(false)
   const [status, setStatus]   = useState('idle') // idle | saving | done | dup | error
   const [msg, setMsg]         = useState('')
-  const [form, setForm]       = useState({ parentName: '', phone: '', childName: '', childAge: '', goal: '' })
+  const [form, setForm]       = useState({ code: '', parentName: '', phone: '', childName: '', childAge: '', goal: '' })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const valid = form.parentName.trim() && form.phone.trim() && form.childName.trim()
+  const valid = form.code.trim() && form.parentName.trim() && form.phone.trim() && form.childName.trim()
 
   async function submit(e) {
     e?.preventDefault()
@@ -23,7 +23,7 @@ export default function KidsTrialGift() {
       const data = await res.json().catch(() => ({}))
       if (res.ok) { setStatus('done') }
       else if (res.status === 409) { setStatus('dup'); setMsg(data.message || 'سبق تسجيل هذا الرقم.') }
-      else { setStatus('error'); setMsg(data.error || 'تعذّر الإرسال — حاول مجدداً') }
+      else { setStatus('error'); setMsg(data.message || data.error || 'تعذّر الإرسال — حاول مجدداً') }
     } catch { setStatus('error'); setMsg('تعذّر الاتصال — تحقق من الإنترنت') }
   }
 
@@ -102,6 +102,12 @@ export default function KidsTrialGift() {
               </div>
             ) : (
               <form onSubmit={submit} className="p-6 space-y-3">
+                <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3">
+                  <label className="text-xs font-extrabold text-teal-700 block mb-1">🔑 كود الدعوة *</label>
+                  <input value={form.code} onChange={e => set('code', e.target.value)} placeholder="الكود الذي أرسله لك المدرب"
+                    className="w-full px-3 py-2.5 rounded-xl border border-teal-200 text-sm outline-none focus:border-teal-400 transition text-center font-bold tracking-widest" />
+                  <p className="text-[10px] text-teal-600/80 mt-1">هذه التجربة حصريّة لعملاء الجلسات الحضوريّة — استخدم الكود الذي حصلت عليه من المدرب.</p>
+                </div>
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">اسم الولي *</label>
                   <input value={form.parentName} onChange={e => set('parentName', e.target.value)} placeholder="مثال: أحمد بن علي"

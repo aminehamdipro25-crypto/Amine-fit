@@ -47,9 +47,22 @@ export async function POST(req) {
   const childName  = clean(body.childName, 100)
   const childAge   = clean(body.childAge, 10)
   const goal       = clean(body.goal, 400)
+  const code       = clean(body.code, 40)
 
   if (!parentName || !phone || !childName) {
     return NextResponse.json({ error: 'يرجى تعبئة اسم الولي، الهاتف، واسم الطفل' }, { status: 400 })
+  }
+
+  // Invitation code gate — only in-person session clients (who received the code
+  // from the coach) can claim the free month. Code comes from Redis (settable by
+  // the coach) with an env fallback. If none is configured, the offer is closed.
+  const validCode = (await redisGet('kids_trial_code')) || process.env.KIDS_TRIAL_CODE || ''
+  const norm = s => String(s || '').trim().toLowerCase()
+  if (!norm(validCode)) {
+    return NextResponse.json({ error: 'التسجيل مغلق حالياً — تواصل مع المدرب مباشرة.' }, { status: 403 })
+  }
+  if (norm(code) !== norm(validCode)) {
+    return NextResponse.json({ error: 'bad_code', message: 'كود الدعوة غير صحيح — هذه التجربة حصريّة لعملاء الجلسات الحضوريّة. تواصل مع المدرب للحصول على الكود.' }, { status: 403 })
   }
   const pk = phoneKey(phone)
   if (pk.length < 6) return NextResponse.json({ error: 'رقم الهاتف غير صالح' }, { status: 400 })
