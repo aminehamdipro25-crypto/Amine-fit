@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Zap, Mail, Lock, Loader2, Eye, EyeOff, KeyRound, ShieldCheck, Ban, X } from 'lucide-react'
+import AmineFitLogo from '@/components/AmineFitLogo'
 
 const BG_EMOJIS = {
   left:  [
@@ -296,8 +297,8 @@ function ClientLoginInner() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gold-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-gold-400/20">
-            <Zap className="w-8 h-8 text-black" fill="black" />
+          <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+            <AmineFitLogo size={64} />
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight uppercase">
             Amine<span className="text-gold-400">Fit</span>
