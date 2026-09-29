@@ -90,7 +90,7 @@ export default function Navbar() {
               <a key={l.href} href={l.href}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   l.highlight
-                    ? 'text-teal-300 font-extrabold hover:bg-teal-400/10'
+                    ? 'text-violet-300 font-extrabold hover:bg-violet-400/10'
                     : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
                 {l.label}
               </a>
