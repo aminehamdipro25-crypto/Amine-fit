@@ -113,7 +113,7 @@ function SuccessContent() {
   }
 
   function waMsg() {
-    const via = method === 'fawra' ? 'عبر فورا' : method === 'post' ? 'عبر البريد التونسي (إيداع)' : 'عبر D17'
+    const via = method === 'fawra' ? 'عبر فورّان (Fawran)' : method === 'post' ? 'عبر البريد التونسي (إيداع)' : 'عبر D17'
     return encodeURIComponent(
       `مرحباً أمين 👋\nلقد أكملت تسجيل الاستبيان وسأرسل الدفع ${via}.\n` +
       (plan ? `الباقة: ${plan.label} — ${price} ${cur}\n` : '') +
@@ -192,8 +192,8 @@ function SuccessContent() {
                 className="w-full bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-2xl p-5 flex items-center gap-4 transition cursor-pointer mb-3">
                 <Wallet className="w-7 h-7 text-[#fbbf24] flex-shrink-0" />
                 <div className="text-right">
-                  <p className="text-white font-extrabold text-sm">فورا (Fawran)</p>
-                  <p className="text-white/30 text-xs mt-0.5">تحويل فوري داخل قطر</p>
+                  <p className="text-white font-extrabold text-sm">فورّان (Fawran)</p>
+                  <p className="text-white/30 text-xs mt-0.5">تحويل فوري عبر رقم الهاتف</p>
                 </div>
               </button>
             ) : (
@@ -231,16 +231,16 @@ function SuccessContent() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-[#fbbf24]" />
-                <p className="text-white font-extrabold text-sm">الدفع عبر فورا</p>
+                <p className="text-white font-extrabold text-sm">الدفع عبر فورّان (Fawran)</p>
               </div>
               <button onClick={() => setMethod(null)} className="text-white/25 text-xs hover:text-white/50 underline">تغيير</button>
             </div>
             <div className="space-y-4">
-              <Step n={1} title="افتح تطبيق فورا على هاتفك" sub="تحويل فوري داخل قطر" />
-              <Step n={2} title={`أرسل ${price} ${cur} إلى:`}>
+              <Step n={1} title="افتح تطبيق فورّان (Fawran) على هاتفك" sub="تحويل فوري من حسابك إلى حساب آخر عبر رقم الهاتف" />
+              <Step n={2} title={`أرسل ${price} ${cur} إلى رقم الهاتف:`}>
                 <NumberBox value={FAWRA_NUMBER} onCopy={() => copy(FAWRA_NUMBER)} copied={copied} />
               </Step>
-              <Step n={3} title="أرسل إثبات التحويل على واتساب" sub="صورة من فورا تؤكد التحويل" />
+              <Step n={3} title="أرسل إثبات التحويل على واتساب" sub="صورة من فورّان تؤكد التحويل" />
             </div>
           </div>
         )}
