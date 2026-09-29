@@ -4,9 +4,9 @@ import WhatsAppButton from '@/components/landing/WhatsAppButton'
 import KidsTrialGift from '@/components/landing/KidsTrialGift'
 import { Brain, Activity, HeartHandshake, Target, Clock, User, Sparkles, CheckCircle2, LogIn, GraduationCap, Video, ClipboardList, Gamepad2, FileText } from 'lucide-react'
 
-// The live Amine Academy platform. Set NEXT_PUBLIC_ACADEMY_URL to academy.amine-fit.com
-// once the subdomain is connected — until then it points to the current deployment.
-const ACADEMY_URL = process.env.NEXT_PUBLIC_ACADEMY_URL || 'https://amine-academy.vercel.app'
+// The live Amine Academy platform, served on the unified subdomain academy.amine-fit.com.
+// NEXT_PUBLIC_ACADEMY_URL can still override it if the platform ever moves.
+const ACADEMY_URL = process.env.NEXT_PUBLIC_ACADEMY_URL || 'https://academy.amine-fit.com'
 
 export const metadata = {
   title: 'Amine Academy | برنامج تدريب الأطفال — طيف التوحّد و ADHD',
