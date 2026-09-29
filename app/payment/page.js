@@ -181,7 +181,7 @@ export default function PaymentPage() {
   function waMessage() {
     if (!plan) return ''
     if (isGift) return encodeURIComponent(`مرحباً أمين 👋\nلديّ كود هدية: ${giftCode}\nأريد تفعيل باقة ${plan.name}. شكراً!`)
-    const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : method === 'fawra' ? 'عبر فورا' : 'عبر D17'
+    const via = method === 'post' ? 'عبر البريد (إيداع CCP)' : method === 'fawra' ? 'عبر فورّان (Fawran)' : 'عبر D17'
     return encodeURIComponent(`مرحباً أمين 👋\nلقد أرسلت ${pPrice(plan)} ${pCur(plan)} ${via} للاشتراك في ${plan.name}.\nأرجو تفعيل حسابي.`)
   }
 
@@ -195,7 +195,7 @@ export default function PaymentPage() {
         </div>
         <h1 className="text-4xl font-extrabold text-white mb-3">اختر خطتك</h1>
         <p className="text-white/40 text-base font-medium">
-          {zone === 'gulf' ? 'الدفع عبر فورا (قطر)' : 'الدفع عبر D17 أو البريد التونسي'}
+          {zone === 'gulf' ? 'الدفع عبر فورّان (قطر)' : 'الدفع عبر D17 أو البريد التونسي'}
         </p>
 
         {/* Steps indicator */}
@@ -360,8 +360,8 @@ export default function PaymentPage() {
                     className="bg-[#1a1a1a] hover:bg-white/5 border border-white/10 hover:border-[#fbbf24]/40 rounded-3xl p-4 flex flex-col items-center gap-2 transition">
                     <Wallet className="w-7 h-7 text-[#fbbf24]" />
                     <div className="text-center">
-                      <p className="text-white font-extrabold text-xs">فورا</p>
-                      <p className="text-white/30 text-[10px] mt-0.5">تحويل فوري — قطر</p>
+                      <p className="text-white font-extrabold text-xs">فورّان</p>
+                      <p className="text-white/30 text-[10px] mt-0.5">Fawran — تحويل فوري</p>
                     </div>
                   </button>
                   {CARD_READY && (
@@ -556,7 +556,7 @@ export default function PaymentPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2">
                     <Wallet className="w-5 h-5 text-[#fbbf24]" />
-                    <h2 className="text-white font-extrabold text-base">الدفع عبر فورا</h2>
+                    <h2 className="text-white font-extrabold text-base">الدفع عبر فورّان (Fawran)</h2>
                   </div>
                   <button onClick={() => setMethod(null)} className="text-xs text-white/25 hover:text-white/50 underline transition">تغيير</button>
                 </div>
@@ -564,15 +564,15 @@ export default function PaymentPage() {
                   <div className="flex gap-3">
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
                     <div>
-                      <p className="text-white font-bold text-sm mb-1">افتح تطبيق فورا على هاتفك</p>
-                      <p className="text-white/40 text-xs">تحويل فوري داخل قطر</p>
+                      <p className="text-white font-bold text-sm mb-1">افتح تطبيق فورّان (Fawran) على هاتفك</p>
+                      <p className="text-white/40 text-xs">تحويل فوري من حسابك إلى حساب آخر عبر رقم الهاتف فقط</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
                     <div className="flex-1">
                       <p className="text-white font-bold text-sm mb-2">
-                        أرسل <span className="text-[#fbbf24]">{plan.priceQar} ر.ق</span> إلى:
+                        أرسل <span className="text-[#fbbf24]">{plan.priceQar} ر.ق</span> إلى رقم الهاتف:
                       </p>
                       <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
                         <span className="text-white font-extrabold text-xl tracking-widest flex-1 text-center" dir="ltr">{FAWRA_NUMBER}</span>
@@ -587,7 +587,7 @@ export default function PaymentPage() {
                     <div className="w-7 h-7 rounded-full bg-[#fbbf24] text-black text-xs font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
                     <div>
                       <p className="text-white font-bold text-sm mb-1">أرسل إثبات التحويل على واتساب</p>
-                      <p className="text-white/40 text-xs">صورة من فورا تؤكد إتمام التحويل</p>
+                      <p className="text-white/40 text-xs">صورة من فورّان تؤكد إتمام التحويل</p>
                     </div>
                   </div>
                 </div>
