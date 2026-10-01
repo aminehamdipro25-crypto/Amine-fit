@@ -3,6 +3,7 @@ import { updateSubmission, getSubmissionById } from '@/lib/submissions'
 import { requireAdmin } from '@/lib/adminAuth'
 import { hashPassword } from '@/lib/password'
 import { isRateLimited } from '@/lib/rateLimit'
+import { archivePlan } from '@/lib/planHistory'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,9 @@ export async function PUT(req, { params }) {
     // planner) never wipes another part (e.g. an already-saved nutrition plan).
     const existing = await getSubmissionById(params.id)
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    // Snapshot the plan that is about to be replaced so the coach keeps a history
+    // of previous versions (best-effort — never blocks the save).
+    if (existing.plan) await archivePlan(params.id, existing.plan, existing.planUpdatedKind || 'plan').catch(() => {})
     const mergedPlan = { ...(existing.plan || {}), ...(plan || {}) }
     // Stamp the update so the client's portal can show a "your plan was updated"
     // notification — no more telling them manually.
