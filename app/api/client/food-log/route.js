@@ -76,9 +76,11 @@ export async function POST(req) {
   if (!['breakfast','lunch','dinner','snack'].includes(meal)) {
     return NextResponse.json({ error: 'وجبة غير صالحة' }, { status: 400 })
   }
-  if (!name?.trim() || !calories || isNaN(Number(calories))) {
+  // Accept a legitimate 0-calorie item (black coffee, diet soda, water with lemon).
+  if (!name?.trim() || calories === undefined || calories === null || !Number.isFinite(Number(calories))) {
     return NextResponse.json({ error: 'الاسم والسعرات مطلوبان' }, { status: 400 })
   }
+  const macro = v => Number.isFinite(Number(v)) ? Math.round(Math.max(0, Number(v))) : null
 
   const k       = key(payload.id, date)
   const entries = parseEntries(await redisGet(k))
@@ -88,9 +90,9 @@ export async function POST(req) {
     meal,
     name:     String(name).trim().slice(0, 100),
     calories: Math.round(Math.max(0, Math.min(5000, Number(calories)))),
-    protein:  protein  ? Math.round(Math.max(0, Number(protein)))  : null,
-    carbs:    carbs    ? Math.round(Math.max(0, Number(carbs)))    : null,
-    fat:      fat      ? Math.round(Math.max(0, Number(fat)))      : null,
+    protein:  macro(protein),
+    carbs:    macro(carbs),
+    fat:      macro(fat),
   }
 
   entries.push(entry)

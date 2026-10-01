@@ -33,10 +33,11 @@ export async function GET(req) {
     console.error('[cron/backup] CRON_SECRET not set — endpoint disabled')
     return NextResponse.json({ error: 'not_configured' }, { status: 503 })
   }
+  // Vercel Cron sends the secret in the Authorization header. We do NOT accept it
+  // in the query string (?key=) — query strings leak via access/proxy logs and
+  // Referer headers, and this single secret guards every cron route.
   const auth = req.headers.get('authorization')
-  // Vercel Cron sends the Authorization header; also allow ?key= for manual runs
-  const url = new URL(req.url)
-  if (auth !== `Bearer ${secret}` && url.searchParams.get('key') !== secret) {
+  if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 

@@ -239,7 +239,7 @@ export async function POST(req) {
   const methodKey = selectMethod(client)
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ protocol: buildFallback(client, methodKey) })
+    return NextResponse.json({ protocol: buildFallback(client, methodKey), fallback: true })
   }
 
   try {
@@ -270,11 +270,15 @@ export async function POST(req) {
 
     if (!aiRes.ok) throw new Error(`AI ${aiRes.status}`)
     const aiData  = await aiRes.json()
-    const raw     = aiData.content?.[0]?.text?.trim() || ''
-    const protocol = JSON.parse(raw)
+    let raw       = aiData.content?.[0]?.text?.trim() || ''
+    // Strip markdown code fences and extract the JSON object, like the other
+    // routes — otherwise a fenced/prefixed reply throws and silently falls back.
+    raw = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    const match = raw.match(/\{[\s\S]*\}/)
+    const protocol = JSON.parse(match ? match[0] : raw)
     return NextResponse.json({ protocol })
   } catch (err) {
     console.error('[ai-protocol]', err.message)
-    return NextResponse.json({ protocol: buildFallback(client, methodKey) })
+    return NextResponse.json({ protocol: buildFallback(client, methodKey), fallback: true })
   }
 }

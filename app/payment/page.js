@@ -218,7 +218,7 @@ export default function PaymentPage() {
           <div className="max-w-4xl mx-auto px-4 pb-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
             {PLANS.map(p => (
               <div key={p.id}
-                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: Number(p.price) }); trackPixel('AddToCart', { content_name: p.name, value: Number(p.price), currency: 'TND' }) }}
+                onClick={() => { setSelected(p.id); trackEvent('plan_selected', { plan_name: p.name, plan_price: Number(pPrice(p)) }); trackPixel('AddToCart', { content_name: p.name, value: Number(pPrice(p)), currency: isGulf ? 'QAR' : 'TND' }) }}
                 className={`rounded-3xl p-6 border cursor-pointer transition-all ${
                   p.highlight
                     ? selected === p.id

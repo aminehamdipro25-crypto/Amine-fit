@@ -107,8 +107,8 @@ export default function ClientResourcesPage() {
           📎
         </div>
         <div>
-          <h1 className="text-lg font-extrabold text-white">ملفاتي</h1>
-          <p className="text-xs text-white/30">الملفات والروابط التي شاركها معك المدرب</p>
+          <h1 className="text-lg font-extrabold text-slate-900">ملفاتي</h1>
+          <p className="text-xs text-slate-400">الملفات والروابط التي شاركها معك المدرب</p>
         </div>
       </div>
 
