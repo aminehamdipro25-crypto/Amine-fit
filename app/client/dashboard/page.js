@@ -1485,11 +1485,22 @@ function OnboardingModal({ client, onDone }) {
 // ─── Smart in-app reminders — gentle nudges based on the client's own activity ──
 function SmartReminders({ client }) {
   const now = Date.now(), DAY = 86400000
-  const hasPlan = !!(client.plan?.nutrition || client.nutritionCalcPlan || client.plan?.training)
+  const hasTraining  = !!(client.plan?.training?.days?.length)
+  const hasNutrition = !!(client.plan?.nutrition || client.nutritionCalcPlan)
+  const hasPlan = hasTraining || hasNutrition || !!client.plan?.training
   if (!hasPlan) return null
   const lastProgress = (client.progress || []).at(-1)?.date
   const lastCheckin  = (client.checkins || []).at(-1)?.date
+  const logs         = Array.isArray(client.workoutLogs) ? client.workoutLogs : []
+  const lastWorkout  = logs.at(-1)?.date
   const reminders = []
+  // Workout logging — the signal the coach relies on to see real progress.
+  if (hasTraining) {
+    if (!lastWorkout)
+      reminders.push({ icon: '🏋️', text: 'لم تُسجّل أيّ تمرين بعد — سجّل جلستك ليتابع مدربك أداءك ويطوّر خطتك', href: '/client/workout-log', cta: 'سجّل تمرينك' })
+    else if (now - new Date(lastWorkout).getTime() > 3 * DAY)
+      reminders.push({ icon: '🏋️', text: 'مرّت أيام دون تسجيل تمرين — سجّل جلستك القادمة لتتابع قوّتك وتقدّمك', href: '/client/workout-log', cta: 'سجّل الآن' })
+  }
   if (!lastProgress || now - new Date(lastProgress).getTime() > 7 * DAY)
     reminders.push({ icon: '⚖️', text: 'لم تُسجّل وزنك هذا الأسبوع — سجّله لمتابعة تقدمك', href: '/client/progress', cta: 'سجّل الآن' })
   if (!lastCheckin || now - new Date(lastCheckin).getTime() > 7 * DAY)
@@ -1504,7 +1515,7 @@ function SmartReminders({ client }) {
         <p className="font-extrabold text-slate-800 text-sm">تذكيرات لك</p>
       </div>
       <div className="divide-y divide-slate-50">
-        {reminders.slice(0, 2).map((r, i) => (
+        {reminders.slice(0, 3).map((r, i) => (
           <a key={i} href={r.href}
             className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition">
             <span className="text-xl flex-shrink-0">{r.icon}</span>
