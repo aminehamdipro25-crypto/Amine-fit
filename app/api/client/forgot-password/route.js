@@ -19,6 +19,13 @@ export async function POST(req) {
     }
 
     const emailLower = email.toLowerCase().trim()
+
+    // Per-email limit (on top of the per-IP limit) stops reset-email bombing of a
+    // known victim address from rotating IPs. Silent to preserve non-enumeration.
+    if (await isRateLimited(`forgot_pw_email:${emailLower}`, 3, 3600)) {
+      return NextResponse.json({ ok: true })
+    }
+
     const client = await getSubmissionByEmail(emailLower)
 
     // Always respond ok — prevents email enumeration

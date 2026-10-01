@@ -61,6 +61,12 @@ export async function POST(req) {
       return NextResponse.json({ error: 'الكود غير صحيح أو انتهت صلاحيته' }, { status: 401 })
     }
 
+    // A suspended account must not be able to mint a fresh session via reset —
+    // mirror the block in client/auth (login & activation).
+    if (client.status === 'suspended') {
+      return NextResponse.json({ error: 'تم تعليق حسابك، تواصل مع المدرب' }, { status: 403 })
+    }
+
     // Update password, clear reset fields
     await updateSubmission(client.id, {
       clientPassword:      hashPassword(password),

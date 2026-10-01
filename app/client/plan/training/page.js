@@ -1136,10 +1136,11 @@ export default function TrainingPlan() {
   const daysPerWeek = plan.days.length   // always trust actual saved days
   const schedule    = getSchedule(daysPerWeek)
   const startDate   = plan.startDate || null  // ISO string set when admin uploads the plan
-  // Plan runs until the subscription ends; if none, default to 30 days from start
-  // (so the weekly schedule doesn't repeat forever across every month).
-  const endDate     = client.subscriptionEndDate
-    || (startDate ? new Date(new Date(startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : null)
+  // Plan runs until the subscription ends. If there is no subscription end date,
+  // the weekly schedule simply repeats (getPlanDayFromStart cycles via modulo) —
+  // we must NOT invent a 30-day cutoff, which would silently "end" the plan for
+  // an active client who has no explicit end date.
+  const endDate     = client.subscriptionEndDate || null
   const isToday     = isSameDay(selectedDate, today)
   const planEnded   = endDate && +startOfDay(selectedDate) > +startOfDay(new Date(endDate))
   const planDayIdx  = getPlanDayFromStart(selectedDate, schedule, startDate, plan.days.length, endDate)

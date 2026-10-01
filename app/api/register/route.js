@@ -6,6 +6,7 @@ import { sendTelegramMessage } from '@/lib/telegram'
 import { sendEmail } from '@/lib/mailer'
 import { deleteDraft } from '@/lib/leadDraft'
 import { processReferralReward } from '@/lib/referral'
+import { validateGiftCode, redeemGiftCode, releaseGiftCode } from '@/lib/giftCodes'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -62,17 +63,13 @@ export async function POST(req) {
       }, { status: 409 })
     }
 
-    // Validate gift code early so we can set subscription fields before saving
+    // Validate gift code early so we can set subscription fields before saving.
+    // Call the shared lib directly (no self-HTTP, no CRON_SECRET dependency).
     giftCode = sanitizeStr(body.giftCode, 12).toUpperCase()
     let validatedGift = null
     if (giftCode) {
       try {
-        const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-        const giftRes = await fetch(`${BASE}/api/gift?code=${encodeURIComponent(giftCode)}`, {
-          cache: 'no-store',
-          headers: process.env.CRON_SECRET ? { 'x-internal-secret': process.env.CRON_SECRET } : {},
-        })
-        const giftData = await giftRes.json()
+        const giftData = await validateGiftCode(giftCode)
         if (giftData.valid) validatedGift = giftData
       } catch { /* gift validation failure is non-fatal — fall through to pending */ }
     }
@@ -160,28 +157,27 @@ export async function POST(req) {
       }),
     }
 
-    // Mark gift as used BEFORE saving client to prevent race condition
+    // Redeem the gift atomically BEFORE saving (the NX lock prevents two signups
+    // from redeeming the same code). If the save then fails we roll the code back
+    // so it is never silently burned without an account.
     if (isGift) {
-      try {
-        const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
-        const markRes = await fetch(`${BASE}/api/gift`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(process.env.CRON_SECRET ? { 'x-internal-secret': process.env.CRON_SECRET } : {}),
-          },
-          body: JSON.stringify({ code: giftCode, email: emailLower }),
-        })
-        const markData = await markRes.json()
-        if (!markData.ok) {
-          return NextResponse.json({ error: 'كود الهدية استُخدم مسبقاً أو انتهت صلاحيته' }, { status: 400 })
+      const redeem = await redeemGiftCode(giftCode, emailLower)
+      if (!redeem.ok) {
+        if (redeem.reason === 'unavailable') {
+          return NextResponse.json({ error: 'تعذّر التحقق من كود الهدية — حاول مجدداً' }, { status: 503 })
         }
-      } catch {
-        return NextResponse.json({ error: 'تعذّر التحقق من كود الهدية — حاول مجدداً' }, { status: 500 })
+        return NextResponse.json({ error: 'كود الهدية استُخدم مسبقاً أو انتهت صلاحيته' }, { status: 400 })
       }
     }
 
-    const entry = await saveSubmission(safeEntry)
+    let entry
+    try {
+      entry = await saveSubmission(safeEntry)
+    } catch (saveErr) {
+      // Account creation failed after the gift was redeemed — give the code back.
+      if (isGift && giftCode) await releaseGiftCode(giftCode).catch(() => {})
+      throw saveErr
+    }
     deleteDraft(emailLower).catch(() => {})
     sendEmailNotification(entry).catch(err => logger.error('register', 'notification email failed', { err: err.message }))
     // Gift signups are active with a subscriptionEndDate immediately — eligible for referral reward now.
@@ -232,9 +228,9 @@ export async function POST(req) {
       }, { status: 409 })
     }
     if (isGift && giftCode) {
-      // Gift was already marked used before this failure — no account was created,
-      // so the code is effectively burned. Needs the admin to manually reissue it.
-      logger.critical('register', 'Gift code burned but account creation failed — needs manual reissue', { giftCode, err: err.message })
+      // Save failure already rolled the gift code back (see saveSubmission catch),
+      // so the code stays redeemable — the client can simply retry.
+      logger.critical('register', 'Gift registration failed — code rolled back for retry', { giftCode, err: err.message })
     } else {
       logger.critical('register', 'Registration failed', { err: err.message })
     }

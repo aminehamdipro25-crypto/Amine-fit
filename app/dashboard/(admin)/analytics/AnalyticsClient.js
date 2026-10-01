@@ -484,8 +484,13 @@ export default function AnalyticsClient({ submissions }) {
     return sum + price * months
   }, 0)
 
-  // MRR: active PAID clients only (gifts excluded)
-  const mrr = activeClients.filter(s => !s.giftCode).reduce((sum, s) => sum + (prices[s.subscriptionPlan] ?? 0), 0)
+  // MRR: active PAID clients only (gifts excluded). Premium is a 3-month plan,
+  // so its monthly-recurring share is a third of the quoted (3-month) price.
+  const mrr = Math.round(activeClients.filter(s => !s.giftCode).reduce((sum, s) => {
+    const price = prices[s.subscriptionPlan] ?? 0
+    const months = s.subscriptionPlan === 'premium' ? 3 : 1
+    return sum + price / months
+  }, 0))
 
   // Lost revenue: expired + awaiting payment who have an interested plan
   const lostRevenue = [...expiredClients, ...pendingClients, ...activeClients.filter(s => !s.subscriptionPlan)]

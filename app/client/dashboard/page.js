@@ -6,6 +6,14 @@ import { ArrowLeft, Clock, CheckCircle2, Droplets, Star, AlertTriangle, Calendar
 import { SkeletonDashboard } from '@/components/SkeletonLoader'
 import PushSubscriber from '@/components/PushSubscriber'
 
+// Local calendar date (YYYY-MM-DD) — logs are written with the browser's LOCAL
+// date (see WaterWidget / journal), so every date comparison must use the same
+// local formatter, never toISOString() (which is UTC and drifts a day for
+// Qatar/Tunisia users around midnight).
+function localYMD(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const PLAN_DISPLAY = {
   basic:     { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
   standard:  { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
@@ -168,10 +176,7 @@ function WaterWidget() {
   const [goal,    setGoal]    = useState(8)
   const [saving,  setSaving]  = useState(false)
 
-  const today = (() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  })()
+  const today = localYMD()
 
   useEffect(() => {
     fetch('/api/client/logs')
@@ -257,10 +262,7 @@ function FoodLogWidget() {
   const [target,   setTarget]   = useState(0)
   const [loaded,   setLoaded]   = useState(false)
 
-  const today = (() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  })()
+  const today = localYMD()
 
   useEffect(() => {
     Promise.all([
@@ -329,7 +331,7 @@ function StreakWidget() {
         const now = new Date()
         for (let i = 0; i < 365; i++) {
           const d = new Date(now.getTime() - i * 86400000)
-          const ds = d.toISOString().slice(0, 10)
+          const ds = localYMD(d)
           if (logged.has(ds)) count++
           else if (i > 0) break // gap — stop
         }
@@ -707,12 +709,13 @@ function TrainingAttendanceWidget({ trainingDaysPerWeek }) {
       .catch(() => {})
   }, [])
 
-  // Build last 14 days grid
+  // Build last 14 days grid — all fields derived from the same LOCAL date so the
+  // printed day number, the stored/toggled key, and the "today" marker agree.
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(Date.now() - (13 - i) * 86400000)
     return {
-      date:    d.toISOString().slice(0, 10),
-      dayName: d.toLocaleDateString('ar', { weekday: 'short', timeZone: 'Asia/Qatar' }),
+      date:    localYMD(d),
+      dayName: d.toLocaleDateString('ar', { weekday: 'short' }),
       dayNum:  d.getDate(),
       isToday: i === 13,
     }
@@ -721,7 +724,7 @@ function TrainingAttendanceWidget({ trainingDaysPerWeek }) {
   const streak = (() => {
     let s = 0
     for (let i = 0; i < 60; i++) {
-      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)
+      const d = localYMD(new Date(Date.now() - i * 86400000))
       if (log[d]) s++
       else if (i > 0) break
     }
