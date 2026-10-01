@@ -296,6 +296,47 @@ function EditableCountry({ clientId, initialValue, onSaved }) {
   )
 }
 
+// ── Engagement strip — surfaces whether the client actually logs activity, so
+//    the coach can nudge them (e.g. a client who never logs workouts). ──────────
+function EngagementStrip({ client }) {
+  const DAY = 86400000
+  const lastWorkout = Array.isArray(client.workoutLogs) ? client.workoutLogs.at(-1)?.date : null
+  const lastWeight  = (client.progress || []).filter(e => e.weight != null).at(-1)?.date
+  const lastCheckin = (client.checkins || []).at(-1)?.date
+
+  const staleness = (iso, days) => {
+    if (!iso) return 'never'
+    return (Date.now() - new Date(iso).getTime()) > days * DAY ? 'stale' : 'ok'
+  }
+  const items = [
+    { icon: '🏋️', label: 'آخر تمرين', iso: lastWorkout, state: staleness(lastWorkout, 4) },
+    { icon: '⚖️', label: 'آخر وزن',   iso: lastWeight,  state: staleness(lastWeight, 7) },
+    { icon: '📋', label: 'آخر تقرير',  iso: lastCheckin, state: staleness(lastCheckin, 7) },
+  ]
+  const tone = {
+    never: 'bg-red-50 border-red-200 text-red-700',
+    stale: 'bg-amber-50 border-amber-200 text-amber-700',
+    ok:    'bg-emerald-50 border-emerald-200 text-emerald-700',
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">متابعة النشاط</h3>
+      <div className="grid grid-cols-3 gap-3">
+        {items.map(it => (
+          <div key={it.label} className={`rounded-2xl p-3 text-center border ${tone[it.state]}`}>
+            <p className="text-lg">{it.icon}</p>
+            <p className="text-[11px] font-bold mt-0.5">{it.label}</p>
+            <p className="text-xs font-extrabold mt-0.5">
+              {it.state === 'never' ? 'لم يُسجّل بعد' : formatAgo(it.iso)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, onKick, onUpdate }) {
   const goal = goalMap[client.goal]
   const [kicking, setKicking] = useState(false)
@@ -366,6 +407,9 @@ function ClientModal({ client, onClose, onStatusChange, onDelete, onlineInfo, on
         </div>
 
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+
+          {/* Engagement / activity — does the client actually log? */}
+          <EngagementStrip client={client} />
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-3">

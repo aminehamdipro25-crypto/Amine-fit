@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Trash2, Save, ArrowRight,
   Loader2, Sparkles, LogIn, Paperclip,
-  CheckCircle2, X,
+  CheckCircle2, X, Bell,
 } from 'lucide-react'
 import { linkMealsToDB, findFoodInDB, makeDBItem, calcItemTotals } from './components/foodUtils'
 import NutritionTab from './components/NutritionTab'
@@ -49,7 +49,25 @@ export default function PlanBuilder({ client }) {
   const [localClient, setLocalClient] = useState(client)
   function handleProtocolUpdate(_, patch) { setLocalClient(c => ({ ...c, ...patch })) }
   const [saving, setSaving] = useState(false)
+  const [notifying, setNotifying] = useState(false)
   const [toast, setToast]   = useState('')
+
+  /* Email + push the client that their plan was updated — coach-triggered so
+     the client isn't spammed on every save during plan-building. */
+  async function notifyClient() {
+    if (!confirm(`سيصل العميل "${client.name}" إشعاراً بالبريد والتطبيق بأن خطته جُدّثت. متابعة؟`)) return
+    setNotifying(true)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}/notify-plan`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) setToast('✓ تم إشعار العميل بالبريد')
+      else setToast(data.error || '❌ تعذّر إرسال الإشعار')
+    } catch {
+      setToast('❌ تعذّر إرسال الإشعار — تحقق من الاتصال')
+    } finally {
+      setNotifying(false)
+    }
+  }
 
   // Nutrition form state (flat object passed to NutritionTab)
   const [nutritionForm, setNutritionForm] = useState({
@@ -340,6 +358,12 @@ export default function PlanBuilder({ client }) {
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
             دخول كالعميل
           </button>
+          <button onClick={notifyClient} disabled={notifying}
+            title="أرسل للعميل إشعاراً بالبريد والتطبيق بأن خطته جاهزة/محدّثة"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gold-400 text-[#0a0a0a] rounded-xl font-bold text-sm hover:bg-gold-500 transition disabled:opacity-50 shadow-sm">
+            {notifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+            إشعار العميل
+          </button>
           <button onClick={save} disabled={saving}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#0a0a0a] text-white rounded-xl font-bold text-sm hover:bg-black transition disabled:opacity-50 shadow-sm">
             {saving
@@ -358,7 +382,8 @@ export default function PlanBuilder({ client }) {
           <p className="text-white/40 text-xs leading-relaxed">
             ابنِ الخطة ثم اضغط <span className="text-gold-400 font-bold">حفظ الخطة</span> — سيجدها العميل فوراً في بوابته على{' '}
             <span className="text-gold-400 font-bold" dir="ltr">amine-fit.com/client/login</span>{' '}
-            ببريده وكلمة المرور التي ضبطتها له.
+            ببريده وكلمة المرور التي ضبطتها له. عند الانتهاء اضغط{' '}
+            <span className="text-gold-400 font-bold">إشعار العميل</span> ليصله تنبيه بالبريد والتطبيق بأن خطته جاهزة.
           </p>
         </div>
       </div>
