@@ -21,14 +21,16 @@ export async function GET() {
 
   const messages = client.messages || []
 
-  // Mark admin messages as read
+  // Mark admin messages as read — done as a mutation on the freshly-read record
+  // under the write lock, so a message the coach posts concurrently is never lost.
   const hasUnread = messages.some(m => m.from === 'admin' && !m.read)
   if (hasUnread) {
-    const updated = messages.map(m =>
-      m.from === 'admin' && !m.read ? { ...m, read: true } : m
-    )
-    await updateSubmission(payload.id, { messages: updated }).catch(() => {})
-    return NextResponse.json(updated)
+    const result = await updateSubmission(payload.id, (cur) => {
+      const list = cur.messages || []
+      if (!list.some(m => m.from === 'admin' && !m.read)) return null
+      return { messages: list.map(m => m.from === 'admin' && !m.read ? { ...m, read: true } : m) }
+    }).catch(() => null)
+    return NextResponse.json(result?.messages || messages.map(m => m.from === 'admin' && !m.read ? { ...m, read: true } : m))
   }
 
   return NextResponse.json(messages)
@@ -57,8 +59,10 @@ export async function POST(req) {
       date: new Date().toISOString(),
       read: false,
     }
-    const messages = [...(client.messages || []), entry].slice(-100)
-    await updateSubmission(payload.id, { messages })
+    // Append under the lock on fresh data so a concurrent coach reply is kept.
+    await updateSubmission(payload.id, (cur) => ({
+      messages: [...(cur.messages || []), entry].slice(-100),
+    }))
 
     // Notify coach via Telegram
     const BASE = process.env.NEXT_PUBLIC_BASE_URL || 'https://amine-fit.com'
