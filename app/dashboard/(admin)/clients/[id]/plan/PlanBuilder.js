@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import {
   Utensils, Dumbbell, Trash2, Save, ArrowRight,
   Loader2, Sparkles, LogIn, Paperclip,
-  CheckCircle2, X, Bell,
+  CheckCircle2, X, Bell, History, RotateCcw,
 } from 'lucide-react'
 import { linkMealsToDB, findFoodInDB, makeDBItem, calcItemTotals } from './components/foodUtils'
 import NutritionTab from './components/NutritionTab'
@@ -66,6 +66,51 @@ export default function PlanBuilder({ client }) {
       setToast('❌ تعذّر إرسال الإشعار — تحقق من الاتصال')
     } finally {
       setNotifying(false)
+    }
+  }
+
+  /* ── Plan version history ─────────────────────────────────────────────────── */
+  const [historyOpen, setHistoryOpen]       = useState(false)
+  const [history, setHistory]               = useState(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [restoring, setRestoring]           = useState(null)
+
+  async function openHistory() {
+    setHistoryOpen(true)
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}/plan-history`)
+      const data = await res.json().catch(() => ({}))
+      setHistory(Array.isArray(data.history) ? data.history : [])
+    } catch {
+      setHistory([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  async function restoreVersion(versionId) {
+    if (!confirm('سيُستبدل المحتوى الحالي بهذه النسخة (ويُحفظ الحالي في السجل أيضاً). متابعة؟')) return
+    setRestoring(versionId)
+    try {
+      const res = await fetch(`/api/admin/clients/${client.id}/plan-history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionId }),
+      })
+      if (res.ok) {
+        setToast('✓ تم استرجاع النسخة')
+        setHistoryOpen(false)
+        // Full reload so the builder re-initialises its form from the restored plan.
+        setTimeout(() => window.location.reload(), 700)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setToast(data.error || '❌ تعذّر الاسترجاع')
+      }
+    } catch {
+      setToast('❌ تعذّر الاسترجاع — تحقق من الاتصال')
+    } finally {
+      setRestoring(null)
     }
   }
 
@@ -358,6 +403,12 @@ export default function PlanBuilder({ client }) {
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
             دخول كالعميل
           </button>
+          <button onClick={openHistory}
+            title="عرض النسخ السابقة من الخطة واسترجاع أيّ منها"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:border-slate-300 transition shadow-sm">
+            <History className="w-4 h-4" />
+            النسخ السابقة
+          </button>
           <button onClick={notifyClient} disabled={notifying}
             title="أرسل للعميل إشعاراً بالبريد والتطبيق بأن خطته جاهزة/محدّثة"
             className="flex items-center gap-2 px-4 py-2.5 bg-gold-400 text-[#0a0a0a] rounded-xl font-bold text-sm hover:bg-gold-500 transition disabled:opacity-50 shadow-sm">
@@ -473,6 +524,62 @@ export default function PlanBuilder({ client }) {
               : <><Save className="w-4 h-4" /> حفظ الخطة</>
             }
           </button>
+        </div>
+      )}
+
+      {/* Plan version history modal */}
+      {historyOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto"
+          onClick={e => e.target === e.currentTarget && setHistoryOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg" dir="rtl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-slate-700" />
+                <h3 className="font-extrabold text-slate-900">النسخ السابقة من الخطة</h3>
+              </div>
+              <button onClick={() => setHistoryOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 max-h-[65vh] overflow-y-auto space-y-3">
+              {historyLoading && (
+                <div className="flex items-center justify-center py-10 text-slate-400">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
+              )}
+              {!historyLoading && history && history.length === 0 && (
+                <p className="text-center text-slate-400 text-sm py-10">
+                  لا توجد نسخ سابقة بعد — ستُحفظ النسخة الحالية تلقائياً عند أوّل تعديل قادم للخطة.
+                </p>
+              )}
+              {!historyLoading && history && history.map((v, i) => {
+                const d = new Date(v.archivedAt)
+                const dateStr = d.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Qatar' })
+                const timeStr = d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Qatar' })
+                const s = v.summary || {}
+                return (
+                  <div key={v.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-sm">
+                        {i === 0 ? 'أحدث نسخة محفوظة' : `نسخة ${history.length - i}`}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{dateStr} · {timeStr}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {s.calories ? <span className="text-[11px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg">{s.calories} سعرة</span> : null}
+                        {s.mealsCount ? <span className="text-[11px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg">{s.mealsCount} وجبات</span> : null}
+                        {s.trainingDays ? <span className="text-[11px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg">{s.trainingDays} أيام تدريب</span> : null}
+                      </div>
+                    </div>
+                    <button onClick={() => restoreVersion(v.id)} disabled={restoring === v.id}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-[#0a0a0a] text-white rounded-xl font-bold text-xs hover:bg-black transition disabled:opacity-50 flex-shrink-0">
+                      {restoring === v.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                      استرجاع
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
 
