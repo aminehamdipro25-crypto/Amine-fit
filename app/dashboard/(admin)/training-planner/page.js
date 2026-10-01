@@ -193,6 +193,11 @@ function DayCard({ day }) {
                     {ex.rest}
                   </span>
                 )}
+                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name || '') + ' exercise tutorial')}`}
+                  target="_blank" rel="noreferrer" title="شاهد الأداء"
+                  className="text-[11px] font-bold text-white/40 hover:text-[#fbbf24] bg-[#1a1a1a] px-2 py-1 rounded-lg flex items-center gap-1 flex-shrink-0">
+                  🎥 <span className="hidden sm:inline">شاهد</span>
+                </a>
               </div>
             </div>
           ))}
@@ -205,11 +210,18 @@ function DayCard({ day }) {
                   {day.cardio.note && <p className="text-xs text-white/30 mt-0.5">{day.cardio.note}</p>}
                 </div>
               </div>
-              {day.cardio.duration && (
-                <span className="text-xs font-extrabold text-[#fbbf24] bg-[#fbbf24]/10 px-2.5 py-1 rounded-lg flex-shrink-0">
-                  {day.cardio.duration}
-                </span>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {day.cardio.duration && (
+                  <span className="text-xs font-extrabold text-[#fbbf24] bg-[#fbbf24]/10 px-2.5 py-1 rounded-lg">
+                    {day.cardio.duration}
+                  </span>
+                )}
+                <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent((day.cardio.type || 'cardio') + ' workout tutorial')}`}
+                  target="_blank" rel="noreferrer" title="شاهد الأداء"
+                  className="text-[11px] font-bold text-white/40 hover:text-[#fbbf24] bg-[#1a1a1a] px-2 py-1 rounded-lg flex items-center gap-1">
+                  🎥 <span className="hidden sm:inline">شاهد</span>
+                </a>
+              </div>
             </div>
           )}
         </div>
