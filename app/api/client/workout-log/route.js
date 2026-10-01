@@ -117,12 +117,12 @@ export async function POST(req) {
     rating:      rating !== undefined ? rating : null,
   }
 
-  const existing = Array.isArray(client.workoutLogs) ? client.workoutLogs : []
-
-  // Enforce max 200 entries — drop oldest if needed
-  const updated = [...existing, entry].slice(-MAX_ENTRIES)
-
-  const result = await updateSubmission(payload.id, { workoutLogs: updated })
+  // Append under the lock on fresh data (enforcing the max-entries cap) so a
+  // concurrent write to the same record can't drop this logged session.
+  const result = await updateSubmission(payload.id, (cur) => {
+    const existing = Array.isArray(cur.workoutLogs) ? cur.workoutLogs : []
+    return { workoutLogs: [...existing, entry].slice(-MAX_ENTRIES) }
+  })
   if (!result) return NextResponse.json({ error: 'فشل حفظ الجلسة' }, { status: 500 })
 
   return NextResponse.json(entry, { status: 201 })
@@ -142,13 +142,15 @@ export async function DELETE(req) {
   if (!client) return NextResponse.json({ error: 'العميل غير موجود' }, { status: 404 })
 
   const existing = Array.isArray(client.workoutLogs) ? client.workoutLogs : []
-  const filtered = existing.filter(e => e.id !== entryId)
-
-  if (filtered.length === existing.length) {
+  if (!existing.some(e => e.id === entryId)) {
     return NextResponse.json({ error: 'الجلسة غير موجودة' }, { status: 404 })
   }
 
-  const result = await updateSubmission(payload.id, { workoutLogs: filtered })
+  // Remove under the lock on fresh data so a concurrent log append isn't dropped.
+  const result = await updateSubmission(payload.id, (cur) => {
+    const list = Array.isArray(cur.workoutLogs) ? cur.workoutLogs : []
+    return { workoutLogs: list.filter(e => e.id !== entryId) }
+  })
   if (!result) return NextResponse.json({ error: 'فشل الحذف' }, { status: 500 })
 
   return NextResponse.json({ success: true })

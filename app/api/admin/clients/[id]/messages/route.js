@@ -13,15 +13,17 @@ export async function GET(req, { params }) {
   const client = await getSubmissionById(params.id)
   if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-  // Mark client messages as read by admin
+  // Mark client messages as read by admin — mutate the freshly-read record under
+  // the write lock so a message the client posts concurrently is never lost.
   const messages = client.messages || []
   const hasUnread = messages.some(m => m.from === 'client' && !m.read)
   if (hasUnread) {
-    const updated = messages.map(m =>
-      m.from === 'client' && !m.read ? { ...m, read: true } : m
-    )
-    await updateSubmission(params.id, { messages: updated }).catch(() => {})
-    return NextResponse.json(updated)
+    const result = await updateSubmission(params.id, (cur) => {
+      const list = cur.messages || []
+      if (!list.some(m => m.from === 'client' && !m.read)) return null
+      return { messages: list.map(m => m.from === 'client' && !m.read ? { ...m, read: true } : m) }
+    }).catch(() => null)
+    return NextResponse.json(result?.messages || messages.map(m => m.from === 'client' && !m.read ? { ...m, read: true } : m))
   }
 
   return NextResponse.json(messages)
@@ -46,8 +48,10 @@ export async function POST(req, { params }) {
       date: new Date().toISOString(),
       read: false,
     }
-    const messages = [...(client.messages || []), entry].slice(-100)
-    await updateSubmission(params.id, { messages })
+    // Append under the lock on fresh data so a concurrent client message is kept.
+    await updateSubmission(params.id, (cur) => ({
+      messages: [...(cur.messages || []), entry].slice(-100),
+    }))
 
     // Notify client via push notification
     await sendPushToClient(params.id, '💬 رسالة من مدربك', clean.slice(0, 80), '/client/messages').catch(() => {})

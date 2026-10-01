@@ -24,9 +24,16 @@ export async function POST(req, { params }) {
   const existing = (client.checkins || []).find(c => c.id === checkinId)
   if (!existing) return NextResponse.json({ error: 'check-in not found' }, { status: 404 })
 
-  const updatedEntry = { ...existing, coachReply: reply.trim().slice(0, 500), repliedAt: new Date().toISOString() }
-  const checkins = (client.checkins || []).map(c => c.id === checkinId ? updatedEntry : c)
-  await updateSubmission(params.id, { checkins })
+  const coachReply = reply.trim().slice(0, 500)
+  const repliedAt  = new Date().toISOString()
+  // Update under the lock on fresh data so a check-in the client submits
+  // concurrently is preserved.
+  await updateSubmission(params.id, (cur) => {
+    const list = cur.checkins || []
+    if (!list.some(c => c.id === checkinId)) return null
+    return { checkins: list.map(c => c.id === checkinId ? { ...c, coachReply, repliedAt } : c) }
+  })
+  const updatedEntry = { ...existing, coachReply, repliedAt }
 
   // Notify client by email
   if (process.env.RESEND_API_KEY && client.email) {

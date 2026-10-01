@@ -14,6 +14,20 @@ function localYMD(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// Number of meals in the client's active nutrition plan — mirrors the resolution
+// used by /client/plan/nutrition so the dashboard card never disagrees with it.
+// (A saved plan.meals that is an empty array must fall through to the calc plan,
+// and a default single-day calc plan stores its meals in calcPlan.menu.)
+function countPlanMeals(client) {
+  const plan     = client?.plan?.nutrition
+  const calcPlan = client?.nutritionCalcPlan
+  if (plan?.meals?.length > 0)             return plan.meals.length
+  if (calcPlan?.duration === 'week')       return calcPlan.days?.[0]?.menu?.length || 0
+  if (calcPlan?.duration === 'month')      return calcPlan.weeks?.[0]?.menu?.length || 0
+  if (calcPlan)                            return calcPlan.menu?.length || 0
+  return 0
+}
+
 const PLAN_DISPLAY = {
   basic:     { label: 'برنامج التدريب',  emoji: '🏋️', color: 'from-blue-600 to-blue-800' },
   standard:  { label: 'الباقة الشهرية', emoji: '⚡',  color: 'from-amber-500 to-yellow-600' },
@@ -1825,15 +1839,7 @@ export default function ClientDashboard() {
             </h3>
             <p className={`text-sm font-medium ${hasNutrition ? 'text-emerald-200' : 'text-white/20'}`}>
               {hasNutrition
-                ? `${client.plan?.nutrition?.calories || calcPlan?.target || 0} سعرة • ${
-                    client.plan?.nutrition?.meals?.length
-                    ?? (calcPlan?.duration === 'day'
-                        ? calcPlan?.menu?.length
-                        : calcPlan?.duration === 'month'
-                        ? calcPlan?.weeks?.[0]?.menu?.length
-                        : calcPlan?.days?.[0]?.menu?.length)
-                    ?? 0
-                  } وجبات`
+                ? `${client.plan?.nutrition?.calories || calcPlan?.target || 0} سعرة • ${countPlanMeals(client)} وجبات`
                 : 'قيد الإعداد من المدرب'}
             </p>
             {hasNutrition ? (

@@ -53,8 +53,10 @@ export async function POST(req) {
     const client = await getSubmissionById(payload.id)
     if (!client) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-    const checkins = [...(client.checkins || []), entry].slice(-52)
-    await updateSubmission(payload.id, { checkins })
+    // Append under the lock on fresh data so a concurrent coach reply isn't lost.
+    await updateSubmission(payload.id, (cur) => ({
+      checkins: [...(cur.checkins || []), entry].slice(-52),
+    }))
 
     // Notify admin by email (fire-and-forget)
     if (process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL) {
