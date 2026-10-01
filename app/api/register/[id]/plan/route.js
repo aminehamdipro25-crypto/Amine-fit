@@ -24,7 +24,16 @@ export async function PUT(req, { params }) {
     const existing = await getSubmissionById(params.id)
     if (!existing) return NextResponse.json({ error: 'not found' }, { status: 404 })
     const mergedPlan = { ...(existing.plan || {}), ...(plan || {}) }
-    const updated = await updateSubmission(params.id, { plan: mergedPlan })
+    // Stamp the update so the client's portal can show a "your plan was updated"
+    // notification — no more telling them manually.
+    const keys = Object.keys(plan || {})
+    const kind = keys.includes('training') && keys.includes('nutrition')
+      ? 'both' : keys.includes('training') ? 'training' : keys.includes('nutrition') ? 'nutrition' : 'plan'
+    const updated = await updateSubmission(params.id, {
+      plan: mergedPlan,
+      planUpdatedAt: new Date().toISOString(),
+      planUpdatedKind: kind,
+    })
     if (!updated) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ success: true })
   } catch {
