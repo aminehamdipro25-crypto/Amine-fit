@@ -1560,6 +1560,57 @@ function AchievementsWidget({ client }) {
   )
 }
 
+// ─── Plan-update notification — shows when the coach updates the client's plan ──
+function PlanUpdateBanner({ client }) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    if (!client?.planUpdatedAt) { setShow(false); return }
+    try {
+      const seen = localStorage.getItem(`af_plan_seen_${client.id}`)
+      setShow(seen !== client.planUpdatedAt)
+    } catch { setShow(true) }
+  }, [client?.planUpdatedAt, client?.id])
+  if (!show) return null
+
+  const kind = client.planUpdatedKind
+  function markSeen() {
+    try { localStorage.setItem(`af_plan_seen_${client.id}`, client.planUpdatedAt) } catch {}
+    setShow(false)
+  }
+  const showTraining  = kind === 'training'  || kind === 'both' || kind === 'plan' || !kind
+  const showNutrition = kind === 'nutrition' || kind === 'both' || kind === 'plan' || !kind
+  const what = kind === 'training' ? 'خطتك التدريبية' : kind === 'nutrition' ? 'خطتك الغذائية' : 'خطتك'
+
+  return (
+    <div className="relative bg-gradient-to-l from-amber-400 to-gold-400 rounded-3xl p-5 shadow-lg shadow-gold-400/20 overflow-hidden">
+      <button onClick={markSeen} aria-label="إغلاق" className="absolute top-3 left-3 text-black/40 hover:text-black/70 transition">
+        <X className="w-5 h-5" />
+      </button>
+      <div className="flex items-start gap-3">
+        <span className="text-2xl animate-bounce">🔔</span>
+        <div className="flex-1">
+          <p className="font-extrabold text-black text-base">حدّث مدربك {what}!</p>
+          <p className="text-black/60 text-sm mt-0.5">اطّلع على آخر التعديلات التي أعدّها لك المدرب أمين.</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {showTraining && (
+              <a href="/client/plan/training" onClick={markSeen}
+                className="inline-flex items-center gap-1.5 bg-black text-gold-400 text-xs font-extrabold px-4 py-2 rounded-xl hover:bg-black/80 transition">
+                <Dumbbell className="w-3.5 h-3.5" /> الخطة التدريبية
+              </a>
+            )}
+            {showNutrition && (
+              <a href="/client/plan/nutrition" onClick={markSeen}
+                className="inline-flex items-center gap-1.5 bg-black/10 text-black text-xs font-extrabold px-4 py-2 rounded-xl hover:bg-black/20 transition">
+                <Utensils className="w-3.5 h-3.5" /> الخطة الغذائية
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ClientDashboard() {
   const router = useRouter()
   const [client, setClient] = useState(null)
@@ -1711,6 +1762,9 @@ export default function ClientDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Plan-update notification — the coach updated the client's plan */}
+      <PlanUpdateBanner client={client} />
 
       {/* Subscription card */}
       <SubscriptionCard client={client} />
