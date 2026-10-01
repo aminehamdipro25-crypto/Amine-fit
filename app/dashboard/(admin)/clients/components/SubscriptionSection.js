@@ -83,13 +83,26 @@ export default function SubscriptionSection({ client, onUpdate }) {
   // coach's geo. This is why the country field is now mandatory at registration.
   const clientZone = client.country ? zoneForCountry(client.country) : null
   const [zone, setZone]               = useState(clientZone || 'gulf')
+  // Admin-overridable prices (same source as the public pricing page) so the
+  // subscription selector shows exactly what the client saw — not stale defaults.
+  const [pricing, setPricing]         = useState(null)
   useEffect(() => {
     if (clientZone) return   // client's own country is authoritative
     fetch('/api/geo').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.zone) setZone(d.zone)
     }).catch(() => {})
   }, [clientZone])
-  const pt = PRICE_TABLE[zone] || PRICE_TABLE.gulf
+  useEffect(() => {
+    fetch('/api/pricing').then(r => r.ok ? r.json() : null).then(p => { if (p) setPricing(p) }).catch(() => {})
+  }, [])
+  const base = PRICE_TABLE[zone] || PRICE_TABLE.gulf
+  const priceOf = key => {
+    const p = pricing?.[key]
+    if (!p) return base[key]
+    const v = zone === 'gulf' ? p.qar : p.tnd
+    return Number.isFinite(v) ? v : base[key]
+  }
+  const pt = { basic: priceOf('basic'), standard: priceOf('standard'), premium: priceOf('premium'), cur: base.cur }
 
   async function saveSubscription() {
     setSaving(true)
